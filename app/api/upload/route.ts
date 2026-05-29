@@ -23,21 +23,17 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // 1. Save file to local 'uploads' directory (Acts as S3 storage in this local setup)
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    await mkdir(uploadDir, { recursive: true }); // Ensure dir exists
-    
+    // 1. Convert file to Base64 (Vercel has read-only disk, so we save to Postgres directly)
+    const base64Data = buffer.toString('base64');
     const fileName = `${uuidv4()}_${file.name}`;
-    const filePath = path.join(uploadDir, fileName);
     
-    await writeFile(filePath, buffer);
-
     // 2. Initialize Database Tables for Jobs (if they don't exist)
     const jobId = uuidv4();
     await query(`
       CREATE TABLE IF NOT EXISTS upload_jobs (
         id UUID PRIMARY KEY,
         file_path TEXT,
+        file_data TEXT,
         password VARCHAR(255),
         status VARCHAR(50) DEFAULT 'PENDING',
         total_rows INT DEFAULT 0,
@@ -46,6 +42,7 @@ export async function POST(req: Request) {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS file_data TEXT;
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS upload_at DATE;
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
@@ -53,9 +50,9 @@ export async function POST(req: Request) {
 
     // 3. Create the Job Entry as 'PENDING'
     await query(`
-      INSERT INTO upload_jobs (id, file_path, password, upload_at, uploaded_by_employee_id, uploaded_by_name, status) 
-      VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
-    `, [jobId, filePath, password, uploadAt, employeeId, employeeName]);
+      INSERT INTO upload_jobs (id, file_path, file_data, password, upload_at, uploaded_by_employee_id, uploaded_by_name, status) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+    `, [jobId, fileName, base64Data, password, uploadAt, employeeId, employeeName]);
 
     // Track Audit Log
     await logAudit(

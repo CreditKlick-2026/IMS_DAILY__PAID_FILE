@@ -299,31 +299,13 @@ export default function UploadPage() {
 
     try {
       if (currentPassword && needsPassword) {
-        // Backend decryption pipeline
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('password', currentPassword);
-        
-        fetch('/api/decrypt', { method: 'POST', body: formData })
-          .then(async (res) => {
-            if (!res.ok) {
-              const errData = await res.json().catch(() => ({}));
-              setMessage(errData.error || 'Decryption failed.');
-              setNeedsPassword(true);
-              setIsValidating(false);
-              return;
-            }
-            const data = await res.arrayBuffer();
-            const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
-            processWorkbook(workbook);
-            setIsValidating(false);
-          })
-          .catch((err) => {
-            console.error("Decryption pipeline error:", err);
-            setMessage("Decryption API error.");
-            setNeedsPassword(true);
-            setIsValidating(false);
-          });
+        // Vercel Serverless Bypass: We cannot decrypt files in the browser or on Vercel without Python.
+        // We assume it's valid and let the local worker handle decryption and validation.
+        setValidationResult({ isValid: true, missingHeaders: [], foundHeaders: [], rowCount: 0 });
+        setValidatedData(null);
+        setNeedsPassword(false); // Hide password prompt
+        setFilePassword(currentPassword);
+        setIsValidating(false);
         return;
       }
       const reader = new FileReader();

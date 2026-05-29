@@ -85,22 +85,40 @@ async function startWorker() {
 
       const job = res.rows[0];
       const jobId = job.id;
-      const filePath = job.file_path;
       const password = job.password;
+      const fileData = job.file_data;
+      const fileName = job.file_path || `job_${jobId}.xlsx`;
       const uploadAt = job.upload_at;
       const uploadedByEmpId = job.uploaded_by_employee_id;
       const uploadedByName = job.uploaded_by_name;
 
       console.log(`\n⏳ Found New Upload! Processing Job: ${jobId}`);
       
-      let currentFilePath = filePath;
+      let currentFilePath = '';
       let decFilePath = '';
+      let originalFilePath = '';
 
       try {
+        const os = require('os');
+        const { writeFile } = require('fs/promises');
+        
+        originalFilePath = path.join(os.tmpdir(), fileName);
+        currentFilePath = originalFilePath;
+        
+        // Restore physical file from DB base64
+        if (fileData) {
+          const buffer = Buffer.from(fileData, 'base64');
+          await writeFile(originalFilePath, buffer);
+        } else {
+           // fallback for legacy
+           originalFilePath = job.file_path;
+           currentFilePath = job.file_path;
+        }
+
         if (password) {
-          decFilePath = filePath + '_dec.xlsx';
+          decFilePath = originalFilePath + '_dec.xlsx';
           console.log(`\n🔑 Decrypting Job: ${jobId} with python msoffcrypto-tool...`);
-          await execAsync(`msoffcrypto-tool -p "${password.replace(/"/g, '\\"')}" "${filePath}" "${decFilePath}"`);
+          await execAsync(`msoffcrypto-tool -p "${password.replace(/"/g, '\\"')}" "${originalFilePath}" "${decFilePath}"`);
           currentFilePath = decFilePath;
         }
 
@@ -226,13 +244,8 @@ async function startWorker() {
         if (decFilePath) {
           await unlink(decFilePath).catch(() => {});
         }
-        if (filePath) {
-          const fs = require('fs');
-          const path = require('path');
-          const fullPath = path.join(process.cwd(), 'public', filePath);
-          if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-          }
+        if (originalFilePath && fileData) {
+          await unlink(originalFilePath).catch(() => {});
         }
         isProcessing = false;
       }
