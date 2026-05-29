@@ -226,6 +226,14 @@ async function startWorker() {
         if (decFilePath) {
           await unlink(decFilePath).catch(() => {});
         }
+        if (filePath) {
+          const fs = require('fs');
+          const path = require('path');
+          const fullPath = path.join(process.cwd(), 'public', filePath);
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+          }
+        }
         isProcessing = false;
       }
     } catch (err) {

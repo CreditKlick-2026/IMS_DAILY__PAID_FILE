@@ -23,6 +23,7 @@ export async function GET() {
       TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
       upload_at, uploaded_by_employee_id, uploaded_by_name
       FROM upload_jobs
+      WHERE status != 'COMPLETED'
       ORDER BY id DESC
     `);
     return NextResponse.json({ success: true, jobs: res.rows });
