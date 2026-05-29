@@ -301,7 +301,7 @@ export default function UploadPage() {
       if (currentPassword && needsPassword) {
         // Vercel Serverless Bypass: We cannot decrypt files in the browser or on Vercel without Python.
         // We assume it's valid and let the local worker handle decryption and validation.
-        setValidationResult({ isValid: true, missingHeaders: [], foundHeaders: [], rowCount: 0 });
+        setValidationResult({ isValid: true, missingHeaders: [], foundHeaders: REQUIRED_HEADERS.map(h => h.key), rowCount: 0 });
         setValidatedData(null);
         setNeedsPassword(false); // Hide password prompt
         setFilePassword(currentPassword);
