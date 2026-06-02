@@ -15,6 +15,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle database client', err);
+});
+
 async function startWorker() {
   console.log("👷 Native Background Worker Started! Polling Database every 5 seconds...");
 

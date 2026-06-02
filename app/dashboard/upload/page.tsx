@@ -75,8 +75,8 @@ export default function UploadPage() {
           const data = await res.json();
           dt = new Date(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}T${String(data.hour).padStart(2, '0')}:${String(data.minute).padStart(2, '0')}:${String(data.seconds).padStart(2, '0')}+05:30`);
         } catch {
-          setGlobalDate('Date unavailable');
-          return;
+          console.warn("Time APIs failed, falling back to local system time.");
+          dt = new Date();
         }
       }
       if (dt) {
