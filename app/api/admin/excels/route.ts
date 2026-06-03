@@ -61,7 +61,7 @@ export async function DELETE(req: Request) {
       'EXCEL_BATCH',
       id,
       admin.username,
-      { file_path: jobCheck.rows[0].file_path }
+      { file_path: jobCheck.rows[0].file_path, action_by_emp_id: admin.employee_id }
     );
 
     return NextResponse.json({ success: true, message: 'Excel and all associated records deleted successfully.' });

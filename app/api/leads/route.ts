@@ -29,22 +29,16 @@ export async function GET(req: Request) {
       }
     }
 
-    const exactMatchFilters = [
-      { key: 'employee_code', val: searchParams.get('employee_code') },
-      { key: 'product', val: searchParams.get('product') },
-      { key: 'bucket', val: searchParams.get('bucket') },
-      { key: 'location', val: searchParams.get('location') },
-      { key: 'aph', val: searchParams.get('aph') },
-      { key: 'ph', val: searchParams.get('ph') },
-      { key: 'client', val: searchParams.get('client') },
-      { key: 'tl_name', val: searchParams.get('tl_name') },
-      { key: 'employee_name', val: searchParams.get('employee_name') }
+    const multiMatchFilters = [
+      'employee_code', 'product', 'bucket', 'location', 
+      'aph', 'ph', 'client', 'tl_name', 'employee_name'
     ];
 
-    exactMatchFilters.forEach(f => {
-      if (f.val) {
-        conditions.push(`${f.key} = $${queryParams.length + 1}`);
-        queryParams.push(f.val);
+    multiMatchFilters.forEach(key => {
+      const vals = searchParams.getAll(key);
+      if (vals.length > 0) {
+        conditions.push(`${key} = ANY($${queryParams.length + 1})`);
+        queryParams.push(vals);
       }
     });
 
@@ -123,5 +117,41 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error('Error fetching leads:', error);
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const sessionStr = cookieStore.get('auth_session')?.value;
+    if (!sessionStr) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const session = JSON.parse(sessionStr);
+    if (session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const body = await req.json();
+    const { 
+      account_no, employee_code, name, client, product, bucket, location, 
+      outstanding, payment_mode, tl_name, agent, aph, ph, phone_no 
+    } = body;
+
+    const query = `
+      INSERT INTO dpf_records (
+        account_no, employee_code, employee_name, client, product, bucket, location,
+        money_collected, payment_mode, tl_name, am, aph, ph, phone_no, upload_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_DATE
+      ) RETURNING id
+    `;
+    const values = [
+      account_no, employee_code, name, client, product, bucket, location,
+      outstanding ? Number(outstanding) : 0, payment_mode, tl_name, agent, aph, ph, phone_no
+    ];
+
+    const res = await pool.query(query, values);
+    return NextResponse.json({ success: true, id: res.rows[0].id });
+  } catch (error: any) {
+    console.error('Error creating record:', error);
+    return NextResponse.json({ error: 'Failed to create record: ' + error.message }, { status: 500 });
   }
 }

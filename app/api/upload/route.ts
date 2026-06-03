@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       'EXCEL_BATCH',
       jobId,
       employeeName || 'Unknown',
-      { fileName: file.name, size: file.size }
+      { fileName: file.name, size: file.size, action_by_emp_id: employeeId }
     );
 
     // 4. No third-party message queue needed! 

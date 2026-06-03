@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import SButton from './SButton';
 import { ButtonGroup, Button } from '@shopify/polaris';
@@ -73,6 +73,50 @@ const CONNECT_STATUS_COLORS: Record<string, string> = {
 };
 
 const PAGE_SIZE = 25;
+
+const MultiSelect = ({ label, options, selected, onChange }: { label: string, options: string[], selected: string[], onChange: (s: string[]) => void }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const toggle = (val: string) => {
+    if (selected.includes(val)) onChange(selected.filter(x => x !== val));
+    else onChange([...selected, val]);
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: 'auto' }}>
+      <div 
+        className="finp" 
+        style={{ fontSize: 12, padding: '6px 10px', minWidth: 120, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 4 }}
+        onClick={() => setOpen(!open)}
+      >
+        <span>{selected.length === 0 ? label : `${label} (${selected.length})`}</span>
+        <span style={{ fontSize: 10 }}>▼</span>
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 6, zIndex: 100, maxHeight: 200, overflowY: 'auto', minWidth: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          {options.length === 0 ? <div style={{ padding: '6px 10px', fontSize: 11, color: 'var(--txt3)' }}>No options</div> : null}
+          {options.map(o => (
+            <div key={o} onClick={() => toggle(o)} style={{ padding: '6px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: '1px solid var(--faint)' }}>
+              <input type="checkbox" checked={selected.includes(o)} readOnly style={{ cursor: 'pointer' }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{o}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Payment History Modal ─────────────────────────────────────────────────
 const PaymentHistoryModal = ({ lead }: { lead: any }) => {
@@ -1188,6 +1232,87 @@ const RecordLeadPaymentModal = ({ lead, onDone }: { lead: any, onDone: () => voi
   );
 };
 
+const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edit', record?: any, onClose: () => void, onSave: () => void }) => {
+  const [formData, setFormData] = useState({
+    account_no: record?.account_no || '',
+    employee_code: record?.employee_code || '',
+    name: record?.name || record?.employee_name || '',
+    client: record?.client || '',
+    product: record?.product || '',
+    bucket: record?.bucket || '',
+    location: record?.location || '',
+    outstanding: record?.outstanding || record?.money_collected || '',
+    payment_mode: record?.payment_mode || '',
+    tl_name: record?.tl_name || '',
+    agent: record?.agent || record?.am || '',
+    aph: record?.aph || '',
+    ph: record?.ph || '',
+    phone_no: record?.phone_no || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useApp();
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const url = mode === 'add' ? '/api/leads' : `/api/leads/${record.id}`;
+      const method = mode === 'add' ? 'POST' : 'PUT';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(`Record ${mode === 'add' ? 'added' : 'updated'} successfully`);
+        onSave();
+        onClose();
+      } else {
+        toast(data.error || 'Operation failed');
+      }
+    } catch (err) {
+      toast('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg2, #ffffff)', width: '600px', maxWidth: '90%', maxHeight: '90vh', borderRadius: 12, display: 'flex', flexDirection: 'column', border: '1px solid var(--bdr)' }}>
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, fontSize: 16, color: 'var(--txt)' }}>{mode === 'add' ? 'Add New Record' : 'Edit Record'}</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--txt)' }}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: 16, flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="ff"><label>Account Number *</label><input required className="finp" name="account_no" value={formData.account_no} onChange={handleChange} /></div>
+          <div className="ff"><label>Customer Name *</label><input required className="finp" name="name" value={formData.name} onChange={handleChange} /></div>
+          <div className="ff"><label>Money_Collected *</label><input required type="number" className="finp" name="outstanding" value={formData.outstanding} onChange={handleChange} /></div>
+          <div className="ff"><label>Product Type</label><input className="finp" name="product" value={formData.product} onChange={handleChange} /></div>
+          <div className="ff"><label>Emp Code</label><input className="finp" name="employee_code" value={formData.employee_code} onChange={handleChange} /></div>
+          <div className="ff"><label>Client</label><input className="finp" name="client" value={formData.client} onChange={handleChange} /></div>
+          <div className="ff"><label>Bucket</label><input className="finp" name="bucket" value={formData.bucket} onChange={handleChange} /></div>
+          <div className="ff"><label>Location</label><input className="finp" name="location" value={formData.location} onChange={handleChange} /></div>
+          <div className="ff"><label>Payment Mode</label><input className="finp" name="payment_mode" value={formData.payment_mode} onChange={handleChange} /></div>
+          <div className="ff"><label>TL Name</label><input className="finp" name="tl_name" value={formData.tl_name} onChange={handleChange} /></div>
+          <div className="ff"><label>Agent Name</label><input className="finp" name="agent" value={formData.agent} onChange={handleChange} /></div>
+          <div className="ff"><label>APH</label><input className="finp" name="aph" value={formData.aph} onChange={handleChange} /></div>
+          <div className="ff"><label>PH</label><input className="finp" name="ph" value={formData.ph} onChange={handleChange} /></div>
+          <div className="ff"><label>Phone No</label><input className="finp" name="phone_no" value={formData.phone_no} onChange={handleChange} /></div>
+          
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+            <button type="button" onClick={onClose} className="btn">Cancel</button>
+            <button type="submit" className="btn pr" disabled={loading}>{loading ? 'Saving...' : 'Save Record'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const Leads = () => {
   const { openModal, user } = useApp();
   const [leads, setLeads] = useState<any[]>([]);
@@ -1205,19 +1330,20 @@ const Leads = () => {
   const [dpdMin, setDpdMin] = useState('');
   const [dpdMax, setDpdMax] = useState('');
   const [outMin, setOutMin] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
-  const [filterYear, setFilterYear] = useState('');
+  const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1));
+  const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
+  const [exporting, setExporting] = useState(false);
   const [filterOptions, setFilterOptions] = useState<any>({});
   const [filters, setFilters] = useState<any>({
-    employee_code: '',
-    product: '',
-    bucket: '',
-    location: '',
-    aph: '',
-    ph: '',
-    client: '',
-    tl_name: '',
-    employee_name: ''
+    employee_code: [],
+    product: [],
+    bucket: [],
+    location: [],
+    aph: [],
+    ph: [],
+    client: [],
+    tl_name: [],
+    employee_name: []
   });
   const [isTableMaximized, setIsTableMaximized] = useState(false);
   const [page, setPage] = useState(1);
@@ -1226,6 +1352,24 @@ const Leads = () => {
   const [leadPaySummary, setLeadPaySummary] = useState<any>(null);
   const [latestSettlement, setLatestSettlement] = useState<any>(null);
   const [openAltIdx, setOpenAltIdx] = useState<number | null>(null);
+  const [showRecordModal, setShowRecordModal] = useState<'add' | 'edit' | null>(null);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+
+  const handleDeleteRecord = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Record deleted successfully');
+        fetchLeads();
+      } else {
+        alert(data.error || 'Failed to delete record');
+      }
+    } catch (e) {
+      alert('Error deleting record');
+    }
+  };
 
   useEffect(() => {
     fetchMetadata();
@@ -1296,7 +1440,11 @@ const Leads = () => {
       if (filterMonth) query.append('month', filterMonth);
       if (filterYear) query.append('year', filterYear);
       Object.entries(filters).forEach(([k, v]) => {
-        if (v) query.append(k, v as string);
+        if (Array.isArray(v)) {
+          v.forEach(val => query.append(k, val));
+        } else if (v) {
+          query.append(k, v as string);
+        }
       });
       query.append('paginate', 'true');
       query.append('page', page.toString());
@@ -1334,6 +1482,7 @@ const Leads = () => {
   };
 
   const exportToExcel = async () => {
+    setExporting(true);
     try {
       const query = new URLSearchParams({ q: search, searchType: filterTab, userId: user?.id || '' });
       if (statusFilter) query.append('status', statusFilter);
@@ -1345,7 +1494,11 @@ const Leads = () => {
       if (filterMonth) query.append('month', filterMonth);
       if (filterYear) query.append('year', filterYear);
       Object.entries(filters).forEach(([k, v]) => {
-        if (v) query.append(k, v as string);
+        if (Array.isArray(v)) {
+          v.forEach(val => query.append(k, val));
+        } else if (v) {
+          query.append(k, v as string);
+        }
       });
       query.append('export', 'true');
       query.append('t', Date.now().toString());
@@ -1361,8 +1514,8 @@ const Leads = () => {
       }
 
       const formattedRecords = records.map((r: any, index: number) => {
-        const { id, upload_at, created_at, ...rest } = r;
-        return { 'S.No.': index + 1, ...rest };
+        const { id, upload_at, created_at, outstanding, ...rest } = r;
+        return { 'S.No.': index + 1, ...rest, 'Money_Collected': outstanding };
       });
 
       const ws = XLSX.utils.json_to_sheet(formattedRecords);
@@ -1372,6 +1525,8 @@ const Leads = () => {
     } catch (error) {
       console.error("Export failed", error);
       alert("Failed to export Excel");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -1390,7 +1545,7 @@ const Leads = () => {
     bkt_2: { order: 11, label: 'Bucket' },
     min_amt_due: { order: 12, label: 'Min Amount Due' },
     principle_outstanding: { order: 13, label: 'Principle Outstanding' },
-    outstanding: { order: 14, label: 'Total Outstanding' },
+    outstanding: { order: 14, label: 'Money_Collected' },
     product: { order: 15, label: 'Product Type' },
     'credit card number': { order: 16, label: 'Credit Card Number' },
     credit_card_number: { order: 16, label: 'Credit Card Number' },
@@ -1518,6 +1673,14 @@ const Leads = () => {
 
   return (
     <>
+      {showRecordModal && (
+        <RecordFormModal 
+          mode={showRecordModal} 
+          record={editingRecord} 
+          onClose={() => { setShowRecordModal(null); setEditingRecord(null); }} 
+          onSave={fetchLeads} 
+        />
+      )}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -2158,26 +2321,9 @@ const Leads = () => {
           {/* FILTER ROW */}
           {showFilters && (
             <div id="fRow" style={{ display: 'flex', padding: '10px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--bdr)', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select
-                className="finp"
-                style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }}
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Status</option>
-                {statusOptions.map((st: any) => {
-                  const val = typeof st === 'string' ? st : st.value;
-                  const label = typeof st === 'string' ? st : st.label;
-                  return <option key={val} value={val}>{label}</option>;
-                })}
-              </select>
               <input className="finp" type="number" placeholder="DPD Min" style={{ width: '90px', padding: '6px 10px' }} value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
               <input className="finp" type="number" placeholder="DPD Max" style={{ width: '90px', padding: '6px 10px' }} value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
               <input className="finp" type="number" placeholder="₹ Min" style={{ width: '100px', padding: '6px 10px' }} value={outMin} onChange={e => setOutMin(e.target.value)} />
-              <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={portfolioFilter} onChange={e => setPortfolioFilter(e.target.value)}>
-                <option value="">All Portfolios</option>
-                {portfolioOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
               <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
                 <option value="">Sort By</option>
                 <option value="high">Highest Amount</option>
@@ -2196,34 +2342,49 @@ const Leads = () => {
                 ))}
               </select>
               {[
-                { key: 'employeeCode', filterKey: 'employee_code', label: 'Emp Code' },
-                { key: 'product', filterKey: 'product', label: 'Product Type' },
-                { key: 'bucket', filterKey: 'bucket', label: 'Bucket' },
-                { key: 'location', filterKey: 'location', label: 'Location' },
-                { key: 'aph', filterKey: 'aph', label: 'APH' },
-                { key: 'ph', filterKey: 'ph', label: 'PH' },
-                { key: 'client', filterKey: 'client', label: 'Client' },
-                { key: 'tlName', filterKey: 'tl_name', label: 'TL Name' },
-                { key: 'agentName', filterKey: 'employee_name', label: 'Agent Name' }
+                { key: 'employeeCode', filterKey: 'employee_code', label: 'Emp Code', isMulti: true },
+                { key: 'product', filterKey: 'product', label: 'Product Type', isMulti: true },
+                { key: 'bucket', filterKey: 'bucket', label: 'Bucket', isMulti: true },
+                { key: 'location', filterKey: 'location', label: 'Location', isMulti: true },
+                { key: 'aph', filterKey: 'aph', label: 'APH', isMulti: true },
+                { key: 'ph', filterKey: 'ph', label: 'PH', isMulti: true },
+                { key: 'client', filterKey: 'client', label: 'Client', isMulti: true },
+                { key: 'tlName', filterKey: 'tl_name', label: 'TL Name', isMulti: true },
+                { key: 'agentName', filterKey: 'employee_name', label: 'Agent Name', isMulti: true }
               ].map(opt => (
-                <select 
-                  key={opt.key}
-                  className="finp" 
-                  style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} 
-                  value={filters[opt.filterKey] || ''} 
-                  onChange={e => setFilters({ ...filters, [opt.filterKey]: e.target.value })}
-                >
-                  <option value="">{opt.label}</option>
-                  {(filterOptions[opt.key] || []).map((val: string) => (
-                    <option key={val} value={val}>{val}</option>
-                  ))}
-                </select>
+                opt.isMulti ? (
+                  <MultiSelect
+                    key={opt.key}
+                    label={opt.label}
+                    options={filterOptions[opt.key] || []}
+                    selected={Array.isArray(filters[opt.filterKey]) ? filters[opt.filterKey] : (filters[opt.filterKey] ? [filters[opt.filterKey]] : [])}
+                    onChange={(newVal) => setFilters({ ...filters, [opt.filterKey]: newVal })}
+                  />
+                ) : (
+                  <select 
+                    key={opt.key}
+                    className="finp" 
+                    style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} 
+                    value={filters[opt.filterKey] || ''} 
+                    onChange={e => setFilters({ ...filters, [opt.filterKey]: e.target.value })}
+                  >
+                    <option value="">{opt.label}</option>
+                    {(filterOptions[opt.key] || []).map((val: string) => (
+                      <option key={val} value={val}>{val}</option>
+                    ))}
+                  </select>
+                )
               ))}
-              <SButton size="slim" variant="secondary" onClick={exportToExcel}>📥 Current Excel</SButton>
+              <SButton size="slim" variant="secondary" onClick={exportToExcel} disabled={exporting}>
+                {exporting ? '⏳ Processing...' : '📥 Current Excel'}
+              </SButton>
+              {user?.role === 'admin' && (
+                <SButton size="slim" variant="primary" onClick={() => { setEditingRecord(null); setShowRecordModal('add'); }}>➕ Add Record</SButton>
+              )}
               <SButton size="slim" variant="critical" onClick={() => {
-                setStatusFilter(''); setSortBy(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(''); setFilterYear('');
+                setStatusFilter(''); setSortBy(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear()));
                 setFilters({
-                  employee_code: '', product: '', bucket: '', location: '', aph: '', ph: '', client: '', tl_name: '', employee_name: ''
+                  employee_code: [], product: [], bucket: [], location: [], aph: [], ph: [], client: [], tl_name: [], employee_name: []
                 });
               }}>Clear Filters</SButton>
             </div>
@@ -2243,9 +2404,12 @@ const Leads = () => {
                       <>
                         <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Account Number</th>
                         <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Customer Name</th>
-                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Outstanding</th>
+                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Money_Collected</th>
                         <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Assigned To</th>
                       </>
+                    )}
+                    {user?.role === 'admin' && (
+                      <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'right' }}>Actions</th>
                     )}
                   </tr>
                 </thead>
@@ -2300,6 +2464,12 @@ const Leads = () => {
                           <td className="mn" style={{ padding: '8px 10px', color: 'var(--red)', fontWeight: 600 }}>₹{lead.outstanding?.toLocaleString('en-IN')}</td>
                           <td style={{ padding: '8px 10px', fontSize: 11, color: 'var(--txt2)' }}>{lead.agent || lead.assignedAgent?.name || 'Unassigned'}</td>
                         </>
+                      )}
+                      {user?.role === 'admin' && (
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--acc2)', marginRight: 12, fontSize: 16 }} title="Edit">✎</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: 16 }} title="Delete">🗑</button>
+                        </td>
                       )}
                     </tr>
                   ))}

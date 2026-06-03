@@ -102,7 +102,9 @@
   border: 1px solid var(--color-border);
   background-color: var(--color-background);
   color: var(--color-foreground);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
   outline: none;
   transition: all 0.2s ease;
 }
@@ -110,4 +112,18 @@
 .finp:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.ff {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ff label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }

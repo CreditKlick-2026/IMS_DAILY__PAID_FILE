@@ -54,7 +54,7 @@ export async function PUT(req: Request) {
       'USER',
       userId.toString(),
       admin.username,
-      { targetUserId: userId }
+      { targetUserId: userId, action_by_emp_id: admin.employee_id }
     );
 
     return NextResponse.json({ success: true, message: 'Password updated successfully' });
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       'USER',
       newUserId.toString(),
       admin.username,
-      { employee_id, name, username, role }
+      { employee_id, name, username, role, action_by_emp_id: admin.employee_id }
     );
 
     return NextResponse.json({ success: true, message: 'User created successfully', user: res.rows[0] });
@@ -124,7 +124,7 @@ export async function DELETE(req: Request) {
       'USER',
       userId,
       admin.username,
-      { targetUserId: userId }
+      { targetUserId: userId, action_by_emp_id: admin.employee_id }
     );
 
     return NextResponse.json({ success: true, message: 'User deleted successfully' });
