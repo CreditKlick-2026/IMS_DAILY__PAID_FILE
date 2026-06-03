@@ -5,7 +5,7 @@ import {
   PieChart, Pie, AreaChart, Area, CartesianGrid
 } from 'recharts';
 
-const COLORS = ['#6366f1','#f59e0b','#10b981','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#ef4444','#84cc16'];
+const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316', '#ef4444', '#84cc16'];
 
 // ─── MultiSelect ─────────────────────────────────────────────────────────────
 const MultiSelect = ({ label, options, selected, onChange }: {
@@ -77,8 +77,8 @@ const Dashboard: React.FC = () => {
   });
 
   const months = [
-    {v:'1',l:'Jan'},{v:'2',l:'Feb'},{v:'3',l:'Mar'},{v:'4',l:'Apr'},{v:'5',l:'May'},{v:'6',l:'Jun'},
-    {v:'7',l:'Jul'},{v:'8',l:'Aug'},{v:'9',l:'Sep'},{v:'10',l:'Oct'},{v:'11',l:'Nov'},{v:'12',l:'Dec'}
+    { v: '1', l: 'Jan' }, { v: '2', l: 'Feb' }, { v: '3', l: 'Mar' }, { v: '4', l: 'Apr' }, { v: '5', l: 'May' }, { v: '6', l: 'Jun' },
+    { v: '7', l: 'Jul' }, { v: '8', l: 'Aug' }, { v: '9', l: 'Sep' }, { v: '10', l: 'Oct' }, { v: '11', l: 'Nov' }, { v: '12', l: 'Dec' }
   ];
 
   useEffect(() => {
@@ -136,7 +136,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
           <div>
             <div className="text-sm font-bold text-foreground flex items-center gap-2">
-              <span>▣ BPO Daily Paid File Dashboard</span>
+              <span>Daily Paid File Dashboard</span>
               <span className="text-[9px] text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">LIVE</span>
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -148,7 +148,7 @@ const Dashboard: React.FC = () => {
               {months.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
             </select>
             <select className="px-2.5 py-1.5 rounded-lg border border-border bg-card text-foreground font-semibold text-xs cursor-pointer w-20" value={year} onChange={e => setYear(e.target.value)}>
-              {['2024','2025','2026'].map(y => <option key={y} value={y}>{y}</option>)}
+              {['2024', '2025', '2026'].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
       <div className="flex-grow overflow-y-auto p-6 flex flex-col gap-6">
         {loading || !data ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1,2,3,4,5,6,7,8].map(i => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <div key={i} className="animate-pulse bg-card border border-border rounded-xl h-24 p-5 flex flex-col gap-3">
                 <div className="h-3.5 bg-muted rounded w-2/3" /><div className="h-6 bg-muted rounded w-1/2" />
               </div>
@@ -247,11 +247,11 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18} name="Collection">
-                          {toChartData(data.buckets).map((_: any, i: number) => <Cell key={i} fill={['#8b5cf6','#6366f1','#3b82f6','#06b6d4','#14b8a6'][i % 5]} />)}
+                          {toChartData(data.buckets).map((_: any, i: number) => <Cell key={i} fill={['#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6'][i % 5]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.buckets} fmt={fmt} colors={['#8b5cf6','#6366f1','#3b82f6','#06b6d4','#14b8a6']} />
+                    <Legend items={data.buckets} fmt={fmt} colors={['#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6']} />
                   </>
                 )}
               </ChartCard>
@@ -265,7 +265,7 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18} name="Collection">
-                          {toChartData(data.teamLeaders).map((_: any, i: number) => <Cell key={i} fill={i === 0 ? '#f59e0b' : COLORS[(i+2) % COLORS.length]} />)}
+                          {toChartData(data.teamLeaders).map((_: any, i: number) => <Cell key={i} fill={i === 0 ? '#f59e0b' : COLORS[(i + 2) % COLORS.length]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -273,7 +273,7 @@ const Dashboard: React.FC = () => {
                       {data.teamLeaders.map((item: any, i: number) => (
                         <div key={i} className="flex justify-between text-[10px]">
                           <span className="flex items-center gap-1 text-muted-foreground">
-                            <span style={{ width: 14, height: 14, borderRadius: 3, background: i === 0 ? '#f59e0b' : COLORS[(i+2)%COLORS.length], display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 700 }}>#{i+1}</span>
+                            <span style={{ width: 14, height: 14, borderRadius: 3, background: i === 0 ? '#f59e0b' : COLORS[(i + 2) % COLORS.length], display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 700 }}>#{i + 1}</span>
                             {item.name}
                           </span>
                           <span className="font-semibold text-green-500">{fmt(item.collected)} <span className="text-muted-foreground font-normal">({(item.percentage ?? 0).toFixed(1)}%)</span></span>
@@ -325,7 +325,7 @@ const Dashboard: React.FC = () => {
                     <ResponsiveContainer width="100%" height={170}>
                       <PieChart>
                         <Pie data={toChartData(data.paymentModes)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={30} paddingAngle={3}>
-                          {toChartData(data.paymentModes).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6','#10b981','#f59e0b','#ec4899','#8b5cf6'][i % 5]} />)}
+                          {toChartData(data.paymentModes).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][i % 5]} />)}
                         </Pie>
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                       </PieChart>
@@ -334,7 +334,7 @@ const Dashboard: React.FC = () => {
                       {data.paymentModes.map((item: any, i: number) => (
                         <div key={i} className="bg-muted/30 p-2 rounded-lg border border-border">
                           <div className="flex items-center gap-1 mb-1">
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: ['#3b82f6','#10b981','#f59e0b','#ec4899','#8b5cf6'][i%5], display: 'inline-block' }} />
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][i % 5], display: 'inline-block' }} />
                             <span className="text-[9px] text-muted-foreground uppercase font-semibold truncate">{item.name}</span>
                           </div>
                           <div className="text-xs font-bold text-foreground">{fmt(item.collected)}</div>
@@ -363,7 +363,7 @@ const Dashboard: React.FC = () => {
                       {data.agents.map((a: any, i: number) => (
                         <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '8px 10px' }}>
-                            <span style={{ width: 20, height: 20, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'var(--color-muted-foreground)' }}>{i+1}</span>
+                            <span style={{ width: 20, height: 20, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'var(--color-muted-foreground)' }}>{i + 1}</span>
                           </td>
                           <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-foreground)' }}>{a.name}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--color-muted-foreground)', fontFamily: 'monospace', fontSize: 10 }}>{a.code || '—'}</td>
@@ -397,11 +397,11 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection">
-                          {toChartData(data.aphBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6366f1','#3b82f6','#14b8a6','#10b981','#84cc16'][i % 10]} />)}
+                          {toChartData(data.aphBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#14b8a6', '#10b981', '#84cc16'][i % 10]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.aphBreakdown} fmt={fmt} colors={['#f59e0b','#f97316','#ef4444','#ec4899','#8b5cf6','#6366f1','#3b82f6','#14b8a6','#10b981','#84cc16']} />
+                    <Legend items={data.aphBreakdown} fmt={fmt} colors={['#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#14b8a6', '#10b981', '#84cc16']} />
                   </>
                 )}
               </ChartCard>
@@ -415,11 +415,11 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection">
-                          {toChartData(data.phBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6','#06b6d4','#14b8a6','#10b981','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#8b5cf6'][i % 10]} />)}
+                          {toChartData(data.phBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f97316', '#ef4444', '#ec4899', '#8b5cf6'][i % 10]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.phBreakdown} fmt={fmt} colors={['#3b82f6','#06b6d4','#14b8a6','#10b981','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#8b5cf6']} />
+                    <Legend items={data.phBreakdown} fmt={fmt} colors={['#3b82f6', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f97316', '#ef4444', '#ec4899', '#8b5cf6']} />
                   </>
                 )}
               </ChartCard>

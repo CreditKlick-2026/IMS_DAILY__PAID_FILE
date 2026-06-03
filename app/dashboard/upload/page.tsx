@@ -740,11 +740,52 @@ export default function UploadPage() {
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <div className="flex items-center gap-1.5">
                       {activeJob.status === 'PROCESSING' && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-                      Status: <span className={activeJob.status === 'COMPLETED' ? 'text-emerald-500' : 'text-primary'}>{activeJob.status}</span>
+                      Status: <span className={activeJob.status === 'COMPLETED' ? 'text-emerald-500' : activeJob.status === 'FAILED' ? 'text-destructive' : 'text-primary'}>{activeJob.status}</span>
                     </div>
                   </div>
 
-
+                  {/* Show Error / Warning Details */}
+                  {activeJob.error_log && (
+                    <div className="mt-3 p-3 rounded-lg text-xs font-semibold border bg-slate-50 border-slate-200">
+                      {(() => {
+                        let parsed: any = activeJob.error_log;
+                        if (typeof parsed === 'string') {
+                          try {
+                            parsed = JSON.parse(parsed);
+                          } catch {
+                            // Leave it as a string
+                          }
+                        }
+                        
+                        if (typeof parsed === 'string') {
+                          return <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{parsed}</span></div>;
+                        } else if (parsed && typeof parsed === 'object') {
+                          return (
+                            <div className="flex flex-col gap-1.5 text-slate-600">
+                              {parsed.duplicates_found > 0 && (
+                                <div className="text-amber-600 flex items-center gap-2">
+                                  <AlertCircle className="w-4 h-4" />
+                                  <span>Marked {parsed.duplicates_found} records as duplicate.</span>
+                                </div>
+                              )}
+                              {parsed.failed_count > 0 && (
+                                <div className="text-destructive flex items-center gap-2">
+                                  <XCircle className="w-4 h-4" />
+                                  <span>Failed to insert {parsed.failed_count} records.</span>
+                                </div>
+                              )}
+                              {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> Error: {parsed.last_error}</div>}
+                              {(!parsed.duplicates_found && !parsed.failed_count && !parsed.last_error) && (
+                                <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{JSON.stringify(parsed)}</span></div>
+                              )}
+                            </div>
+                          );
+                        } else {
+                          return <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{String(parsed)}</span></div>;
+                        }
+                      })()}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

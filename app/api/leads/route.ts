@@ -44,6 +44,13 @@ export async function GET(req: Request) {
 
     const month = searchParams.get('month') || '';
     const year = searchParams.get('year') || '';
+    const duplicateOnly = searchParams.get('duplicateOnly') === 'true';
+
+    if (duplicateOnly) {
+      conditions.push(`is_duplicate = TRUE`);
+    } else {
+      conditions.push(`(is_duplicate = FALSE OR is_duplicate IS NULL)`);
+    }
 
     if (month) {
       conditions.push(`EXTRACT(MONTH FROM upload_at) = $${queryParams.length + 1}`);

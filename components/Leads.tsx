@@ -280,6 +280,7 @@ const PaymentSummaryModal = ({ lead }: { lead: any }) => {
               <div key={k.label} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: '14px 16px' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>{k.icon}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: k.color, marginBottom: 2 }}>{k.val}</div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: k.color, marginBottom: 2 }}>{k.val}</div>
                 <div style={{ fontSize: 10, color: 'var(--txt)', fontWeight: 600 }}>{k.label}</div>
                 <div style={{ fontSize: 9, color: 'var(--txt3)', marginTop: 2 }}>{k.note}</div>
               </div>
@@ -1313,7 +1314,7 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
   );
 };
 
-const Leads = () => {
+const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
   const { openModal, user } = useApp();
   const [leads, setLeads] = useState<any[]>([]);
   const [leadColumns, setLeadColumns] = useState<any[]>([]);
@@ -1368,6 +1369,22 @@ const Leads = () => {
       }
     } catch (e) {
       alert('Error deleting record');
+    }
+  };
+
+  const handleTransferRecord = async (id: string) => {
+    if (!confirm('Are you sure you want to transfer this record to the main leads table? This will mark it as a valid lead.')) return;
+    try {
+      const res = await fetch(`/api/leads/${id}/transfer`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Record transferred to leads successfully');
+        fetchLeads();
+      } else {
+        alert(data.error || 'Failed to transfer record');
+      }
+    } catch (e) {
+      alert('Error transferring record');
     }
   };
 
@@ -1450,6 +1467,7 @@ const Leads = () => {
       query.append('page', page.toString());
       query.append('limit', limit.toString());
       query.append('t', Date.now().toString());
+      if (duplicateOnly) query.append('duplicateOnly', 'true');
 
       const res = await fetch(`/api/leads?${query.toString()}`, { cache: 'no-store' });
       const data = await res.json();
@@ -1502,6 +1520,7 @@ const Leads = () => {
       });
       query.append('export', 'true');
       query.append('t', Date.now().toString());
+      if (duplicateOnly) query.append('duplicateOnly', 'true');
 
       const res = await fetch(`/api/leads?${query.toString()}`, { cache: 'no-store' });
       const data = await res.json();
@@ -2121,6 +2140,17 @@ const Leads = () => {
           {/* CUSTOMER DASHBOARD HEADER */}
           {!isTableMaximized && (
             <div id="custDash" className="cust-dash filled" style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--bdr)' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--txt)', margin: '0 0 4px 0' }}>
+                    {duplicateOnly ? 'Duplicate Records' : 'Leads Management'}
+                  </h1>
+                  <p style={{ fontSize: 12, color: 'var(--txt3)', margin: 0 }}>
+                    {duplicateOnly ? 'View and manage duplicate file uploads' : 'View, filter, and manage your uploaded leads'}
+                  </p>
+                </div>
+              </div>
               <div className="cust-dash-header" style={{ alignItems: 'flex-start' }}>
 
                 {/* LEFT SIDE: Avatar + Name OR skeleton OR placeholder */}
@@ -2471,6 +2501,9 @@ const Leads = () => {
                       )}
                       {user?.role === 'admin' && (
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                          {duplicateOnly && (
+                            <button onClick={(e) => { e.stopPropagation(); handleTransferRecord(lead.id); }} style={{ background: 'var(--grnbg)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 6, cursor: 'pointer', color: 'var(--grn)', marginRight: 12, fontSize: 10, padding: '4px 8px', fontWeight: 600 }} title="Transfer to Leads (Approve)">Approve to Leads</button>
+                          )}
                           <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--acc2)', marginRight: 12, fontSize: 16 }} title="Edit">✎</button>
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: 16 }} title="Delete">🗑</button>
                         </td>

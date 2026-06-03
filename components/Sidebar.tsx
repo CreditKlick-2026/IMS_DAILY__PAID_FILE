@@ -35,6 +35,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'manager'],
       Icon: UploadCloud, color: 'text-purple-500'
     },
+    {
+      id: 'duplicate', label: 'Duplicate Records', section: 'MANAGEMENT', link: '/dashboard/duplicate',
+      Icon: Users, color: 'text-amber-500'
+    },
 
     {
       id: 'admin', label: 'Admin Panel', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/admin',

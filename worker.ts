@@ -236,7 +236,8 @@ async function startWorker() {
             const intraKey = `${accNo}_${money}_${payMode}`;
             if (intraFileSet.has(intraKey)) {
                 totalDups++;
-                continue;
+                row._isDuplicate = true;
+                row._duplicateReason = 'EXACT_DUPLICATE';
             }
             
             // 3. Database existing checks
@@ -253,17 +254,19 @@ async function startWorker() {
                 }
             }
             
-            if (!isBad) {
-                intraFileSet.add(intraKey);
-                validData.push(row);
+            if (isBad && !row._isDuplicate) {
+                row._isDuplicate = true;
+                row._duplicateReason = 'EXACT_DUPLICATE';
             }
+            
+            intraFileSet.add(intraKey);
+            validData.push(row);
         }
         
-        if (totalDups > 0) {
-            throw new Error(`Upload Rejected: File contains ${totalDups} duplicate records. The entire file has been rejected. Please fix the errors and re-upload.`);
-        }
+        // We skip the throw Error to allow partial uploads (ignoring duplicates)
 
         const totalRows = validData.length;
+        await pool.query(`UPDATE upload_jobs SET total_rows = $1 WHERE id = $2`, [totalRows, jobId]);
 
         const BATCH_SIZE = 500;
         let processed = 0;
@@ -288,7 +291,7 @@ async function startWorker() {
                 return null;
               };
               
-              placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+              placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
               values.push(
                 get(['Account_No', 'Account No', 'LAN', 'Loan No']),
                 get(['Employee_Code', 'Employee Code', 'EmpCode']),
@@ -307,13 +310,15 @@ async function startWorker() {
                 jobId,
                 uploadAt,
                 uploadedByEmpId,
-                uploadedByName
+                uploadedByName,
+                row._isDuplicate ? true : false,
+                row._duplicateReason || null
               );
             }
 
             await pool.query(`
               INSERT INTO dpf_records 
-                (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name)
+                (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag)
               VALUES ${placeholders.join(', ')}
             `, values);
             processed += batch.length;
