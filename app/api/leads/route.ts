@@ -99,7 +99,9 @@ export async function GET(req: Request) {
         aph,
         ph,
         phone_no,
-        upload_at
+        upload_at,
+        COALESCE(is_duplicate, FALSE) as is_duplicate,
+        fraud_flag
       FROM dpf_records
       ${whereClause}
       ${orderClause}

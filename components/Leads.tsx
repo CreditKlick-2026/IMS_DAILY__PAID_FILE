@@ -2459,7 +2459,11 @@ const Leads = () => {
                         );
                       }) : (
                         <>
-                          <td className="mn" style={{ padding: '8px 10px', color: 'var(--txt3)' }}>{String(lead.account_no || '').replace(/LN-|-/g, '')}</td>
+                          <td className="mn" style={{ padding: '8px 10px', color: 'var(--txt3)' }}>
+                            {String(lead.account_no || '').replace(/LN-|-/g, '')}
+                            {lead.is_duplicate && <span style={{ marginLeft: 4, background: '#ef4444', color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle' }}>DUP</span>}
+                            {lead.fraud_flag && <span style={{ marginLeft: 4, background: '#f59e0b', color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle' }} title={lead.fraud_flag}>FRAUD</span>}
+                          </td>
                           <td className="nm" style={{ padding: '8px 10px', color: 'var(--txt)' }}>{lead.name}</td>
                           <td className="mn" style={{ padding: '8px 10px', color: 'var(--red)', fontWeight: 600 }}>₹{lead.outstanding?.toLocaleString('en-IN')}</td>
                           <td style={{ padding: '8px 10px', fontSize: 11, color: 'var(--txt2)' }}>{lead.agent || lead.assignedAgent?.name || 'Unassigned'}</td>

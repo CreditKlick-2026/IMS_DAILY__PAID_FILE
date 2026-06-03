@@ -184,9 +184,9 @@ const Dashboard: React.FC = () => {
                 { label: 'Unique Accounts', value: data.summary.uniqueAccounts, icon: '👤', color: 'text-blue-500' },
                 { label: 'Avg / File', value: fmt(data.summary.avgPerFile), icon: '📊', color: 'text-amber-500' },
                 { label: 'Active Agents', value: data.summary.activeAgents, icon: '🧑‍💼', color: 'text-purple-500' },
-                { label: 'Active TLs', value: data.summary.activeTLs, icon: '👥', color: 'text-indigo-500' },
                 { label: 'Top Client', value: data.summary.topClient, icon: '🏢', color: 'text-amber-500' },
-                { label: 'Top Bucket', value: data.summary.topBucket, icon: '🪣', color: 'text-cyan-500' },
+                { label: 'Duplicates', value: data.summary.duplicateCount || 0, icon: '⚠️', color: data.summary.duplicateCount > 0 ? 'text-red-500' : 'text-green-500' },
+                { label: 'Frauds', value: data.summary.fraudCount || 0, icon: '🚨', color: data.summary.fraudCount > 0 ? 'text-red-500' : 'text-green-500' },
               ].map((k, i) => (
                 <div key={i} className="p-4 rounded-xl border border-border bg-card flex flex-col gap-1 shadow-sm">
                   <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">

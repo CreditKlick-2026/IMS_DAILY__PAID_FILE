@@ -61,8 +61,18 @@ async function startWorker() {
       upload_at        DATE,
       uploaded_by_employee_id VARCHAR(100),
       uploaded_by_name VARCHAR(255),
+      is_duplicate     BOOLEAN DEFAULT FALSE,
+      duplicate_of     INT,
+      fraud_flag       VARCHAR(255),
       created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  // Ensure is_duplicate and fraud_flag columns exist (for existing tables)
+  await pool.query(`
+    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS is_duplicate BOOLEAN DEFAULT FALSE;
+    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS duplicate_of INT;
+    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS fraud_flag VARCHAR(255);
   `);
 
   let isProcessing = false;
@@ -169,17 +179,99 @@ async function startWorker() {
           throw new Error("No matching headers found in any sheet.");
         }
 
-        const totalRows = bestSheetData.length;
-        await pool.query(`UPDATE upload_jobs SET total_rows = $1 WHERE id = $2`, [totalRows, jobId]);
-        console.log(`📊 Processing Sheet: "${bestSheetName}" | Rows: ${totalRows} | Headers at Row: ${bestHeaderIndex + 1}`);
+        // ─── PRE-VALIDATION: FILTER FRAUDS & DUPLICATES BEFORE INSERT ─────────────────
+        const allAccountNos = bestSheetData.map(row => {
+          const get = (keys: string[]) => {
+            for (const k of keys) {
+              const target = normalize(k);
+              const foundKey = Object.keys(row).find(r => normalize(r) === target);
+              if (foundKey !== undefined && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+            }
+            return null;
+          };
+          return get(['Account_No', 'Account No', 'LAN', 'Loan No']);
+        }).filter(Boolean);
+
+        const uniqueAccounts = [...new Set(allAccountNos)];
+        
+        let existingRecords: any[] = [];
+        if (uniqueAccounts.length > 0) {
+          console.log(`🔍 Fetching existing records for ${uniqueAccounts.length} unique accounts to check duplicates...`);
+          // Chunk unique accounts to avoid query size limits
+          for (let i = 0; i < uniqueAccounts.length; i += 1000) {
+             const chunk = uniqueAccounts.slice(i, i + 1000);
+             const res = await pool.query(`
+               SELECT account_no, money_collected, payment_mode, employee_code, upload_at 
+               FROM dpf_records 
+               WHERE account_no = ANY($1) 
+                 AND EXTRACT(MONTH FROM upload_at) = EXTRACT(MONTH FROM $2::date)
+                 AND EXTRACT(YEAR FROM upload_at) = EXTRACT(YEAR FROM $2::date)
+             `, [chunk, uploadAt]);
+             existingRecords.push(...res.rows);
+          }
+        }
+
+        const validData = [];
+        let totalDups = 0;
+        
+        const intraFileSet = new Set(); // to detect duplicates within the same file
+
+        for (const row of bestSheetData) {
+            const get = (keys: string[]) => {
+              for (const k of keys) {
+                const target = normalize(k);
+                const foundKey = Object.keys(row).find(r => normalize(r) === target);
+                if (foundKey !== undefined && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+              }
+              return null;
+            };
+            
+            const accNo = get(['Account_No', 'Account No', 'LAN', 'Loan No']);
+            const moneyStr = String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '');
+            const money = parseFloat(moneyStr) || 0;
+            const payMode = String(get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']) || '').toLowerCase();
+            const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode']);
+            
+            // 2. Intra-file duplicate
+            const intraKey = `${accNo}_${money}_${payMode}`;
+            if (intraFileSet.has(intraKey)) {
+                totalDups++;
+                continue;
+            }
+            
+            // 3. Database existing checks
+            let isBad = false;
+            const matches = existingRecords.filter(r => r.account_no == accNo);
+            
+            for (const match of matches) {
+                const dbMoney = parseFloat(match.money_collected) || 0;
+                const dbPayMode = String(match.payment_mode || '').toLowerCase();
+
+                // Exact Duplicate
+                if (dbMoney === money && dbPayMode === payMode) {
+                   isBad = true; totalDups++; break;
+                }
+            }
+            
+            if (!isBad) {
+                intraFileSet.add(intraKey);
+                validData.push(row);
+            }
+        }
+        
+        if (totalDups > 0) {
+            throw new Error(`Upload Rejected: File contains ${totalDups} duplicate records. The entire file has been rejected. Please fix the errors and re-upload.`);
+        }
+
+        const totalRows = validData.length;
 
         const BATCH_SIZE = 500;
         let processed = 0;
         let failed = 0;
         let lastError = null;
 
-          for (let i = 0; i < totalRows; i += BATCH_SIZE) {
-          const batch = bestSheetData.slice(i, i + BATCH_SIZE);
+        for (let i = 0; i < totalRows; i += BATCH_SIZE) {
+          const batch = validData.slice(i, i + BATCH_SIZE);
           
           try {
             const values: any[] = [];
@@ -235,8 +327,11 @@ async function startWorker() {
           console.log(`✅ Progress: ${processed}/${totalRows} (Failed: ${failed})`);
         }
 
-        await pool.query(`UPDATE upload_jobs SET status = 'COMPLETED' WHERE id = $1`, [jobId]);
-        console.log(`🎉 Job ${jobId} Finished! Total: ${processed} inserted.`);
+        await pool.query(`UPDATE upload_jobs SET status = 'COMPLETED', error_log = $2 WHERE id = $1`, [
+          jobId,
+          JSON.stringify({ duplicates_found: totalDups, failed_count: failed, last_error: lastError, status: 'Blocked records prevented from upload' })
+        ]);
+        console.log(`🎉 Job ${jobId} Finished! Inserted: ${processed}, Blocked: ${totalDups}`);
 
       } catch (fileError: any) {
         console.error(`❌ Processing Failed:`, fileError);

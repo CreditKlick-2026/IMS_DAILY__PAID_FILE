@@ -22,7 +22,6 @@ export async function GET(req: Request) {
     const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
 
-    // Multi-select filters
     const multiFilters: { col: string; vals: string[] }[] = [];
     const filterKeys = [
       { param: 'tl_name', col: 'tl_name' },
@@ -45,12 +44,16 @@ export async function GET(req: Request) {
       baseParams.push(vals);
     });
 
-    const dateFilter = `EXTRACT(MONTH FROM upload_at) = $1 AND EXTRACT(YEAR FROM upload_at) = $2${extraConditions}`;
+    // Exclude duplicates AND frauds from all calculations!
+    const dateFilter = `EXTRACT(MONTH FROM upload_at) = $1 AND EXTRACT(YEAR FROM upload_at) = $2 AND (is_duplicate = FALSE OR is_duplicate IS NULL) AND fraud_flag IS NULL${extraConditions}`;
+    // Separate filter for stats (include all)
+    const dateFilterAll = `EXTRACT(MONTH FROM upload_at) = $1 AND EXTRACT(YEAR FROM upload_at) = $2${extraConditions}`;
 
     const [
       totalRes, clientRes, bucketRes, productRes, locationRes,
       tlRes, amRes, paymentRes,
-      dailyRes, agentRes, aphRes, phRes, summaryExtRes
+      dailyRes, agentRes, aphRes, phRes, summaryExtRes,
+      dupStatsRes
     ] = await Promise.all([
       query(`SELECT COUNT(id) as total_files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as total_collected FROM dpf_records WHERE ${dateFilter}`, baseParams),
       query(`SELECT client as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND client IS NOT NULL GROUP BY client ORDER BY collected DESC`, baseParams),
@@ -60,16 +63,34 @@ export async function GET(req: Request) {
       query(`SELECT tl_name as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND tl_name IS NOT NULL GROUP BY tl_name ORDER BY collected DESC LIMIT 5`, baseParams),
       query(`SELECT am as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND am IS NOT NULL GROUP BY am ORDER BY collected DESC LIMIT 5`, baseParams),
       query(`SELECT payment_mode as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND payment_mode IS NOT NULL GROUP BY payment_mode ORDER BY collected DESC`, baseParams),
-      // Daily Collection Trend
+      // Daily trend
       query(`SELECT EXTRACT(DAY FROM upload_at)::int as day, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND upload_at IS NOT NULL GROUP BY EXTRACT(DAY FROM upload_at) ORDER BY day ASC`, baseParams),
-      // Agent-wise Performance (Top 10)
+      // Agent performance
       query(`SELECT employee_name as name, employee_code as code, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected, COUNT(DISTINCT account_no) as unique_accounts FROM dpf_records WHERE ${dateFilter} AND employee_name IS NOT NULL GROUP BY employee_name, employee_code ORDER BY collected DESC LIMIT 10`, baseParams),
-      // APH-wise
+      // APH
       query(`SELECT aph as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND aph IS NOT NULL AND aph != '' GROUP BY aph ORDER BY collected DESC LIMIT 10`, baseParams),
-      // PH-wise
+      // PH
       query(`SELECT ph as name, COUNT(id) as files, COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) as collected FROM dpf_records WHERE ${dateFilter} AND ph IS NOT NULL AND ph != '' GROUP BY ph ORDER BY collected DESC LIMIT 10`, baseParams),
       // Extended summary
-      query(`SELECT COUNT(DISTINCT account_no) as unique_accounts, CASE WHEN COUNT(id) > 0 THEN COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) / COUNT(id) ELSE 0 END as avg_per_file, COUNT(DISTINCT employee_name) as active_agents, COUNT(DISTINCT tl_name) as active_tls FROM dpf_records WHERE ${dateFilter}`, baseParams)
+      query(`SELECT COUNT(DISTINCT account_no) as unique_accounts, CASE WHEN COUNT(id) > 0 THEN COALESCE(SUM(CAST(money_collected AS NUMERIC)), 0) / COUNT(id) ELSE 0 END as avg_per_file, COUNT(DISTINCT employee_name) as active_agents, COUNT(DISTINCT tl_name) as active_tls FROM dpf_records WHERE ${dateFilter}`, baseParams),
+      // Duplicate and Fraud stats (counts ALL including duplicates/frauds)
+      query(`
+        SELECT 
+          COUNT(*) FILTER (WHERE is_duplicate = TRUE AND fraud_flag IS NULL) as dup_count, 
+          COALESCE(SUM(CAST(money_collected AS NUMERIC)) FILTER (WHERE is_duplicate = TRUE AND fraud_flag IS NULL), 0) as dup_amount,
+          COUNT(*) FILTER (WHERE fraud_flag IS NOT NULL) as fraud_count,
+          COALESCE(SUM(CAST(money_collected AS NUMERIC)) FILTER (WHERE fraud_flag IS NOT NULL), 0) as fraud_amount,
+          COUNT(*) as total_all 
+        FROM dpf_records WHERE ${dateFilterAll}
+      `, baseParams),
+      // Fraud breakdown
+      query(`
+        SELECT fraud_flag as name, COUNT(id) as count 
+        FROM dpf_records 
+        WHERE ${dateFilterAll} AND fraud_flag IS NOT NULL 
+        GROUP BY fraud_flag 
+        ORDER BY count DESC
+      `, baseParams)
     ]);
 
     const totalCollected = parseFloat(totalRes.rows[0].total_collected);
@@ -83,6 +104,7 @@ export async function GET(req: Request) {
     }));
 
     const ext = summaryExtRes.rows[0] || {};
+    const dupStats = dupStatsRes.rows[0] || {};
 
     const data = {
       summary: {
@@ -92,8 +114,15 @@ export async function GET(req: Request) {
         uniqueAccounts: parseInt(ext.unique_accounts) || 0,
         avgPerFile: parseFloat(ext.avg_per_file) || 0,
         activeAgents: parseInt(ext.active_agents) || 0,
-        activeTLs: parseInt(ext.active_tls) || 0
+        activeTLs: parseInt(ext.active_tls) || 0,
+        // Blocked stats
+        duplicateCount: parseInt(dupStats.dup_count) || 0,
+        duplicateAmount: parseFloat(dupStats.dup_amount) || 0,
+        fraudCount: parseInt(dupStats.fraud_count) || 0,
+        fraudAmount: parseFloat(dupStats.fraud_amount) || 0,
+        totalWithDuplicates: parseInt(dupStats.total_all) || 0
       },
+      fraudBreakdown: (arguments[14]?.rows || []).map((r: any) => ({ name: r.name, count: parseInt(r.count) })),
       clients: formatData(clientRes.rows),
       buckets: formatData(bucketRes.rows),
       products: formatData(productRes.rows),
