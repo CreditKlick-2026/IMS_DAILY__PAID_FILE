@@ -11,6 +11,7 @@ async function run() {
     await pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id VARCHAR(100);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
       
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);

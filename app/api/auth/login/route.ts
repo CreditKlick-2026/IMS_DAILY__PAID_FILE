@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const { employee_id, password, role } = await request.json();
 
-    // Query the neon database for a matching user
+    // Query the database for a matching user strictly based on provided role
     const result = await query(
       'SELECT id, employee_id, name, username, role FROM users WHERE employee_id = $1 AND password = $2 AND role = $3',
       [employee_id, password, role]

@@ -7,6 +7,8 @@ import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
 import { unlink } from 'fs/promises';
+import cron from 'node-cron';
+import { sendReminderEmail, sendAdminSummaryEmail } from './lib/email';
 
 const execAsync = util.promisify(exec);
 
@@ -21,6 +23,60 @@ pool.on('error', (err) => {
 
 async function startWorker() {
   console.log("👷 Native Background Worker Started! Polling Database every 5 seconds...");
+
+  // Start Daily Reminder Cron Job (runs at 8:00 PM every day)
+  cron.schedule('0 20 * * *', async () => {
+    console.log("⏰ Running daily check for missing Paid Files...");
+    try {
+      // 1. Get all active users
+      const usersRes = await pool.query(`SELECT employee_id, name, email FROM users WHERE role = 'user' AND email IS NOT NULL`);
+      const phUsers = usersRes.rows;
+
+      if (phUsers.length === 0) {
+        console.log("No PH users with email addresses found.");
+        return;
+      }
+
+      // 2. Get today's date in YYYY-MM-DD for the query
+      // using UTC timezone to avoid local server timezone issues
+      const today = new Date().toISOString().split('T')[0];
+
+      // 3. Get all employee_ids who have uploaded a file today
+      const uploadsRes = await pool.query(`
+        SELECT DISTINCT uploaded_by_employee_id 
+        FROM upload_jobs 
+        WHERE DATE(created_at) = $1 AND status = 'COMPLETED'
+      `, [today]);
+      
+      const uploadedEmpIds = uploadsRes.rows.map(r => r.uploaded_by_employee_id);
+
+      // 4. Find defaulters and completed users
+      const missedUsers = [];
+      const uploadedUsers = [];
+
+      for (const user of phUsers) {
+        if (!uploadedEmpIds.includes(user.employee_id)) {
+          missedUsers.push(user);
+          console.log(`⚠️ User ${user.name} (${user.employee_id}) missed today's upload. Sending reminder...`);
+          await sendReminderEmail(user.email, user.name || user.employee_id, today);
+        } else {
+          uploadedUsers.push(user);
+        }
+      }
+
+      // 5. Send Admin Summary Email
+      const adminsRes = await pool.query(`SELECT email FROM users WHERE role = 'admin' AND email IS NOT NULL`);
+      const adminEmails = adminsRes.rows.map(r => r.email);
+
+      if (adminEmails.length > 0) {
+        console.log(`📊 Sending Daily Upload Summary to Admins: ${adminEmails.join(', ')}`);
+        await sendAdminSummaryEmail(adminEmails, today, uploadedUsers, missedUsers);
+      }
+    } catch (err) {
+      console.error("Cron Job Error:", err);
+    }
+  });
+
 
   // Initialize Tables with actual DPF columns
   await pool.query(`

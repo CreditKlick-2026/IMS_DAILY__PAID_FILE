@@ -9,6 +9,8 @@ export default function AuditPage() {
   const date = new Date();
   const [month, setMonth] = useState((date.getMonth() + 1).toString());
   const [year, setYear] = useState(date.getFullYear().toString());
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -29,10 +31,13 @@ export default function AuditPage() {
 
   const fetchLogs = () => {
     setLoading(true);
-    fetch(`/api/audit?month=${month}&year=${year}`)
+    fetch(`/api/audit?month=${month}&year=${year}&page=${page}`)
       .then(r => r.json())
       .then(d => {
-        if (d.success) setLogs(d.logs);
+        if (d.success) {
+          setLogs(d.logs);
+          setTotalPages(d.totalPages || 1);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -42,7 +47,12 @@ export default function AuditPage() {
     if (user && user.role === 'admin') {
       fetchLogs();
     }
-  }, [user, month, year]);
+  }, [user, month, year, page]);
+
+  // Reset page to 1 when month or year changes
+  useEffect(() => {
+    setPage(1);
+  }, [month, year]);
 
   const handleDownloadExcel = () => {
     if (logs.length === 0) {
@@ -120,9 +130,9 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/10 h-full w-full">
+      <div className="w-full mx-auto flex flex-col h-full">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 shrink-0">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <LineChart className="text-primary" /> System Audit Logs
@@ -161,68 +171,68 @@ export default function AuditPage() {
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden flex-1 flex flex-col">
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-muted/50 text-muted-foreground text-[10px] uppercase tracking-wider border-b border-border sticky top-0 z-10 backdrop-blur bg-muted/95">
                 <tr>
-                  <th className="px-6 py-4 font-semibold">Timestamp</th>
-                  <th className="px-6 py-4 font-semibold">Action</th>
-                  <th className="px-6 py-4 font-semibold">Entity</th>
-                  <th className="px-6 py-4 font-semibold">Changed By</th>
-                  <th className="px-6 py-4 font-semibold">Emp ID</th>
-                  <th className="px-6 py-4 font-semibold">Details</th>
+                  <th className="px-3 py-2 font-semibold">Timestamp</th>
+                  <th className="px-3 py-2 font-semibold">Action</th>
+                  <th className="px-3 py-2 font-semibold">Entity</th>
+                  <th className="px-3 py-2 font-semibold">Changed By</th>
+                  <th className="px-3 py-2 font-semibold">Emp ID</th>
+                  <th className="px-3 py-2 font-semibold">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loading ? (
                   [1, 2, 3, 4, 5].map(i => (
                     <tr key={i} className="animate-pulse">
-                      <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-24"></div></td>
-                      <td className="px-6 py-4"><div className="h-6 bg-muted rounded w-28"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-20"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-24"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-20"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-muted rounded w-48"></div></td>
+                      <td className="px-3 py-2"><div className="h-3 bg-muted rounded w-20"></div></td>
+                      <td className="px-3 py-2"><div className="h-4 bg-muted rounded w-24"></div></td>
+                      <td className="px-3 py-2"><div className="h-3 bg-muted rounded w-16"></div></td>
+                      <td className="px-3 py-2"><div className="h-3 bg-muted rounded w-20"></div></td>
+                      <td className="px-3 py-2"><div className="h-3 bg-muted rounded w-16"></div></td>
+                      <td className="px-3 py-2"><div className="h-3 bg-muted rounded w-40"></div></td>
                     </tr>
                   ))
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                      <Activity className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                      <Activity className="w-8 h-8 mx-auto mb-2 opacity-20" />
                       No audit logs found for the selected month.
                     </td>
                   </tr>
                 ) : (
                   logs.map((log: any) => (
                     <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar size={14} />
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Calendar size={12} />
                           {new Date(log.created_at).toLocaleString()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         {formatAction(log.action)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-xs text-muted-foreground border border-border px-1.5 py-0.5 rounded">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-mono text-[10px] text-muted-foreground border border-border px-1 py-0.5 rounded">
                           {log.entity_type} {log.entity_id ? `(#${log.entity_id})` : ''}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 font-medium">
-                          <User size={14} className="text-muted-foreground" />
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <User size={12} className="text-muted-foreground" />
                           {log.changed_by}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono text-xs text-foreground bg-muted/50 px-2 py-1 rounded">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-mono text-[10px] text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                           {log.details?.action_by_emp_id || log.details?.employee_id || 'N/A'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <pre className="text-[10px] font-mono bg-muted/50 p-2 rounded max-w-xs overflow-x-auto text-muted-foreground border border-border/50">
+                      <td className="px-3 py-2">
+                        <pre className="text-[9px] font-mono bg-muted/50 p-1.5 rounded max-w-[200px] sm:max-w-sm overflow-x-auto text-muted-foreground border border-border/50">
                           {JSON.stringify(log.details, null, 2)}
                         </pre>
                       </td>
@@ -232,6 +242,31 @@ export default function AuditPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-t border-border shrink-0">
+              <div className="text-xs text-muted-foreground font-medium">
+                Showing page {page} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-xs font-semibold rounded bg-white border border-border hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1.5 text-xs font-semibold rounded bg-white border border-border hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

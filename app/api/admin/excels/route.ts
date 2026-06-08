@@ -15,16 +15,31 @@ async function checkAdmin() {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
-    const res = await query(`
+    const { searchParams } = new URL(req.url);
+    const monthStr = searchParams.get('month');
+    const yearStr = searchParams.get('year');
+
+    let queryText = `
       SELECT id, file_path, status, total_rows, processed_rows, 
       TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
-      upload_at, uploaded_by_employee_id, uploaded_by_name
+      TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at, uploaded_by_employee_id, uploaded_by_name, target_employee_id, is_edited_by_admin
       FROM upload_jobs
-      ORDER BY created_at DESC
-    `);
+    `;
+    let queryParams: any[] = [];
+
+    if (monthStr && yearStr) {
+      const month = parseInt(monthStr);
+      const year = parseInt(yearStr);
+      queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 AND EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $2 `;
+      queryParams.push(month, year);
+    }
+    
+    queryText += ` ORDER BY created_at DESC`;
+
+    const res = await query(queryText, queryParams);
     return NextResponse.json({ success: true, jobs: res.rows });
   } catch (error: any) {
     console.error('Error fetching upload jobs:', error);
@@ -54,7 +69,7 @@ export async function DELETE(req: Request) {
     }
 
     await query('DELETE FROM dpf_records WHERE job_id = $1', [id]);
-    await query('DELETE FROM upload_jobs WHERE id = $1', [id]);
+    await query('UPDATE upload_jobs SET status = $1 WHERE id = $2', ['DELETED_BY_ADMIN', id]);
 
     await logAudit(
       'DELETE_EXCEL',

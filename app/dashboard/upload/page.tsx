@@ -58,7 +58,21 @@ export default function UploadPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [countdown, setCountdown] = useState<string>('');
-  const [globalTimeOffset, setGlobalTimeOffset] = useState<number>(0); // offset between global time and local clock
+  const [globalTimeOffset, setGlobalTimeOffset] = useState<number>(0);
+
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [targetEmployeeId, setTargetEmployeeId] = useState<string>('');
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetch('/api/users').then(r => r.json()).then(d => {
+        if (d.success) {
+          const phs = d.users.filter((u: any) => u.role === 'user');
+          setUsersList(phs);
+        }
+      });
+    }
+  }, [user]);
 
   // Fetch global internet date (not system clock)
   useEffect(() => {
@@ -362,6 +376,7 @@ export default function UploadPage() {
     }
     if (user?.employee_id) formData.append('employee_id', user.employee_id);
     if (user?.name) formData.append('name', user.name);
+    if (targetEmployeeId) formData.append('target_employee_id', targetEmployeeId);
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
@@ -516,19 +531,37 @@ export default function UploadPage() {
 
               {/* Date Selector Row */}
               {dateOptions.length > 0 && (
-                <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center gap-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Date:</span>
-                  <ButtonGroup variant="segmented">
-                    {dateOptions.map((opt) => (
-                      <PolarisButton
-                        key={opt.value}
-                        pressed={selectedDate === opt.value}
-                        onClick={() => setSelectedDate(opt.value)}
+                <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Date:</span>
+                    <ButtonGroup variant="segmented">
+                      {dateOptions.map((opt) => (
+                        <PolarisButton
+                          key={opt.value}
+                          pressed={selectedDate === opt.value}
+                          onClick={() => setSelectedDate(opt.value)}
+                        >
+                          {opt.label} — {opt.display}
+                        </PolarisButton>
+                      ))}
+                    </ButtonGroup>
+                  </div>
+
+                  {user?.role === 'admin' && (
+                    <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                      <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Admin Proxy Upload:</span>
+                      <select 
+                        className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-purple-500"
+                        value={targetEmployeeId}
+                        onChange={e => setTargetEmployeeId(e.target.value)}
                       >
-                        {opt.label} — {opt.display}
-                      </PolarisButton>
-                    ))}
-                  </ButtonGroup>
+                        <option value="">-- Select target User --</option>
+                        {usersList.map(u => (
+                          <option key={u.employee_id} value={u.employee_id}>{u.name} ({u.employee_id})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

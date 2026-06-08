@@ -21,14 +21,26 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = 50;
+    const offset = (page - 1) * limit;
+
+    const countRes = await query(`
+      SELECT COUNT(*) as total FROM audit_logs 
+      WHERE EXTRACT(MONTH FROM created_at) = $1 AND EXTRACT(YEAR FROM created_at) = $2
+    `, [month, year]);
+    
+    const total = parseInt(countRes.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
 
     const res = await query(`
       SELECT * FROM audit_logs 
       WHERE EXTRACT(MONTH FROM created_at) = $1 AND EXTRACT(YEAR FROM created_at) = $2
       ORDER BY created_at DESC
-    `, [month, year]);
+      LIMIT $3 OFFSET $4
+    `, [month, year, limit, offset]);
     
-    return NextResponse.json({ success: true, logs: res.rows });
+    return NextResponse.json({ success: true, logs: res.rows, totalPages, page, total });
   } catch (error) {
     console.error('Audit Fetch Error:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch audit logs' }, { status: 500 });

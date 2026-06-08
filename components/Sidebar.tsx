@@ -32,12 +32,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     },
 
     {
-      id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'manager'],
+      id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'user'],
       Icon: UploadCloud, color: 'text-purple-500'
     },
     {
       id: 'duplicate', label: 'Duplicate Records', section: 'MANAGEMENT', link: '/dashboard/duplicate',
       Icon: Users, color: 'text-amber-500'
+    },
+    {
+      id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
+      Icon: BarChart2, color: 'text-teal-500'
     },
 
     {
@@ -45,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       Icon: Settings, color: 'text-indigo-500'
     },
     {
-      id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', link: '/dashboard/audit',
+      id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
       Icon: LineChart, color: 'text-rose-500'
     }
   ];

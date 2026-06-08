@@ -1333,6 +1333,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
   const [outMin, setOutMin] = useState('');
   const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1));
   const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
+  const [filterUploadDate, setFilterUploadDate] = useState('');
   const [exporting, setExporting] = useState(false);
   const [filterOptions, setFilterOptions] = useState<any>({});
   const [filters, setFilters] = useState<any>({
@@ -1424,7 +1425,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, JSON.stringify(filters)]);
 
   useEffect(() => {
     setLoading(true);
@@ -1432,7 +1433,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       fetchLeads();
     }, 300);
     return () => clearTimeout(timer);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, page, limit, user?.id, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, page, limit, user?.id, JSON.stringify(filters)]);
 
   const fetchMetadata = async () => {
     try {
@@ -1456,6 +1457,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       if (outMin) query.append('outMin', outMin);
       if (filterMonth) query.append('month', filterMonth);
       if (filterYear) query.append('year', filterYear);
+      if (filterUploadDate) query.append('uploadDate', filterUploadDate);
       Object.entries(filters).forEach(([k, v]) => {
         if (Array.isArray(v)) {
           v.forEach(val => query.append(k, val));
@@ -2371,6 +2373,10 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
+              <div style={{ position: 'relative' }}>
+                <input className="finp" type="date" title="Upload Date" style={{ fontSize: 12, padding: '5px 10px', width: 'auto', background: 'var(--bg2)' }} value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
+                <span style={{ position: 'absolute', top: -8, left: 6, fontSize: 8, fontWeight: 700, color: 'var(--txt3)', background: 'var(--bg2)', padding: '0 4px', letterSpacing: 0.5, textTransform: 'uppercase' }}>Upload At</span>
+              </div>
               {[
                 { key: 'employeeCode', filterKey: 'employee_code', label: 'Emp Code', isMulti: true },
                 { key: 'product', filterKey: 'product', label: 'Product Type', isMulti: true },
@@ -2412,7 +2418,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 <SButton size="slim" variant="primary" onClick={() => { setEditingRecord(null); setShowRecordModal('add'); }}>➕ Add Record</SButton>
               )}
               <SButton size="slim" variant="critical" onClick={() => {
-                setStatusFilter(''); setSortBy(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear()));
+                setStatusFilter(''); setSortBy(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear())); setFilterUploadDate('');
                 setFilters({
                   employee_code: [], product: [], bucket: [], location: [], aph: [], ph: [], client: [], tl_name: [], employee_name: []
                 });

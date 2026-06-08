@@ -6,7 +6,7 @@ export default function Home() {
   const router = useRouter();
   const [authData, setAuthData] = useState({ employee_id: '', password: '' });
   const [showPwd, setShowPwd] = useState(false);
-  const [userType, setUserType] = useState("hr");
+  const [userType, setUserType] = useState("user");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,14 +56,14 @@ export default function Home() {
               {/* Custom Shadcn-like Tabs for Role */}
               <div className="grid gap-2">
                 <label className="text-sm font-medium leading-none text-foreground">Account Type</label>
-                <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+                <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
                   <button
                     type="button"
-                    onClick={() => setUserType('hr')}
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${userType === 'hr' ? 'bg-background text-foreground shadow-sm' : 'hover:text-foreground'
+                    onClick={() => setUserType('user')}
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${userType === 'user' ? 'bg-background text-foreground shadow-sm' : 'hover:text-foreground'
                       } w-1/2`}
                   >
-                    HR
+                    User
                   </button>
                   <button
                     type="button"

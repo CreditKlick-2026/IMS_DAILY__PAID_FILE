@@ -9,14 +9,15 @@ export async function GET() {
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        role VARCHAR(20) NOT NULL
+        role VARCHAR(20) NOT NULL,
+        email VARCHAR(255)
       );
     `);
 
-    // Insert an HR user
+    // Insert a test user
     await query(`
       INSERT INTO users (username, password, role) 
-      VALUES ('hr_user', 'hr123', 'hr')
+      VALUES ('test_user', 'test123', 'user')
       ON CONFLICT (username) DO NOTHING;
     `);
 
@@ -30,7 +31,7 @@ export async function GET() {
     return NextResponse.json({ 
       message: 'Database setup complete. Users created.',
       test_users: [
-        { username: 'hr_user', password: 'hr123', role: 'hr' },
+        { username: 'test_user', password: 'test123', role: 'user' },
         { username: 'admin_user', password: 'admin123', role: 'admin' }
       ]
     });

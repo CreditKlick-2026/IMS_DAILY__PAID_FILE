@@ -15,6 +15,17 @@ export async function GET(req: Request) {
     const conditions: string[] = [];
     const queryParams: any[] = [];
 
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const sessionStr = cookieStore.get('auth_session')?.value;
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      if (session.role !== 'admin') {
+        conditions.push(`uploaded_by_employee_id = $${queryParams.length + 1}`);
+        queryParams.push(session.employee_id);
+      }
+    }
+
     if (search) {
       if (searchType === 'account no') {
         conditions.push(`account_no ILIKE $${queryParams.length + 1}`);
@@ -59,6 +70,12 @@ export async function GET(req: Request) {
     if (year) {
       conditions.push(`EXTRACT(YEAR FROM upload_at) = $${queryParams.length + 1}`);
       queryParams.push(year);
+    }
+
+    const uploadDate = searchParams.get('uploadDate') || '';
+    if (uploadDate) {
+      conditions.push(`DATE(upload_at) = $${queryParams.length + 1}`);
+      queryParams.push(uploadDate);
     }
 
     const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -106,7 +123,7 @@ export async function GET(req: Request) {
         aph,
         ph,
         phone_no,
-        upload_at,
+        TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at,
         COALESCE(is_duplicate, FALSE) as is_duplicate,
         fraud_flag
       FROM dpf_records
