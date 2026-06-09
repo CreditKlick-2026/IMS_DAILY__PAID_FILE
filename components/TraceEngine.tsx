@@ -204,7 +204,7 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
                     highlighted: i === rowHighlightIdx,
                     cells: [
                         { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: m0[i] !== '' ? formatCurrency(Number(m0[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 1 },
+                        { val: formatCurrency(Number(m0[i])), highlighted: i === rowHighlightIdx && targetColIdx === 1 },
                         { val: m1[i] !== '' ? formatCurrency(Number(m1[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 2 },
                         { val: m2[i] !== '' ? formatCurrency(Number(m2[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 3 },
                         { val: m3[i] !== '' ? formatCurrency(Number(m3[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 4 }
