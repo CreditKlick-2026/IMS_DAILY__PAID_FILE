@@ -118,7 +118,7 @@ export default function RecordListPage() {
   const totalColl = filteredData.reduce((sum, r) => sum + (r.total_collection || 0), 0);
 
   return (
-    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', h: '100%', overflow: 'hidden' }}>
+    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       
       {/* Dynamic Top Flow Viewer */}
       {selectedRecord && (
