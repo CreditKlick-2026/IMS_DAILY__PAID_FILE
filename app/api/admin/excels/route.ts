@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     let queryText = `
       SELECT id, file_path, status, total_rows, processed_rows, 
       TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
-      TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at, uploaded_by_employee_id, uploaded_by_name, target_employee_id, is_edited_by_admin
+      TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at, uploaded_by_employee_id, uploaded_by_name, target_employee_id, is_edited_by_admin, job_type
       FROM upload_jobs
     `;
     let queryParams: any[] = [];

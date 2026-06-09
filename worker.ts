@@ -95,6 +95,7 @@ async function startWorker() {
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS password VARCHAR(255);
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
+    ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'DPF';
 
     DROP TABLE IF EXISTS dpf_records;
     CREATE TABLE dpf_records (
@@ -155,14 +156,16 @@ async function startWorker() {
 
       const job = res.rows[0];
       const jobId = job.id;
+      const jobType = job.job_type || 'DPF';
       const password = job.password;
       const fileData = job.file_data;
       const fileName = job.file_path || `job_${jobId}.xlsx`;
       const uploadAt = job.upload_at;
       const uploadedByEmpId = job.uploaded_by_employee_id;
       const uploadedByName = job.uploaded_by_name;
+      const clientOverride = job.client_override;
 
-      console.log(`\n⏳ Found New Upload! Processing Job: ${jobId}`);
+      console.log(`\n⏳ Found New Upload! Processing Job: ${jobId} (Type: ${jobType})`);
       
       let currentFilePath = '';
       let decFilePath = '';
@@ -193,6 +196,82 @@ async function startWorker() {
         }
 
         const workbook = xlsx.readFile(currentFilePath);
+        
+        if (jobType === 'KEKA') {
+             const sheetName = workbook.SheetNames[0];
+             const sheet = workbook.Sheets[sheetName];
+             const rawRows = xlsx.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+             
+             let headerIndex = 0;
+             for (let i = 0; i < Math.min(10, rawRows.length); i++) {
+                 if (rawRows[i] && rawRows[i].filter(c => typeof c === 'string').length >= 3) {
+                     headerIndex = i;
+                     break;
+                 }
+             }
+             const dataRows = xlsx.utils.sheet_to_json(sheet, { range: headerIndex }) as any[];
+             const normalize = (s: string) => String(s || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+             
+             const totalRows = dataRows.length;
+             await pool.query(`UPDATE upload_jobs SET total_rows = $1 WHERE id = $2`, [totalRows, jobId]);
+             
+             let processed = 0;
+             let failed = 0;
+             for (const row of dataRows) {
+                 const get = (keys: string[]) => {
+                     for (const k of keys) {
+                         const target = normalize(k);
+                         const foundKey = Object.keys(row).find(r => normalize(r) === target);
+                         if (foundKey !== undefined && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+                     }
+                     return null;
+                 };
+                 
+                 const location = get(['Location']);
+                 const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE']);
+                 const name = get(['Name', 'Employee Name', 'EmpName']);
+                 const designation = get(['Designation', 'Role', 'DESIGNATION']);
+                 const agentOhr = String(get(['Agent OHR', 'AgentOHR', 'OHR']) || '');
+                 const dojRaw = get(['DOJ', 'Date of Joining']);
+                 let dojDate = null;
+                 if (dojRaw) {
+                     if (typeof dojRaw === 'number') dojDate = new Date(Math.round((dojRaw - 25569) * 86400 * 1000));
+                     else dojDate = new Date(dojRaw);
+                 }
+                 const docRaw = get(['DOC', 'Date of Calling']);
+                 let docDate = null;
+                 if (docRaw) {
+                     if (typeof docRaw === 'number') docDate = new Date(Math.round((docRaw - 25569) * 86400 * 1000));
+                     else docDate = new Date(docRaw);
+                 }
+                 const salaryStr = String(get(['Salary', 'CTC', 'Target', 'salary']) || '0').replace(/,/g, '');
+                 const salary = parseFloat(salaryStr) || 0;
+                 
+                 if (!empCode) {
+                     failed++;
+                 } else {
+                     try {
+                         await pool.query(`
+                             INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, updated_at)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+                             ON CONFLICT (employee_id) DO UPDATE SET 
+                                 location = EXCLUDED.location, name = EXCLUDED.name, designation = EXCLUDED.designation,
+                                 agent_ohr = EXCLUDED.agent_ohr, doj = EXCLUDED.doj, doc = EXCLUDED.doc, salary = EXCLUDED.salary,
+                                 updated_at = CURRENT_TIMESTAMP
+                         `, [location, empCode, name, designation, agentOhr, dojDate, docDate, salary]);
+                         processed++;
+                     } catch (err) {
+                         failed++;
+                     }
+                 }
+                 if ((processed + failed) % 50 === 0) {
+                     await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
+                 }
+             }
+             await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = 'COMPLETED', error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: failed, status: 'Success' }), jobId]);
+             console.log(`🎉 KEKA Job ${jobId} Finished! Processed: ${processed}, Failed: ${failed}`);
+             
+        } else {
         let bestSheetData: any[] = [];
         let bestHeaderIndex = 0;
         let maxTotalMatches = -1;
@@ -352,7 +431,7 @@ async function startWorker() {
                 get(['Account_No', 'Account No', 'LAN', 'Loan No']),
                 get(['Employee_Code', 'Employee Code', 'EmpCode']),
                 get(['Employee_Name', 'Employee Name', 'EmpName']),
-                get(['Client', 'client', 'Customer']),
+                clientOverride ? clientOverride : get(['Client', 'client', 'Customer']),
                 get(['Product', 'product', 'Scheme']),
                 get(['Bucket', 'bucket', 'Delinquency']),
                 get(['Location', 'location', 'City']),
@@ -393,6 +472,7 @@ async function startWorker() {
           JSON.stringify({ duplicates_found: totalDups, failed_count: failed, last_error: lastError, status: 'Blocked records prevented from upload' })
         ]);
         console.log(`🎉 Job ${jobId} Finished! Inserted: ${processed}, Blocked: ${totalDups}`);
+        }
 
       } catch (fileError: any) {
         console.error(`❌ Processing Failed:`, fileError);

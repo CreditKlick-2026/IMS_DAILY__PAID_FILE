@@ -12,6 +12,7 @@ const MultiSelect = ({ label, options, selected, onChange }: {
   label: string; options: string[]; selected: string[]; onChange: (s: string[]) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -19,17 +20,30 @@ const MultiSelect = ({ label, options, selected, onChange }: {
     return () => document.removeEventListener('mousedown', h);
   }, []);
   const toggle = (val: string) => onChange(selected.includes(val) ? selected.filter(x => x !== val) : [...selected, val]);
+
+  const filteredOptions = (options || []).filter(o => o.toLowerCase().includes(searchTerm.toLowerCase()));
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div onClick={() => setOpen(!open)} style={{ padding: '6px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-card)', color: 'var(--color-foreground)', minWidth: 110, whiteSpace: 'nowrap' }}>
+      <div onClick={() => setOpen(!open)} style={{ padding: '6px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', gap: 6, alignItems: 'center', borderRadius: 8, border: '1px solid var(--border, #e5e7eb)', background: '#ffffff', color: '#000000', minWidth: 110, whiteSpace: 'nowrap' }}>
         <span>{selected.length === 0 ? label : `${label} (${selected.length})`}</span>
         <span style={{ fontSize: 9, opacity: 0.6 }}>▼</span>
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 200, background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, maxHeight: 200, overflowY: 'auto', minWidth: '100%', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
-          {options.length === 0 && <div style={{ padding: '8px 12px', fontSize: 11, opacity: 0.5 }}>No options</div>}
-          {options.map(o => (
-            <div key={o} onClick={() => toggle(o)} style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: '1px solid var(--color-border)' }}>
+        <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 9999, background: '#ffffff', color: '#000000', border: '1px solid var(--border, #e5e7eb)', borderRadius: 8, maxHeight: 250, overflowY: 'auto', minWidth: '100%', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+          <div style={{ padding: '6px', position: 'sticky', top: 0, background: '#ffffff', borderBottom: '1px solid var(--border, #e5e7eb)', zIndex: 2 }}>
+            <input 
+              type="text" 
+              placeholder={`Search ${label}...`}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ width: '100%', padding: '6px', fontSize: 11, border: '1px solid var(--border, #e5e7eb)', borderRadius: 4, outline: 'none', background: '#f9fafb', color: '#000000' }}
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+          {filteredOptions.length === 0 && <div style={{ padding: '8px 12px', fontSize: 11, opacity: 0.5 }}>No options</div>}
+          {filteredOptions.map(o => (
+            <div key={o} onClick={() => toggle(o)} style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: '1px solid var(--border, #f3f4f6)' }}>
               <input type="checkbox" readOnly checked={selected.includes(o)} style={{ cursor: 'pointer' }} />
               <span style={{ whiteSpace: 'nowrap' }}>{o}</span>
             </div>
@@ -65,6 +79,7 @@ const NoData = () => <div className="text-xs text-muted-foreground text-center p
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const [data, setData] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState('');
   const date = new Date();
@@ -88,6 +103,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetch('/api/leads/filters').then(r => r.json()).then(d => { if (d.success) setFilterOptions(d.filters); });
+    fetch('/api/auth/me').then(r => r.json()).then(d => { if (d.success) setUser(d.user); });
   }, []);
 
   useEffect(() => { fetchDashboardData(); }, [month, year, JSON.stringify(filters)]);
@@ -135,6 +151,11 @@ const Dashboard: React.FC = () => {
       <div className="px-6 py-4 border-b border-border bg-card flex-shrink-0 shadow-sm">
         <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
           <div>
+            {user?.name && (
+              <div className="text-xl font-bold text-foreground mb-1">
+                Welcome, <span className="text-primary">{user.name}</span>
+              </div>
+            )}
             <div className="text-sm font-bold text-foreground flex items-center gap-2">
               <span>Daily Paid File Dashboard</span>
               <span className="text-[9px] text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">LIVE</span>

@@ -62,11 +62,19 @@ export default function UploadPage() {
 
   const [usersList, setUsersList] = useState<any[]>([]);
   const [targetEmployeeId, setTargetEmployeeId] = useState<string>('');
+  
+  const [clientsList, setClientsList] = useState<any[]>([]);
+  const [selectedClient, setSelectedClient] = useState<string>('');
 
   useEffect(() => {
+    // Fetch clients
+    fetch('/api/admin/clients').then(r => r.json()).then(d => {
+      if (d.success) setClientsList(d.clients);
+    });
+
     if (user?.role === 'admin') {
       fetch('/api/users').then(r => r.json()).then(d => {
-        if (d.success) {
+        if (d.users) {
           const phs = d.users.filter((u: any) => u.role === 'user');
           setUsersList(phs);
         }
@@ -291,11 +299,15 @@ export default function UploadPage() {
             };
 
             const accNo = get(['Account_No', 'Account No', 'LAN', 'Loan No']);
+            const location = get(['Location', 'location', 'City']);
+            const client = get(['Client', 'client', 'Customer']);
             let money = get(['Money_Collected', 'Money Collected', 'Amount']);
             if (typeof money === 'string') money = parseFloat(money.replace(/,/g, ''));
 
             const errors = [];
             if (!accNo) errors.push("Missing Account No");
+            if (!location) errors.push("Missing Location");
+            if (!client) errors.push("Missing Process");
             if (money === null || isNaN(money)) errors.push("Missing/Invalid Amount");
             
             if (errors.length > 0) {
@@ -364,6 +376,11 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (!file || (validationResult && !validationResult.isValid)) return;
     
+    if (!selectedClient) {
+      setMessage("Error: Please select a Process from the dropdown before uploading!");
+      return;
+    }
+    
     setUploading(true);
     setMessage("");
     const formData = new FormData();
@@ -373,6 +390,9 @@ export default function UploadPage() {
     }
     if (selectedDate) {
       formData.append('upload_at', selectedDate);
+    }
+    if (selectedClient) {
+      formData.append('client_override', selectedClient);
     }
     if (user?.employee_id) formData.append('employee_id', user.employee_id);
     if (user?.name) formData.append('name', user.name);
@@ -547,6 +567,20 @@ export default function UploadPage() {
                     </ButtonGroup>
                   </div>
 
+                  <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Process:</span>
+                    <select 
+                      className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/50"
+                      value={selectedClient}
+                      onChange={e => setSelectedClient(e.target.value)}
+                    >
+                      <option value="">-- Select Process --</option>
+                      {clientsList.map(c => (
+                        <option key={c.id} value={c.client_name}>{c.client_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {user?.role === 'admin' && (
                     <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
                       <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Admin Proxy Upload:</span>
@@ -716,7 +750,7 @@ export default function UploadPage() {
                   <Button
                     onClick={handleUpload}
                     disabled={!file || uploading || !validationResult?.isValid || !selectedDate}
-                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-400 border-transparent opacity-60'}`}
+                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedClient) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     size="lg"
                   >
                     {uploading ? (

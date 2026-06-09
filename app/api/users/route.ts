@@ -19,7 +19,7 @@ export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const query = `
-      SELECT id, employee_id, name, username, role, email 
+      SELECT id, employee_id, name, username, role, email, location 
       FROM users 
       ORDER BY id ASC;
     `;
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   const admin = await checkAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
-    const { employee_id, name, username, password, role, email } = await req.json();
+    const { employee_id, name, username, password, role, email, location } = await req.json();
 
     if (!username || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -80,8 +80,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
-    const query = 'INSERT INTO users (employee_id, name, username, password, role, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, employee_id, name, username, role, email';
-    const res = await pool.query(query, [employee_id || username, name || username, username, password, role, email || null]);
+    const query = 'INSERT INTO users (employee_id, name, username, password, role, email, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, employee_id, name, username, role, email, location';
+    const res = await pool.query(query, [employee_id || username, name || username, username, password, role, email || null, location || null]);
     const newUserId = res.rows[0].id;
 
     // Track Audit Log

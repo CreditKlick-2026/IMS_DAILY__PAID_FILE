@@ -7,9 +7,12 @@ export default function Home() {
   const [authData, setAuthData] = useState({ employee_id: '', password: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [userType, setUserType] = useState("user");
+  const [location, setLocation] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -17,7 +20,8 @@ export default function Home() {
         body: JSON.stringify({
           employee_id: authData.employee_id,
           password: authData.password,
-          role: userType
+          role: userType,
+          location: userType === 'user' ? location : null
         })
       });
 
@@ -31,6 +35,8 @@ export default function Home() {
       }
     } catch (error) {
       alert('Error connecting to the server.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,6 +82,25 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Location Dropdown (Only for Users) */}
+              {userType === 'user' && (
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium leading-none text-foreground">Location</label>
+                  <select
+                    required
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select Location</option>
+                    <option value="UN">Uttam Nagar (UN)</option>
+                    <option value="Puna">Puna (Puna)</option>
+                    <option value="Noida">Noida (Noida)</option>
+                    <option value="GGN">Gurugram (GGN)</option>
+                  </select>
+                </div>
+              )}
+
               {/* Emp ID Input */}
               <div className="grid gap-2">
                 <label className="text-sm font-medium leading-none text-foreground">Emp ID</label>
@@ -104,6 +129,7 @@ export default function Home() {
                     placeholder="••••••••"
                     value={authData.password}
                     onChange={e => setAuthData({ ...authData, password: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-12"
                   />
                   <button
@@ -119,9 +145,15 @@ export default function Home() {
               {/* Submit Button */}
               <button
                 type="submit"
+                disabled={isLoading}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full mt-2"
               >
-                Sign In
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Signing in...
+                  </span>
+                ) : 'Sign In'}
               </button>
 
             </form>

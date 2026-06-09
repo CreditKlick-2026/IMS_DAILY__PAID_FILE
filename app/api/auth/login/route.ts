@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       ON CONFLICT (username) DO NOTHING;
     `);
 
-    const { employee_id, password, role } = await request.json();
+    const { employee_id, password, role, location } = await request.json();
 
     // Query the database for a matching user strictly based on provided role
     const result = await query(
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       const response = NextResponse.json({ success: true, message: 'Login successful', user });
       
       // Create a secure HttpOnly session cookie
-      response.cookies.set('auth_session', JSON.stringify({ id: user.id, employee_id: user.employee_id, name: user.name, username: user.username, role: user.role }), {
+      response.cookies.set('auth_session', JSON.stringify({ id: user.id, employee_id: user.employee_id, name: user.name, username: user.username, role: user.role, location: location || null }), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24, // 1 day

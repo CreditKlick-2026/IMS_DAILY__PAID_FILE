@@ -76,6 +76,7 @@ const PAGE_SIZE = 25;
 
 const MultiSelect = ({ label, options, selected, onChange }: { label: string, options: string[], selected: string[], onChange: (s: string[]) => void }) => {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,6 +94,8 @@ const MultiSelect = ({ label, options, selected, onChange }: { label: string, op
     else onChange([...selected, val]);
   };
 
+  const filteredOptions = options.filter(o => o.toLowerCase().includes(searchTerm.toLowerCase()));
+
   return (
     <div ref={ref} style={{ position: 'relative', width: 'auto' }}>
       <div 
@@ -104,9 +107,19 @@ const MultiSelect = ({ label, options, selected, onChange }: { label: string, op
         <span style={{ fontSize: 10 }}>▼</span>
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 6, zIndex: 100, maxHeight: 200, overflowY: 'auto', minWidth: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          {options.length === 0 ? <div style={{ padding: '6px 10px', fontSize: 11, color: 'var(--txt3)' }}>No options</div> : null}
-          {options.map(o => (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 6, zIndex: 100, maxHeight: 250, overflowY: 'auto', minWidth: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <div style={{ padding: '6px', position: 'sticky', top: 0, background: 'var(--bg2, #ffffff)', borderBottom: '1px solid var(--bdr)', zIndex: 2 }}>
+            <input 
+              type="text" 
+              placeholder={`Search ${label}...`}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ width: '100%', padding: '6px', fontSize: 11, border: '1px solid var(--bdr)', borderRadius: 4, outline: 'none' }}
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+          {filteredOptions.length === 0 ? <div style={{ padding: '6px 10px', fontSize: 11, color: 'var(--txt3)' }}>No options</div> : null}
+          {filteredOptions.map(o => (
             <div key={o} onClick={() => toggle(o)} style={{ padding: '6px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: '1px solid var(--faint)' }}>
               <input type="checkbox" checked={selected.includes(o)} readOnly style={{ cursor: 'pointer' }} />
               <span style={{ whiteSpace: 'nowrap' }}>{o}</span>
@@ -1391,13 +1404,6 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   useEffect(() => {
     fetchMetadata();
-    fetch('/api/leads/filters')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setFilterOptions(data.filters);
-        }
-      });
   }, []);
 
   useEffect(() => {
@@ -1431,7 +1437,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
     setLoading(true);
     const timer = setTimeout(() => {
       fetchLeads();
-    }, 300);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, page, limit, user?.id, JSON.stringify(filters)]);
 
@@ -1471,7 +1477,19 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       query.append('t', Date.now().toString());
       if (duplicateOnly) query.append('duplicateOnly', 'true');
 
-      const res = await fetch(`/api/leads?${query.toString()}`, { cache: 'no-store' });
+      const queryString = query.toString();
+
+      // Fetch dynamic filters based on current selections
+      fetch(`/api/leads/filters?${queryString}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setFilterOptions(data.filters);
+          }
+        })
+        .catch(e => console.error('Error fetching filters:', e));
+
+      const res = await fetch(`/api/leads?${queryString}`, { cache: 'no-store' });
       const data = await res.json();
 
       let leadsData = [];

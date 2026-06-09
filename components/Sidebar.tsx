@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { ButtonGroup, Button } from '@shopify/polaris';
-import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart } from 'lucide-react';
+import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database } from 'lucide-react';
 
 interface SidebarProps {
   activePage: string;
@@ -39,10 +39,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       id: 'duplicate', label: 'Duplicate Records', section: 'MANAGEMENT', link: '/dashboard/duplicate',
       Icon: Users, color: 'text-amber-500'
     },
-    {
-      id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
-      Icon: BarChart2, color: 'text-teal-500'
-    },
+
+
 
     {
       id: 'admin', label: 'Admin Panel', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/admin',
@@ -51,6 +49,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     {
       id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
       Icon: LineChart, color: 'text-rose-500'
+    },
+    {
+      id: 'record-list', label: 'Record List', section: 'MANAGEMENT', link: '/dashboard/record-list',
+      Icon: Database, color: 'text-blue-500'
     }
   ];
 
