@@ -58,18 +58,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     {
       id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
       Icon: LineChart, color: 'text-rose-500'
+
     }
   ];
 
   const sections = ['OPERATIONS', 'MANAGEMENT'];
 
   return (
-    <div 
-      className={`h-[calc(100vh-48px)] bg-[var(--bg-top)] border-r border-border flex-shrink-0 flex flex-col transition-all duration-200 ease-in-out ${
-        isCollapsed ? 'w-[60px]' : 'w-[160px]'
-      } ${
-        isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      } fixed lg:relative z-30 lg:z-10 ${!mounted ? 'transition-none' : ''}`}
+    <div
+      className={`h-[calc(100vh-48px)] bg-[var(--bg-top)] border-r border-border flex-shrink-0 flex flex-col transition-all duration-200 ease-in-out ${isCollapsed ? 'w-[60px]' : 'w-[160px]'
+        } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } fixed lg:relative z-30 lg:z-10 ${!mounted ? 'transition-none' : ''}`}
     >
       <div className="flex flex-col items-stretch gap-2 py-4 overflow-y-auto no-scrollbar flex-1 px-2 w-full">
         {navItems.filter(i => (!i.roles || i.roles.includes(user?.role))).map((item, index) => {
@@ -102,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       {/* Bottom toggle button */}
       <div className={`flex items-center p-3 border-t border-border/50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && logout && (
-          <button 
+          <button
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none"
             onClick={() => {
               if (confirm('Are you sure you want to logout?')) {
@@ -114,9 +113,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
             Sign Out
           </button>
         )}
-        
+
         {isCollapsed && logout && (
-          <button 
+          <button
             className="flex items-center justify-center w-7 h-7 rounded-lg text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none mb-2"
             onClick={() => {
               if (confirm('Are you sure you want to logout?')) {
@@ -129,19 +128,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
           </button>
         )}
 
-        <button 
-          className="flex items-center justify-center w-7 h-7 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer bg-transparent" 
-          onClick={toggleCollapse} 
+        <button
+          className="flex items-center justify-center w-7 h-7 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer bg-transparent"
+          onClick={toggleCollapse}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <svg 
-            width="12" 
-            height="12" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2.5" 
-            strokeLinecap="round" 
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
             strokeLinejoin="round"
             className={`transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`}
           >
