@@ -77,7 +77,7 @@ export default function IncentiveDashboard() {
     }
     return acc;
   }, {} as Record<string, number>);
-  const desigChartData = Object.entries(desigPayout).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const desigChartData = Object.entries(desigPayout).map(([name, value]) => ({ name, value: value as number })).sort((a, b) => b.value - a.value);
 
   // 2. Payout by Location
   const locPayout = data.reduce((acc, d) => {
@@ -87,7 +87,7 @@ export default function IncentiveDashboard() {
     }
     return acc;
   }, {} as Record<string, number>);
-  const locChartData = Object.entries(locPayout).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const locChartData = Object.entries(locPayout).map(([name, value]) => ({ name, value: value as number })).sort((a, b) => b.value - a.value);
 
   // 3. Top 10 Earners
   const topEarners = [...data]
@@ -196,14 +196,14 @@ export default function IncentiveDashboard() {
                       cx="50%"
                       cy="50%"
                       outerRadius={100}
-                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({name, percent = 0}) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
                       {desigChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip formatter={(value: any) => formatCurrency(value)} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -219,7 +219,7 @@ export default function IncentiveDashboard() {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bdr)" />
                     <XAxis type="number" tickFormatter={(v) => formatCurrency(v).replace('₹', '')} stroke="var(--txt3)" fontSize={11} />
                     <YAxis dataKey="name" type="category" stroke="var(--txt3)" fontSize={11} />
-                    <Tooltip cursor={{fill: 'var(--bdr)'}} formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip cursor={{fill: 'var(--bdr)'}} formatter={(value: any) => formatCurrency(value)} />
                     <Bar dataKey="value" fill="#8B5CF6" radius={[0, 4, 4, 0]}>
                       {locChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
