@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import TraceEngine from '@/components/TraceEngine';
+import * as XLSX from 'xlsx';
 
 export default function RecordListPage() {
   const { user } = useApp();
@@ -125,6 +126,15 @@ export default function RecordListPage() {
   const totalIncentives = filteredData.reduce((sum, r) => sum + (r.final_incentive || 0), 0);
   const totalColl = filteredData.reduce((sum, r) => sum + (r.total_collection || 0), 0);
 
+  const downloadExcel = () => {
+    if (filteredData.length === 0) return;
+    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Incentives");
+    const filename = `Incentives_${filterMonth || 'All'}_${filterYear || 'All'}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       
@@ -134,6 +144,31 @@ export default function RecordListPage() {
             <TraceEngine record={selectedRecord} onClose={() => setSelectedRecord(null)} />
         </div>
       )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--txt)' }}>Incentive Master</h1>
+        <button
+          onClick={downloadExcel}
+          style={{
+            background: '#4F46E5',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 16px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)'
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download Excel
+        </button>
+      </div>
 
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>

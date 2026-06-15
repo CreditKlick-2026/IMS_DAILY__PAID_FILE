@@ -48,16 +48,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       Icon: Settings, color: 'text-indigo-500'
     },
     {
-      id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
-      Icon: LineChart, color: 'text-rose-500'
-    },
-    {
       id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
       Icon: Database, color: 'text-blue-500'
     },
     {
       id: 'incentive-dashboard', label: 'Incentive Dashboard', section: 'MANAGEMENT', link: '/dashboard/incentive-dashboard',
       Icon: BarChart2, color: 'text-green-500'
+    },
+    {
+      id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
+      Icon: LineChart, color: 'text-rose-500'
     }
   ];
 

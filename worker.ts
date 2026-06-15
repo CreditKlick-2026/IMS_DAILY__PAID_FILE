@@ -97,8 +97,7 @@ async function startWorker() {
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'DPF';
 
-    DROP TABLE IF EXISTS dpf_records;
-    CREATE TABLE dpf_records (
+    CREATE TABLE IF NOT EXISTS dpf_records (
       id SERIAL PRIMARY KEY,
       account_no       VARCHAR(100),
       employee_code    VARCHAR(100),
@@ -431,91 +430,96 @@ async function startWorker() {
         let failed = 0;
         let errorDetails: string[] = [];
 
-        await pool.query('BEGIN');
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
 
-        for (let i = 0; i < totalRows; i += BATCH_SIZE) {
-          const batch = validData.slice(i, i + BATCH_SIZE);
-          
-          try {
-            const values: any[] = [];
-            const placeholders: string[] = [];
-            let paramIndex = 1;
+          for (let i = 0; i < totalRows; i += BATCH_SIZE) {
+            const batch = validData.slice(i, i + BATCH_SIZE);
             
-            for (const row of batch) {
-              const get = (keys: string[]) => {
-                for (const k of keys) {
-                  const target = normalize(k);
-                  const foundKey = Object.keys(row).find(r => normalize(r) === target);
-                  if (foundKey !== undefined && row[foundKey] !== undefined) {
-                      const val = row[foundKey];
-                      if (val === '') continue;
-                      const s = String(val).trim().toLowerCase();
-                      if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
-                      return val;
-                  }
-                }
-                return null;
-              };
+            try {
+              const values: any[] = [];
+              const placeholders: string[] = [];
+              let paramIndex = 1;
               
-              placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-              values.push(
-                get(['Account_No', 'Account No', 'LAN', 'Loan No']),
-                get(['Employee_Code', 'Employee Code', 'EmpCode']),
-                get(['Employee_Name', 'Employee Name', 'EmpName']),
-                clientOverride ? clientOverride : get(['Client', 'client', 'Customer']),
-                get(['Product', 'product', 'Scheme']),
-                get(['Bucket', 'bucket', 'Delinquency']),
-                get(['Location', 'location', 'City']),
-                parseFloat(String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '')) || 0,
-                get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']),
-                get(['TL_Name', 'TL Name', 'Team Leader']),
-                get(['AM', 'am', 'Area Manager']),
-                get(['APH', 'aph']),
-                get(['PH', 'ph']),
-                String(get(['Phone_No', 'Phone No', 'Mobile', 'Contact']) || '').replace(/\D/g, '').slice(-10) || null,
-                jobId,
-                uploadAt,
-                uploadedByEmpId,
-                uploadedByName,
-                row._isDuplicate ? true : false,
-                row._duplicateReason || null
-              );
+              for (const row of batch) {
+                const get = (keys: string[]) => {
+                  for (const k of keys) {
+                    const target = normalize(k);
+                    const foundKey = Object.keys(row).find(r => normalize(r) === target);
+                    if (foundKey !== undefined && row[foundKey] !== undefined) {
+                        const val = row[foundKey];
+                        if (val === '') continue;
+                        const s = String(val).trim().toLowerCase();
+                        if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
+                        return val;
+                    }
+                  }
+                  return null;
+                };
+                
+                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+                values.push(
+                  get(['Account_No', 'Account No', 'LAN', 'Loan No']),
+                  get(['Employee_Code', 'Employee Code', 'EmpCode']),
+                  get(['Employee_Name', 'Employee Name', 'EmpName']),
+                  clientOverride ? clientOverride : get(['Client', 'client', 'Customer']),
+                  get(['Product', 'product', 'Scheme']),
+                  get(['Bucket', 'bucket', 'Delinquency']),
+                  get(['Location', 'location', 'City']),
+                  parseFloat(String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '')) || 0,
+                  get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']),
+                  get(['TL_Name', 'TL Name', 'Team Leader']),
+                  get(['AM', 'am', 'Area Manager']),
+                  get(['APH', 'aph']),
+                  get(['PH', 'ph']),
+                  String(get(['Phone_No', 'Phone No', 'Mobile', 'Contact']) || '').replace(/\D/g, '').slice(-10) || null,
+                  jobId,
+                  uploadAt,
+                  uploadedByEmpId,
+                  uploadedByName,
+                  row._isDuplicate ? true : false,
+                  row._duplicateReason || null
+                );
+              }
+
+              await client.query(`
+                INSERT INTO dpf_records 
+                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag)
+                VALUES ${placeholders.join(', ')}
+              `, values);
+              processed += batch.length;
+            } catch (batchErr: any) {
+              failed += batch.length;
+              errorDetails.push(`Batch ${i/BATCH_SIZE + 1} failed: ${batchErr.message}`);
+              console.error("Batch insert failed:", batchErr.message);
             }
-
-            await pool.query(`
-              INSERT INTO dpf_records 
-                (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag)
-              VALUES ${placeholders.join(', ')}
-            `, values);
-            processed += batch.length;
-          } catch (batchErr: any) {
-            failed += batch.length;
-            errorDetails.push(`Batch ${i/BATCH_SIZE + 1} failed: ${batchErr.message}`);
-            console.error("Batch insert failed:", batchErr.message);
+            
+            await client.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
+            console.log(`✅ Progress: ${processed + failed}/${totalRows} (Failed: ${failed})`);
           }
-          
-          await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
-          console.log(`✅ Progress: ${processed + failed}/${totalRows} (Failed: ${failed})`);
-        }
 
-        if (failed > 0) {
-            await pool.query('ROLLBACK');
-            const finalStatus = 'FAILED';
-            await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
-              jobId,
-              JSON.stringify({ duplicates_found: totalDups, failed_count: failed, status: 'Failed', details: errorDetails }),
-              finalStatus
-            ]);
-            console.log(`❌ Job ${jobId} Failed! Rolled back ${processed} inserts.`);
-        } else {
-            await pool.query('COMMIT');
-            const finalStatus = 'COMPLETED';
-            await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
-              jobId,
-              JSON.stringify({ duplicates_found: totalDups, failed_count: 0, status: 'Success' }),
-              finalStatus
-            ]);
-            console.log(`🎉 Job ${jobId} Finished Successfully! Processed: ${processed}`);
+          if (failed > 0) {
+              await client.query('ROLLBACK');
+              const finalStatus = 'FAILED';
+              await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
+                jobId,
+                JSON.stringify({ duplicates_found: totalDups, failed_count: failed, status: 'Failed', details: errorDetails }),
+                finalStatus
+              ]);
+              console.log(`❌ Job ${jobId} Failed! Rolled back ${processed} inserts.`);
+          } else {
+              await client.query('COMMIT');
+              const finalStatus = 'COMPLETED';
+              await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
+                jobId,
+                JSON.stringify({ duplicates_found: totalDups, failed_count: 0, status: 'Success' }),
+                finalStatus
+              ]);
+              console.log(`🎉 Job ${jobId} Finished Successfully! Processed: ${processed}`);
+          }
+        } finally {
+          client.release();
         }
         console.log(`🎉 Job ${jobId} Finished! Inserted: ${processed}, Blocked: ${totalDups}`);
         }
