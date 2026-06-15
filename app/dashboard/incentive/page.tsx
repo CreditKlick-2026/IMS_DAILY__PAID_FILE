@@ -21,10 +21,13 @@ export default function RecordListPage() {
   // Pagination State
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 100;
+  
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterYear, setFilterYear] = useState("");
 
   useEffect(() => {
     setPage(1);
-  }, [search, selectedLocation, selectedAM, selectedTL, selectedAPH, selectedPH, selectedDesig]);
+  }, [search, selectedLocation, selectedAM, selectedTL, selectedAPH, selectedPH, selectedDesig, filterMonth, filterYear]);
 
   useEffect(() => {
     // Only admins allowed to see this raw master list
@@ -36,14 +39,19 @@ export default function RecordListPage() {
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, filterMonth, filterYear]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      const queryParams = new URLSearchParams();
+      queryParams.append('groupBy', 'employee_code');
+      if (filterMonth) queryParams.append('month', filterMonth);
+      if (filterYear) queryParams.append('year', filterYear);
+
       const [kekaRes, incRes] = await Promise.all([
         fetch('/api/keka'),
-        fetch('/api/incentives?groupBy=employee_code')
+        fetch(`/api/incentives?${queryParams.toString()}`)
       ]);
       
       const kekaResult = await kekaRes.json();
@@ -227,6 +235,28 @@ export default function RecordListPage() {
           <option value="">Location</option>
           {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
         </select>
+
+        <select
+          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 100 }}
+          value={filterMonth}
+          onChange={e => setFilterMonth(e.target.value)}
+        >
+          <option value="">All Months</option>
+          {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+            <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'short' })}</option>
+          ))}
+        </select>
+
+        <select
+          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 80 }}
+          value={filterYear}
+          onChange={e => setFilterYear(e.target.value)}
+        >
+          <option value="">All Years</option>
+          {[2024, 2025, 2026, 2027, 2028].map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
         
         <div style={{ fontSize: 10, color: 'var(--txt3)', whiteSpace: 'nowrap', marginLeft: 'auto' }}>
           {totalCount} records
@@ -273,7 +303,7 @@ export default function RecordListPage() {
                   style={{
                     display: 'grid', gridTemplateColumns: '30px 1.5fr 1fr 1fr 1fr 1fr 1fr 90px 70px 80px',
                     padding: '8px 10px', gap: 6, alignItems: 'center',
-                    borderBottom: idx < paginatedData.length - 1 ? '1px solid var(--faint)' : 'none',
+                    borderBottom: '1px solid #e5e7eb',
                     background: isSelected ? 'rgba(79,125,255,0.08)' : 'transparent',
                     transition: 'all 0.2s',
                     cursor: 'pointer'

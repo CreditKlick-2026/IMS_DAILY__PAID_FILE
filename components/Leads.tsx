@@ -1328,7 +1328,7 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
 };
 
 const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
-  const { openModal, user } = useApp();
+  const { openModal, user, toast } = useApp();
   const [leads, setLeads] = useState<any[]>([]);
   const [leadColumns, setLeadColumns] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -1344,8 +1344,9 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
   const [dpdMin, setDpdMin] = useState('');
   const [dpdMax, setDpdMax] = useState('');
   const [outMin, setOutMin] = useState('');
-  const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1));
-  const [filterYear, setFilterYear] = useState(String(new Date().getFullYear()));
+  const [filterAccountNo, setFilterAccountNo] = useState('');
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterYear, setFilterYear] = useState("");
   const [filterUploadDate, setFilterUploadDate] = useState('');
   const [exporting, setExporting] = useState(false);
   const [filterOptions, setFilterOptions] = useState<any>({});
@@ -1431,7 +1432,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, JSON.stringify(filters)]);
 
   useEffect(() => {
     setLoading(true);
@@ -1439,7 +1440,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       fetchLeads();
     }, 2000);
     return () => clearTimeout(timer);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, page, limit, user?.id, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, page, limit, user?.id, JSON.stringify(filters)]);
 
   const fetchMetadata = async () => {
     try {
@@ -1458,6 +1459,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       if (statusFilter) query.append('status', statusFilter);
       if (sortBy) query.append('sortBy', sortBy);
       if (portfolioFilter) query.append('portfolio', portfolioFilter);
+      if (filterAccountNo) query.append('accountNo', filterAccountNo);
       if (dpdMin) query.append('dpdMin', dpdMin);
       if (dpdMax) query.append('dpdMax', dpdMax);
       if (outMin) query.append('outMin', outMin);
@@ -1526,6 +1528,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       if (statusFilter) query.append('status', statusFilter);
       if (sortBy) query.append('sortBy', sortBy);
       if (portfolioFilter) query.append('portfolio', portfolioFilter);
+      if (filterAccountNo) query.append('accountNo', filterAccountNo);
       if (dpdMin) query.append('dpdMin', dpdMin);
       if (dpdMax) query.append('dpdMax', dpdMax);
       if (outMin) query.append('outMin', outMin);
@@ -2170,6 +2173,55 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                     {duplicateOnly ? 'View and manage duplicate file uploads' : 'View, filter, and manage your uploaded leads'}
                   </p>
                 </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {duplicateOnly && user?.role === 'admin' && (
+                    <button
+                      onClick={async () => {
+                        let confirmMsg = `Are you sure you want to approve ALL duplicate records? They will be transferred to Live Records.`;
+                        if (filterMonth && filterYear) {
+                           confirmMsg = `Are you sure you want to approve all duplicate records for ${filterMonth}/${filterYear}? They will be transferred to Live Records.`;
+                        }
+                        if (!confirm(confirmMsg)) return;
+                        
+                        try {
+                          const res = await fetch('/api/leads/approve-duplicates', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ month: filterMonth, year: filterYear })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            if (toast) toast(`Approved ${data.count} records successfully!`);
+                            else alert(`Approved ${data.count} records successfully!`);
+                            fetchLeads(); // refresh the data
+                          } else {
+                            if (toast) toast(data.error || 'Failed to approve records');
+                            else alert(data.error || 'Failed to approve records');
+                          }
+                        } catch (e) {
+                          if (toast) toast('Error approving records');
+                          else alert('Error approving records');
+                        }
+                      }}
+                      style={{ padding: '6px 14px', background: '#10b981', border: '1px solid #059669', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      Approve All
+                    </button>
+                  )}
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                    <option value="">All Months</option>
+                    {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                      <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
+                    ))}
+                  </select>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                    <option value="">All Years</option>
+                    {[2024, 2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="cust-dash-header" style={{ alignItems: 'flex-start' }}>
 
@@ -2371,6 +2423,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
           {/* FILTER ROW */}
           {showFilters && (
             <div id="fRow" style={{ display: 'flex', padding: '10px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--bdr)', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input className="finp" type="text" placeholder="Account No" style={{ width: '120px', padding: '6px 10px' }} value={filterAccountNo} onChange={e => setFilterAccountNo(e.target.value)} />
               <input className="finp" type="number" placeholder="DPD Min" style={{ width: '90px', padding: '6px 10px' }} value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
               <input className="finp" type="number" placeholder="DPD Max" style={{ width: '90px', padding: '6px 10px' }} value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
               <input className="finp" type="number" placeholder="₹ Min" style={{ width: '100px', padding: '6px 10px' }} value={outMin} onChange={e => setOutMin(e.target.value)} />
@@ -2378,18 +2431,6 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 <option value="">Sort By</option>
                 <option value="high">Highest Amount</option>
                 <option value="low">Lowest Amount</option>
-              </select>
-              <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
-                <option value="">Month</option>
-                {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                  <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'short' })}</option>
-                ))}
-              </select>
-              <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
-                <option value="">Year</option>
-                {[2024, 2025, 2026, 2027, 2028].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
               </select>
               <div style={{ position: 'relative' }}>
                 <input className="finp" type="date" title="Upload Date" style={{ fontSize: 12, padding: '5px 10px', width: 'auto', background: 'var(--bg2)' }} value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
@@ -2436,7 +2477,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 <SButton size="slim" variant="primary" onClick={() => { setEditingRecord(null); setShowRecordModal('add'); }}>➕ Add Record</SButton>
               )}
               <SButton size="slim" variant="critical" onClick={() => {
-                setStatusFilter(''); setSortBy(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear())); setFilterUploadDate('');
+                setStatusFilter(''); setSortBy(''); setFilterAccountNo(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear())); setFilterUploadDate('');
                 setFilters({
                   employee_code: [], product: [], bucket: [], location: [], aph: [], ph: [], client: [], tl_name: [], employee_name: []
                 });

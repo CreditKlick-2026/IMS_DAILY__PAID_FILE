@@ -92,6 +92,17 @@ function getTlIncentivePercentage(pcp: number) {
     return 0;
 }
 
+// ATL Incentive Percentage Slab Logic
+function getAtlIncentivePercentage(pcp: number) {
+    if (pcp >= 400000) return 0.0139;
+    if (pcp >= 375000) return 0.0127;
+    if (pcp >= 350000) return 0.0120;
+    if (pcp >= 325000) return 0.0105;
+    if (pcp >= 300000) return 0.0080;
+    if (pcp >= 270000) return 0.0060;
+    return 0;
+}
+
 // AM Incentive Percentage Slab Logic
 function getAmIncentivePercentage(pcp: number) {
     if (pcp >= 275000) return 0.0040;
@@ -155,16 +166,6 @@ export async function GET(req: Request) {
 
         const outMin = searchParams.get('outMin');
 
-        // Admin sees all, User sees only their own or their team's data
-        /*
-        if (session.role !== 'admin') {
-          // In a real scenario, TLs might want to see their team's data. 
-          // For now, limiting to their own uploaded data or self-emp_code.
-          conditions.push(`(r.uploaded_by_employee_id = $${queryParams.length + 1} OR r.employee_code = $${queryParams.length + 1})`);
-          queryParams.push(session.employee_id);
-        }
-        */
-
         const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
         // 1. Fetch Master Data from Keka
@@ -192,7 +193,7 @@ export async function GET(req: Request) {
     `;
 
         const res = await pool.query(queryText, queryParams);
-        const individualCollections = res.rows; console.log('Found rows:', res.rows.length);
+        const individualCollections = res.rows;
 
         // 3. Pre-calculate Team Collections and Headcounts
         const tlTeamData: Record<string, { collection: number, headcount: Set<string> }> = {};
@@ -227,7 +228,7 @@ export async function GET(req: Request) {
                 const rawDesig = (emp.designation || '').toLowerCase();
                 
                 const isAM = rawDesig.includes('manager') || rawDesig === 'am' || Object.keys(amTeamData).some(am => nameKey.includes(am) || am.includes(firstName));
-                const isTL = rawDesig.includes('leader') || rawDesig === 'tl' || Object.keys(tlTeamData).some(tl => nameKey.includes(tl) || tl.includes(firstName));
+                const isTL = rawDesig.includes('leader') || rawDesig === 'tl' || rawDesig === 'atl' || Object.keys(tlTeamData).some(tl => nameKey.includes(tl) || tl.includes(firstName));
                 
                 if (isAM || isTL) {
                     individualCollections.push({
@@ -265,8 +266,11 @@ export async function GET(req: Request) {
             const nameKey = empName?.toLowerCase().trim() || '';
             const firstName = nameKey.split(' ')[0];
 
-            // Only infer if not explicitly set
-            if (!rawDesignation.includes('manager') && rawDesignation !== 'am' && !rawDesignation.includes('leader') && rawDesignation !== 'tl') {
+            // Only infer if not explicitly set (ATL is considered a form of TL, so we don't overwrite it)
+            const isKekaLeader = rawDesignation.includes('leader') || rawDesignation === 'tl' || rawDesignation === 'atl';
+            const isKekaManager = rawDesignation.includes('manager') || rawDesignation === 'am';
+
+            if (!isKekaManager && !isKekaLeader) {
                 const isAM = Object.keys(amTeamData).some(am => nameKey.includes(am) || am.includes(firstName));
                 const isTL = Object.keys(tlTeamData).some(tl => nameKey.includes(tl) || tl.includes(firstName));
                 
@@ -275,7 +279,7 @@ export async function GET(req: Request) {
             }
 
             if (outMin && !isNaN(Number(outMin)) && collection < Number(outMin)) {
-                if (!designation.includes('manager') && designation !== 'am' && !designation.includes('leader') && designation !== 'tl') {
+                if (!designation.includes('manager') && designation !== 'am' && !designation.includes('leader') && designation !== 'tl' && designation !== 'atl') {
                     continue; // Skip associates under min, but AM/TL still get team incentive
                 }
             }
@@ -287,7 +291,24 @@ export async function GET(req: Request) {
             let teamCollection = 0;
             let teamHeadcount = 0;
 
-            if (designation.includes('leader') || designation === 'tl') {
+            if (doc) {
+                vintageMonths = calculateVintageDays(doc, currentCalcDate);
+            } else {
+                vintageMonths = 999;
+            }
+
+            if (designation === 'atl') {
+                const tlKeyMatch = Object.keys(tlTeamData).find(tl => nameKey.includes(tl) || tl.includes(firstName));
+                const tlKey = tlKeyMatch || record.tl_name?.toLowerCase().trim() || '';
+                const tlData = tlTeamData[tlKey] || { collection: 0, headcount: new Set() };
+                teamCollection = tlData.collection;
+                teamHeadcount = tlData.headcount.size || 1;
+                pcp = teamCollection / teamHeadcount;
+
+                incentivePercent = getAtlIncentivePercentage(pcp);
+                incentive = teamCollection * incentivePercent;
+
+            } else if (designation.includes('leader') || designation === 'tl') {
                 // Team Leader Logic
                 const tlKeyMatch = Object.keys(tlTeamData).find(tl => nameKey.includes(tl) || tl.includes(firstName));
                 const tlKey = tlKeyMatch || record.tl_name?.toLowerCase().trim() || '';
@@ -314,14 +335,11 @@ export async function GET(req: Request) {
             } else {
                 // Associate Logic
                 if (doc) {
-                    const vintageDays = calculateVintageDays(doc, currentCalcDate);
                     let slabMonth = -1;
-                    if (vintageDays <= 30) slabMonth = 0;
-                    else if (vintageDays <= 60) slabMonth = 1;
-                    else if (vintageDays <= 90) slabMonth = 2;
-                    else if (vintageDays <= 120) slabMonth = 3;
-
-                    vintageMonths = vintageDays; // passing raw days
+                    if (vintageMonths <= 30) slabMonth = 0;
+                    else if (vintageMonths <= 60) slabMonth = 1;
+                    else if (vintageMonths <= 90) slabMonth = 2;
+                    else if (vintageMonths <= 120) slabMonth = 3;
 
                     if (slabMonth !== -1) {
                         incentive = getAssociateFixedIncentive(collection, slabMonth);
@@ -331,7 +349,6 @@ export async function GET(req: Request) {
                     }
                 } else {
                     // If no DOC, assume tenured with base salary rule (worst case)
-                    vintageMonths = 999;
                     incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000);
                     incentive = collection * incentivePercent;
                 }
@@ -401,6 +418,7 @@ export async function GET(req: Request) {
             if (groupBy === 'employee_code' || groupBy === 'employee_name') {
                 groupedData[groupKey].team_collection = res.team_collection;
                 groupedData[groupKey].pcp = res.pcp;
+                groupedData[groupKey].team_headcount = res.team_headcount;
                 groupedData[groupKey].vintage = res.vintage;
                 groupedData[groupKey].salary = res.salary;
                 groupedData[groupKey].tl_name = res.tl_name;

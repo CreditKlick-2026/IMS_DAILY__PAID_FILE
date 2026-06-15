@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { ButtonGroup, Button } from '@shopify/polaris';
-import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database } from 'lucide-react';
+import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database, LogOut } from 'lucide-react';
 
 interface SidebarProps {
   activePage: string;
@@ -10,9 +10,10 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   isCollapsed?: boolean;
   toggleCollapse?: () => void;
+  logout?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMobileOpen, isCollapsed, toggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMobileOpen, isCollapsed, toggleCollapse, logout }) => {
   const [mounted, setMounted] = useState(false);
 
   // Use a small timeout to ensure the state is applied before enabling transitions
@@ -51,8 +52,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       Icon: LineChart, color: 'text-rose-500'
     },
     {
-      id: 'record-list', label: 'Record List', section: 'MANAGEMENT', link: '/dashboard/record-list',
+      id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
       Icon: Database, color: 'text-blue-500'
+    },
+    {
+      id: 'incentive-dashboard', label: 'Incentive Dashboard', section: 'MANAGEMENT', link: '/dashboard/incentive-dashboard',
+      Icon: BarChart2, color: 'text-green-500'
     }
   ];
 
@@ -95,7 +100,35 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       <div className="flex-1" />
 
       {/* Bottom toggle button */}
-      <div className="flex items-center justify-center p-3 border-t border-border/50">
+      <div className={`flex items-center p-3 border-t border-border/50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+        {!isCollapsed && logout && (
+          <button 
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none"
+            onClick={() => {
+              if (confirm('Are you sure you want to logout?')) {
+                logout();
+              }
+            }}
+          >
+            <LogOut size={16} strokeWidth={2.5} />
+            Sign Out
+          </button>
+        )}
+        
+        {isCollapsed && logout && (
+          <button 
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none mb-2"
+            onClick={() => {
+              if (confirm('Are you sure you want to logout?')) {
+                logout();
+              }
+            }}
+            title="Sign Out"
+          >
+            <LogOut size={16} strokeWidth={2.5} />
+          </button>
+        )}
+
         <button 
           className="flex items-center justify-center w-7 h-7 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer bg-transparent" 
           onClick={toggleCollapse} 

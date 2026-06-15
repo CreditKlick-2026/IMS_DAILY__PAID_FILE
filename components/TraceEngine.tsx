@@ -67,6 +67,14 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
     let nodesList: Node[] = [];
     let edgesList: Edge[] = [];
     
+    const isTlOrAm = record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl' || record.designation?.toLowerCase() === 'atl' || record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am';
+    
+    let contentStr = `Name: ${record.name || record.employee_name}\nDesignation: ${record.designation}`;
+    if (!isTlOrAm) {
+      contentStr += `\nVintage: ${record.vintage} Days\nSalary: ${record.salary ? formatCurrency(record.salary) : 'N/A'}`;
+    }
+    contentStr += `\nTotal Collection: ${formatCurrency(record.total_collection)}`;
+
     // 1. Input Node
     nodesList.push({
       id: 'input',
@@ -77,14 +85,17 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
         stripeColor: 'bg-indigo-500',
         color: 'bg-indigo-50 text-indigo-600 border border-indigo-100',
         icon: <User className="w-6 h-6" />,
-        content: `Name: ${record.name}\nDesignation: ${record.designation}\nVintage: ${record.vintage} Days\nSalary: ${formatCurrency(record.salary)}\nTotal Collection: ${formatCurrency(record.total_collection)}`
+        content: contentStr
       }
     });
 
     // 2. Rule Selected Node
     let ruleName = "";
     let mathStr = "";
-    if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
+    if (record.designation?.toLowerCase() === 'atl') {
+        ruleName = "SME Team (ATL) Percent Slab";
+        mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+    } else if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
         ruleName = "Team Leader Percent Slab";
         mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else if (record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am') {
@@ -135,6 +146,36 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
                         { val: additional[i], highlighted: false },
                         { val: ztText[i], highlighted: false },
                         { val: deductRules[i], highlighted: false }
+                    ]
+                };
+            })
+        };
+    } else if (record.designation?.toLowerCase() === 'atl') {
+        formulaNodeText = "";
+        const targets = [270000, 300000, 325000, 350000, 375000, 400000];
+        const rates = ['0.60%', '0.80%', '1.05%', '1.20%', '1.27%', '1.39%'];
+        const headcount = record.team_headcount || 1;
+        
+        let rowHighlightIdx = -1;
+        for (let i = targets.length - 1; i >= 0; i--) {
+            if (record.pcp >= targets[i]) {
+                rowHighlightIdx = i; break;
+            }
+        }
+
+        formulaTableData = {
+            headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'],
+            rows: targets.map((t, i) => {
+                const totalRecovery = t * headcount;
+                const amt = totalRecovery * (parseFloat(rates[i]) / 100);
+                return {
+                    highlighted: i === rowHighlightIdx,
+                    cells: [
+                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
+                        { val: headcount.toString(), highlighted: false },
+                        { val: formatCurrency(totalRecovery), highlighted: false },
+                        { val: rates[i], highlighted: i === rowHighlightIdx },
+                        { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
                     ]
                 };
             })
@@ -253,7 +294,7 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
     nodesList.push({
       id: 'rule',
       type: 'custom',
-      position: { x: 420, y: 150 },
+      position: { x: 450, y: 150 },
       data: {
         title: 'Calculation Engine',
         stripeColor: 'bg-amber-500',
@@ -267,7 +308,7 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
     nodesList.push({
       id: 'formula',
       type: 'custom',
-      position: { x: 790, y: 150 },
+      position: { x: 850, y: 150 },
       data: {
         title: 'Applied Matrix Lookup',
         stripeColor: 'bg-rose-500',
@@ -282,7 +323,7 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
     nodesList.push({
       id: 'output',
       type: 'custom',
-      position: { x: 1160, y: 150 },
+      position: { x: 1850, y: 150 },
       data: {
         title: `${new Date().toLocaleString('en-US', { month: 'long' })} Payout`,
         stripeColor: 'bg-emerald-500',
@@ -307,9 +348,9 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
           <X className="w-4 h-4" />
         </button>
       </div>
-      <div className="absolute top-4 left-6 z-10 bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200 shadow-sm pointer-events-none">
-          <h2 className="text-sm font-black text-slate-800">Incentive Trace Engine</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{record.name} ({record.employee_id})</p>
+      <div className="absolute top-4 left-6 z-10 bg-white/80 backdrop-blur-md px-2 py-1 rounded border border-slate-200 shadow-sm pointer-events-none">
+          <h2 className="text-[10px] font-bold text-slate-800 leading-tight">Incentive Trace Engine</h2>
+          <p className="text-[8px] font-medium text-slate-400 uppercase tracking-wide">{record.name} ({record.employee_id})</p>
       </div>
       <div className="flex-1 w-full relative">
         <ReactFlow 

@@ -134,7 +134,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeItem === 'users') {
       fetchUsers();
-    } else if (activeItem === 'excels') {
+    } else if (activeItem === 'excels' || activeItem === 'keka-excels') {
       fetchExcels();
     } else if (activeItem === 'tracker') {
       fetchTrackerData();
@@ -769,12 +769,26 @@ export default function AdminPage() {
                                       <div className="flex items-center justify-end gap-2">
 
                                         {job.status !== 'DELETED_BY_ADMIN' ? (
-                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
-                                            className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
-                                          >
-                                            Delete File
-                                          </button>
+                                          <>
+                                            {job.file_path && (
+                                              <a 
+                                                href={`/${job.file_path.replace(/\\/g, '/')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-xs bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-3 py-2 rounded-lg border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
+                                                download
+                                              >
+                                                Download
+                                              </a>
+                                            )}
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
+                                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
+                                            >
+                                              Delete File
+                                            </button>
+                                          </>
                                         ) : (
                                           <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">Deleted</span>
                                         )}
@@ -1172,7 +1186,17 @@ export default function AdminPage() {
                                     </div>
                                   )}
                                   {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> Error: {parsed.last_error}</div>}
-                                  {(!parsed.failed_count && !parsed.last_error) && (
+                                  {parsed.details && Array.isArray(parsed.details) && parsed.details.length > 0 && (
+                                    <div className="mt-2 max-h-32 overflow-y-auto rounded bg-red-50 p-2 border border-red-100 no-scrollbar">
+                                      <p className="text-[10px] font-bold text-red-800 mb-1 uppercase tracking-widest">Error Details (Upload Cancelled):</p>
+                                      <ul className="list-disc pl-4 space-y-1">
+                                        {parsed.details.map((err: string, i: number) => (
+                                          <li key={i} className="text-[11px] font-medium text-red-700 leading-tight">{err}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {(!parsed.failed_count && !parsed.last_error && !parsed.details) && (
                                     <div className="text-emerald-600 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> <span>{parsed.status || 'Success'}</span></div>
                                   )}
                                 </div>
@@ -1281,12 +1305,26 @@ export default function AdminPage() {
                                       <div className="flex items-center justify-end gap-2">
 
                                         {job.status !== 'DELETED_BY_ADMIN' ? (
-                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
-                                            className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
-                                          >
-                                            Delete File
-                                          </button>
+                                          <>
+                                            {job.file_path && (
+                                              <a 
+                                                href={`/${job.file_path.replace(/\\/g, '/')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-xs bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-3 py-2 rounded-lg border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
+                                                download
+                                              >
+                                                Download
+                                              </a>
+                                            )}
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
+                                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
+                                            >
+                                              Delete File
+                                            </button>
+                                          </>
                                         ) : (
                                           <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">Deleted</span>
                                         )}

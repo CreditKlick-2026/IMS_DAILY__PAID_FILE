@@ -40,6 +40,12 @@ export async function GET(req: Request) {
       }
     }
 
+    const accountNo = searchParams.get('accountNo') || '';
+    if (accountNo) {
+      conditions.push(`account_no ILIKE $${queryParams.length + 1}`);
+      queryParams.push(`%${accountNo}%`);
+    }
+
     const multiMatchFilters = [
       'employee_code', 'product', 'bucket', 'location', 
       'aph', 'ph', 'client', 'tl_name', 'employee_name'

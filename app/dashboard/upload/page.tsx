@@ -24,7 +24,6 @@ const REQUIRED_HEADERS = [
   { key: 'am',              labels: ['AM', 'am', 'Area Manager'], display: 'AM' },
   { key: 'aph',             labels: ['APH', 'aph'], display: 'APH' },
   { key: 'ph',              labels: ['PH', 'ph'], display: 'PH' },
-  { key: 'phone_no',        labels: ['Phone_No', 'Phone No', 'Mobile', 'Contact'], display: 'Phone_No' },
 ];
 
 export default function UploadPage() {
@@ -565,6 +564,14 @@ export default function UploadPage() {
                         </PolarisButton>
                       ))}
                     </ButtonGroup>
+                    {user?.role === 'admin' && (
+                      <input 
+                        type="date" 
+                        className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-purple-500 ml-2"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                      />
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
@@ -842,8 +849,18 @@ export default function UploadPage() {
                                 </div>
                               )}
                               {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> Error: {parsed.last_error}</div>}
-                              {(!parsed.duplicates_found && !parsed.failed_count && !parsed.last_error) && (
-                                <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{JSON.stringify(parsed)}</span></div>
+                              {parsed.details && Array.isArray(parsed.details) && parsed.details.length > 0 && (
+                                <div className="mt-2 max-h-32 overflow-y-auto rounded bg-red-50 p-2 border border-red-100 no-scrollbar">
+                                  <p className="text-[10px] font-bold text-red-800 mb-1 uppercase tracking-widest">Error Details (Upload Cancelled):</p>
+                                  <ul className="list-disc pl-4 space-y-1">
+                                    {parsed.details.map((err: string, i: number) => (
+                                      <li key={i} className="text-[11px] font-medium text-red-700 leading-tight">{err}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {(!parsed.duplicates_found && !parsed.failed_count && !parsed.last_error && !parsed.details) && (
+                                <div className="text-emerald-600 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> <span>{parsed.status || 'Success'}</span></div>
                               )}
                             </div>
                           );

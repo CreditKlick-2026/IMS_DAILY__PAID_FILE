@@ -217,12 +217,23 @@ async function startWorker() {
              
              let processed = 0;
              let failed = 0;
-             for (const row of dataRows) {
+             let errorDetails: string[] = [];
+             
+             await pool.query('BEGIN');
+             
+             for (let i = 0; i < dataRows.length; i++) {
+                 const row = dataRows[i];
                  const get = (keys: string[]) => {
                      for (const k of keys) {
                          const target = normalize(k);
                          const foundKey = Object.keys(row).find(r => normalize(r) === target);
-                         if (foundKey !== undefined && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+                         if (foundKey !== undefined && row[foundKey] !== undefined) {
+                             const val = row[foundKey];
+                             if (val === '') continue;
+                             const s = String(val).trim().toLowerCase();
+                             if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
+                             return val;
+                         }
                      }
                      return null;
                  };
@@ -249,6 +260,7 @@ async function startWorker() {
                  
                  if (!empCode) {
                      failed++;
+                     errorDetails.push(`Row ${i + 2}: Missing Employee Code`);
                  } else {
                      try {
                          await pool.query(`
@@ -260,16 +272,27 @@ async function startWorker() {
                                  updated_at = CURRENT_TIMESTAMP
                          `, [location, empCode, name, designation, agentOhr, dojDate, docDate, salary]);
                          processed++;
-                     } catch (err) {
+                     } catch (err: any) {
                          failed++;
+                         errorDetails.push(`Row ${i + 2} (${empCode}): Database error - ${err.message}`);
                      }
                  }
                  if ((processed + failed) % 50 === 0) {
                      await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
                  }
              }
-             await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = 'COMPLETED', error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: failed, status: 'Success' }), jobId]);
-             console.log(`🎉 KEKA Job ${jobId} Finished! Processed: ${processed}, Failed: ${failed}`);
+             
+             if (failed > 0) {
+                 await pool.query('ROLLBACK');
+                 const finalStatus = 'FAILED';
+                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: failed, status: 'Failed', details: errorDetails }), jobId, finalStatus]);
+                 console.log(`❌ KEKA Job ${jobId} Failed! Rolled back ${processed} inserts. Errors: ${failed}`);
+             } else {
+                 await pool.query('COMMIT');
+                 const finalStatus = 'COMPLETED';
+                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: 0, status: 'Success' }), jobId, finalStatus]);
+                 console.log(`🎉 KEKA Job ${jobId} Finished Successfully! Processed: ${processed}`);
+             }
              
         } else {
         let bestSheetData: any[] = [];
@@ -406,7 +429,9 @@ async function startWorker() {
         const BATCH_SIZE = 500;
         let processed = 0;
         let failed = 0;
-        let lastError = null;
+        let errorDetails: string[] = [];
+
+        await pool.query('BEGIN');
 
         for (let i = 0; i < totalRows; i += BATCH_SIZE) {
           const batch = validData.slice(i, i + BATCH_SIZE);
@@ -421,7 +446,13 @@ async function startWorker() {
                 for (const k of keys) {
                   const target = normalize(k);
                   const foundKey = Object.keys(row).find(r => normalize(r) === target);
-                  if (foundKey !== undefined && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+                  if (foundKey !== undefined && row[foundKey] !== undefined) {
+                      const val = row[foundKey];
+                      if (val === '') continue;
+                      const s = String(val).trim().toLowerCase();
+                      if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
+                      return val;
+                  }
                 }
                 return null;
               };
@@ -459,18 +490,33 @@ async function startWorker() {
             processed += batch.length;
           } catch (batchErr: any) {
             failed += batch.length;
-            lastError = batchErr.message;
+            errorDetails.push(`Batch ${i/BATCH_SIZE + 1} failed: ${batchErr.message}`);
             console.error("Batch insert failed:", batchErr.message);
           }
           
-          await pool.query(`UPDATE upload_jobs SET processed_rows = $1, error_log = $2 WHERE id = $3`, [processed, lastError ? JSON.stringify({ last_error: lastError, failed_count: failed }) : null, jobId]);
-          console.log(`✅ Progress: ${processed}/${totalRows} (Failed: ${failed})`);
+          await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
+          console.log(`✅ Progress: ${processed + failed}/${totalRows} (Failed: ${failed})`);
         }
 
-        await pool.query(`UPDATE upload_jobs SET status = 'COMPLETED', error_log = $2 WHERE id = $1`, [
-          jobId,
-          JSON.stringify({ duplicates_found: totalDups, failed_count: failed, last_error: lastError, status: 'Blocked records prevented from upload' })
-        ]);
+        if (failed > 0) {
+            await pool.query('ROLLBACK');
+            const finalStatus = 'FAILED';
+            await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
+              jobId,
+              JSON.stringify({ duplicates_found: totalDups, failed_count: failed, status: 'Failed', details: errorDetails }),
+              finalStatus
+            ]);
+            console.log(`❌ Job ${jobId} Failed! Rolled back ${processed} inserts.`);
+        } else {
+            await pool.query('COMMIT');
+            const finalStatus = 'COMPLETED';
+            await pool.query(`UPDATE upload_jobs SET status = $3, error_log = $2 WHERE id = $1`, [
+              jobId,
+              JSON.stringify({ duplicates_found: totalDups, failed_count: 0, status: 'Success' }),
+              finalStatus
+            ]);
+            console.log(`🎉 Job ${jobId} Finished Successfully! Processed: ${processed}`);
+        }
         console.log(`🎉 Job ${jobId} Finished! Inserted: ${processed}, Blocked: ${totalDups}`);
         }
 

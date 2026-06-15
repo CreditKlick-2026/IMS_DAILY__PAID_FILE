@@ -70,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isMobileOpen={mobileMenuOpen} 
                 isCollapsed={sidebarCollapsed}
                 toggleCollapse={toggleSidebar}
+                logout={() => { router.push('/'); }}
               />
               <div className="flex-1 flex flex-col overflow-hidden">
                 {children}
