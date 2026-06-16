@@ -18,6 +18,10 @@ export default function RecordListPage() {
   const [selectedPH, setSelectedPH] = useState("");
   const [selectedDesig, setSelectedDesig] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [specialGridRules, setSpecialGridRules] = useState<any[]>([]);
+  const [associateTenuredGrid, setAssociateTenuredGrid] = useState<any[]>([]);
+  const [associateVintageGrid, setAssociateVintageGrid] = useState<any[]>([]);
+  const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);
   
   // Pagination State
   const [page, setPage] = useState(1);
@@ -61,6 +65,12 @@ export default function RecordListPage() {
       if (kekaResult.success) {
         const kekaData = kekaResult.data;
         const incData = incResult.success ? incResult.data : [];
+        if (incResult.special_grid_rules) {
+            setSpecialGridRules(incResult.special_grid_rules);
+        }
+        if (incResult.associateTenuredGrid) setAssociateTenuredGrid(incResult.associateTenuredGrid);
+        if (incResult.associateVintageGrid) setAssociateVintageGrid(incResult.associateVintageGrid);
+        if (incResult.leadershipGrid) setLeadershipGrid(incResult.leadershipGrid);
         
         const mergedData = kekaData.map((emp: any) => {
           const match = incData.find((inc: any) => inc.employee_id === emp.employee_id) || {};
@@ -141,7 +151,14 @@ export default function RecordListPage() {
       {/* Dynamic Top Flow Viewer */}
       {selectedRecord && (
         <div style={{ marginBottom: 20, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--bdr)' }}>
-            <TraceEngine record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+            <TraceEngine 
+                record={selectedRecord} 
+                specialGridRules={specialGridRules} 
+                associateTenuredGrid={associateTenuredGrid}
+                associateVintageGrid={associateVintageGrid}
+                leadershipGrid={leadershipGrid}
+                onClose={() => setSelectedRecord(null)} 
+            />
         </div>
       )}
 
@@ -350,7 +367,11 @@ export default function RecordListPage() {
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: isSelected ? 'var(--acc2)' : 'var(--txt)' }}>{row.name}</div>
-                    <div style={{ fontSize: 9, color: 'var(--txt3)' }}>{row.employee_id} &bull; {row.location}</div>
+                    <div style={{ fontSize: 9, color: 'var(--txt3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {row.employee_id} 
+                      {row.is_special && <span style={{ background: '#fee2e2', color: '#ef4444', padding: '1px 4px', borderRadius: '4px', fontSize: '8px', fontWeight: 'bold' }}>SPECIAL</span>}
+                      &bull; {row.location}
+                    </div>
                   </div>
 
                   <div style={{ fontSize: 10, color: 'var(--txt2)' }}>{row.designation || '—'}</div>

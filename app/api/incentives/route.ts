@@ -14,103 +14,38 @@ async function getSession() {
 }
 
 // Associate Fixed Slab Logic (0-3 Months)
-function getAssociateFixedIncentive(collection: number, monthOfVintage: number) {
-    if (monthOfVintage === 0) {
-        if (collection >= 400000) return 16000;
-        if (collection >= 350000) return 10500;
-        if (collection >= 300000) return 9000;
-        if (collection >= 250000) return 7500;
-        if (collection >= 200000) return 6000;
-        if (collection >= 175000) return 5000;
-        if (collection >= 150000) return 4000;
-        if (collection >= 100000) return 3000;
-        if (collection >= 75000) return 2000;
-        if (collection >= 50000) return 1000;
-        if (collection >= 25000) return 500;
-    } else if (monthOfVintage === 1) {
-        if (collection >= 400000) return 16000;
-        if (collection >= 350000) return 10500;
-        if (collection >= 300000) return 9000;
-        if (collection >= 250000) return 7500;
-        if (collection >= 200000) return 5000;
-        if (collection >= 175000) return 3500;
-        if (collection >= 150000) return 2750;
-        if (collection >= 100000) return 1500;
-        if (collection >= 75000) return 500;
-    } else if (monthOfVintage === 2) {
-        if (collection >= 400000) return 16000;
-        if (collection >= 350000) return 10500;
-        if (collection >= 300000) return 9000;
-        if (collection >= 250000) return 7500;
-        if (collection >= 200000) return 4000;
-        if (collection >= 175000) return 3375;
-        if (collection >= 150000) return 2500;
-        if (collection >= 100000) return 500;
-    } else if (monthOfVintage === 3) {
-        if (collection >= 400000) return 16000;
-        if (collection >= 350000) return 10500;
-        if (collection >= 300000) return 9000;
-        if (collection >= 250000) return 7500;
-        if (collection >= 200000) return 4000;
-        if (collection >= 175000) return 2000;
-        if (collection >= 150000) return 1000;
+function getAssociateFixedIncentive(collection: number, monthOfVintage: number, grid: any[]) {
+    for (const rule of grid) {
+        if (collection >= rule.target_collection) {
+            if (monthOfVintage === 0) return parseFloat(rule.m0);
+            if (monthOfVintage === 1) return parseFloat(rule.m1);
+            if (monthOfVintage === 2) return parseFloat(rule.m2);
+            if (monthOfVintage === 3) return parseFloat(rule.m3);
+        }
     }
     return 0;
 }
 
 // Associate Percentage Slab Logic (>3 Months)
-function getAssociateTenuredIncentivePercentage(collection: number, salary: number) {
-    if (collection >= 400000) return 0.04;
-    if (collection >= 350000) return 0.0325;
-
-    if (salary > 24000) return 0; // >24k only eligible at 350k+
-
-    if (collection >= 300000) {
-        return 0.03;
-    }
-    if (collection >= 280000) {
-        if (salary <= 18000) return 0.025;
-        if (salary > 18000 && salary <= 24000) return 0.025; // Handled by salary>24k check above
-    }
-    if (collection >= 260000) {
-        if (salary <= 18000) return 0.025;
-    }
-    if (collection >= 225000) {
-        if (salary < 16000) return 0.025;
+function getAssociateTenuredIncentivePercentage(collection: number, salary: number, grid: any[]) {
+    for (const rule of grid) {
+        if (collection >= rule.target_collection) {
+            if (salary < 16000) return parseFloat(rule.under_16k) / 100;
+            if (salary >= 16000 && salary < 18000) return parseFloat(rule.between_16_18k) / 100;
+            if (salary >= 18000 && salary < 24000) return parseFloat(rule.between_18_24k) / 100;
+            return parseFloat(rule.over_24k) / 100;
+        }
     }
     return 0;
 }
 
-// TL Incentive Percentage Slab Logic
-function getTlIncentivePercentage(pcp: number) {
-    if (pcp >= 300000) return 0.0115;
-    if (pcp >= 270000) return 0.0100;
-    if (pcp >= 250000) return 0.0080;
-    if (pcp >= 230000) return 0.0070;
-    if (pcp >= 215000) return 0.0060;
-    if (pcp >= 200000) return 0.0045;
-    return 0;
-}
-
-// ATL Incentive Percentage Slab Logic
-function getAtlIncentivePercentage(pcp: number) {
-    if (pcp >= 400000) return 0.0139;
-    if (pcp >= 375000) return 0.0127;
-    if (pcp >= 350000) return 0.0120;
-    if (pcp >= 325000) return 0.0105;
-    if (pcp >= 300000) return 0.0080;
-    if (pcp >= 270000) return 0.0060;
-    return 0;
-}
-
-// AM Incentive Percentage Slab Logic
-function getAmIncentivePercentage(pcp: number) {
-    if (pcp >= 275000) return 0.0040;
-    if (pcp >= 250000) return 0.0035;
-    if (pcp >= 240000) return 0.0030;
-    if (pcp >= 235000) return 0.0025;
-    if (pcp >= 225000) return 0.0020;
-    if (pcp >= 215000) return 0.0012;
+// Leadership Incentive Percentage Slab Logic
+function getLeadershipIncentivePercentage(pcp: number, role: string, grid: any[]) {
+    for (const rule of grid) {
+        if (rule.role === role && pcp >= rule.target_collection) {
+            return parseFloat(rule.incentive_percentage) / 100;
+        }
+    }
     return 0;
 }
 
@@ -148,6 +83,9 @@ export async function GET(req: Request) {
                 // End of the selected month
                 currentCalcDate = new Date(parseInt(year), parseInt(month), 0);
             }
+        } else {
+            // Default to the end of the PREVIOUS month (since data is typically from previous month)
+            currentCalcDate = new Date(now.getFullYear(), now.getMonth(), 0);
         }
 
         // Complex Filters from Live Records
@@ -171,6 +109,22 @@ export async function GET(req: Request) {
         // 1. Fetch Master Data from Keka
         const kekaRes = await pool.query(`SELECT * FROM employee_keka_data`);
         const kekaEmployees = kekaRes.rows;
+
+        // 1.5 Fetch All Grid Rules
+        const [gridRes, tenuredRes, vintageRes, leadershipRes] = await Promise.all([
+            pool.query(`SELECT * FROM special_grid_rules ORDER BY target_collection DESC`),
+            pool.query(`SELECT * FROM associate_tenured_grid ORDER BY target_collection DESC`),
+            pool.query(`SELECT * FROM associate_vintage_grid ORDER BY target_collection DESC`),
+            pool.query(`SELECT * FROM leadership_grid ORDER BY target_collection DESC`)
+        ]);
+
+        const specialGridRules = gridRes.rows.map(r => ({
+            target_collection: parseFloat(r.target_collection),
+            incentive_percentage: parseFloat(r.incentive_percentage) / 100 // divide by 100 to get decimal e.g. 3.25 -> 0.0325
+        }));
+        const associateTenuredGrid = tenuredRes.rows;
+        const associateVintageGrid = vintageRes.rows;
+        const leadershipGrid = leadershipRes.rows;
 
         // 2. Fetch individual collections from DPF
         let queryText = `
@@ -270,13 +224,9 @@ export async function GET(req: Request) {
             const isKekaLeader = rawDesignation.includes('leader') || rawDesignation === 'tl' || rawDesignation === 'atl';
             const isKekaManager = rawDesignation.includes('manager') || rawDesignation === 'am';
 
-            if (!isKekaManager && !isKekaLeader) {
-                const isAM = Object.keys(amTeamData).some(am => nameKey.includes(am) || am.includes(firstName));
-                const isTL = Object.keys(tlTeamData).some(tl => nameKey.includes(tl) || tl.includes(firstName));
-                
-                if (isAM) designation = 'am';
-                else if (isTL) designation = 'tl';
-            }
+            if (isKekaManager) designation = 'am';
+            else if (isKekaLeader) designation = 'tl';
+            else designation = 'associate';
 
             if (outMin && !isNaN(Number(outMin)) && collection < Number(outMin)) {
                 if (!designation.includes('manager') && designation !== 'am' && !designation.includes('leader') && designation !== 'tl' && designation !== 'atl') {
@@ -305,7 +255,7 @@ export async function GET(req: Request) {
                 teamHeadcount = tlData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
 
-                incentivePercent = getAtlIncentivePercentage(pcp);
+                incentivePercent = getLeadershipIncentivePercentage(pcp, 'ATL', leadershipGrid);
                 incentive = teamCollection * incentivePercent;
 
             } else if (designation.includes('leader') || designation === 'tl') {
@@ -317,7 +267,7 @@ export async function GET(req: Request) {
                 teamHeadcount = tlData.headcount.size || 1; // avoid div by 0
                 pcp = teamCollection / teamHeadcount;
 
-                incentivePercent = getTlIncentivePercentage(pcp);
+                incentivePercent = getLeadershipIncentivePercentage(pcp, 'TL', leadershipGrid);
                 incentive = teamCollection * incentivePercent;
 
             } else if (designation.includes('manager') || designation === 'am') {
@@ -329,12 +279,22 @@ export async function GET(req: Request) {
                 teamHeadcount = amData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
 
-                incentivePercent = getAmIncentivePercentage(pcp);
+                incentivePercent = getLeadershipIncentivePercentage(pcp, 'AM', leadershipGrid);
                 incentive = teamCollection * incentivePercent;
 
             } else {
                 // Associate Logic
-                if (doc) {
+                if (kekaData?.is_special) {
+                    incentivePercent = 0;
+                    for (const rule of specialGridRules) {
+                        if (collection >= rule.target_collection) {
+                            incentivePercent = rule.incentive_percentage;
+                            break; // Because it's ordered DESC, first match is the highest applicable
+                        }
+                    }
+                    
+                    incentive = collection * incentivePercent;
+                } else if (doc) {
                     let slabMonth = -1;
                     if (vintageMonths <= 30) slabMonth = 0;
                     else if (vintageMonths <= 60) slabMonth = 1;
@@ -342,14 +302,16 @@ export async function GET(req: Request) {
                     else if (vintageMonths <= 120) slabMonth = 3;
 
                     if (slabMonth !== -1) {
-                        incentive = getAssociateFixedIncentive(collection, slabMonth);
+                        incentive = getAssociateFixedIncentive(collection, slabMonth, associateVintageGrid);
+                        incentivePercent = (collection > 0) ? incentive / collection : 0;
                     } else {
-                        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary);
+                        // >=4 months (tenured)
+                        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary, associateTenuredGrid);
                         incentive = collection * incentivePercent;
                     }
                 } else {
                     // If no DOC, assume tenured with base salary rule (worst case)
-                    incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000);
+                    incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid);
                     incentive = collection * incentivePercent;
                 }
             }
@@ -374,7 +336,8 @@ export async function GET(req: Request) {
                 team_headcount: teamHeadcount,
                 pcp: pcp,
                 incentive_percent: (incentivePercent * 100).toFixed(2) + '%',
-                incentive: incentive
+                incentive: incentive,
+                is_special: kekaData?.is_special || false
             });
         }
 
@@ -421,6 +384,7 @@ export async function GET(req: Request) {
                 groupedData[groupKey].team_headcount = res.team_headcount;
                 groupedData[groupKey].vintage = res.vintage;
                 groupedData[groupKey].salary = res.salary;
+                groupedData[groupKey].is_special = res.is_special;
                 groupedData[groupKey].tl_name = res.tl_name;
                 groupedData[groupKey].am_name = res.am_name;
                 groupedData[groupKey].aph = res.aph;
@@ -430,7 +394,14 @@ export async function GET(req: Request) {
 
         const finalData = Object.values(groupedData).sort((a: any, b: any) => b.total_collection - a.total_collection);
 
-        return NextResponse.json({ success: true, data: finalData });
+        return NextResponse.json({ 
+            success: true, 
+            data: finalData,
+            special_grid_rules: specialGridRules.map(r => ({ ...r, incentive_percentage: r.incentive_percentage * 100 })),
+            associateTenuredGrid,
+            associateVintageGrid,
+            leadershipGrid
+        });
     } catch (error) {
         console.error('Incentive Fetch Error:', error);
         return NextResponse.json({ success: false, error: 'Failed to fetch incentive data' }, { status: 500 });

@@ -33,8 +33,16 @@ export async function GET(req: Request) {
     if (monthStr && yearStr) {
       const month = parseInt(monthStr);
       const year = parseInt(yearStr);
-      queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 AND EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $2 `;
-      queryParams.push(month, year);
+      if (month !== 0 && year !== 0) {
+        queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 AND EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $2 `;
+        queryParams.push(month, year);
+      } else if (month !== 0) {
+        queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 `;
+        queryParams.push(month);
+      } else if (year !== 0) {
+        queryText += ` WHERE EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $1 `;
+        queryParams.push(year);
+      }
     }
     
     queryText += ` ORDER BY created_at DESC`;

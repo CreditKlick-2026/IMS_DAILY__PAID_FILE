@@ -56,6 +56,28 @@ export default function AdminPage() {
   const [kekaValidationView, setKekaValidationView] = useState<'summary'|'valid'|'invalid'>('summary');
   const [kekaMessage, setKekaMessage] = useState("");
   const [activeKekaJob, setActiveKekaJob] = useState<any | null>(null);
+
+  const [specialEmployees, setSpecialEmployees] = useState<any[]>([]);
+  const [specialSearch, setSpecialSearch] = useState('');
+  const [specialLoading, setSpecialLoading] = useState(false);
+  const [specialPage, setSpecialPage] = useState(1);
+  const [specialTotal, setSpecialTotal] = useState(0);
+  const [specialLimit] = useState(50);
+
+  const [specialGrid, setSpecialGrid] = useState<any[]>([]);
+  const [specialGridLoading, setSpecialGridLoading] = useState(false);
+  const [isSavingGrid, setIsSavingGrid] = useState(false);
+
+  const [activeMasterGridTab, setActiveMasterGridTab] = useState('associateTenured');
+  const [masterGrids, setMasterGrids] = useState<{
+    associateTenured: any[];
+    associateVintage: any[];
+    leadership: any[];
+    specialExceptions: any[];
+  }>({ associateTenured: [], associateVintage: [], leadership: [], specialExceptions: [] });
+  const [masterGridsLoading, setMasterGridsLoading] = useState(false);
+  const [isSavingMasterGrid, setIsSavingMasterGrid] = useState(false);
+
   const { user } = useApp();
   const router = useRouter();
 
@@ -140,8 +162,104 @@ export default function AdminPage() {
       fetchTrackerData();
     } else if (activeItem === 'clients') {
       fetchClients();
+    } else if (activeItem === 'special') {
+      fetchSpecialEmployees(specialSearch, specialPage);
+      fetchSpecialGrid();
+    } else if (activeItem === 'master-grids') {
+      fetchMasterGrids();
     }
   }, [activeItem, trackerMonth, trackerYear, deleteMonth, deleteYear]);
+
+  const fetchSpecialEmployees = (search = '', page = 1) => {
+    setSpecialLoading(true);
+    fetch(`/api/admin/special?search=${encodeURIComponent(search)}&page=${page}&limit=${specialLimit}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+            setSpecialEmployees(d.employees);
+            setSpecialTotal(d.total || 0);
+        }
+        setSpecialLoading(false);
+      })
+      .catch(() => setSpecialLoading(false));
+  };
+
+  const fetchSpecialGrid = () => {
+    setSpecialGridLoading(true);
+    fetch(`/api/admin/special-grid`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setSpecialGrid(d.data);
+        setSpecialGridLoading(false);
+      })
+      .catch(() => setSpecialGridLoading(false));
+  };
+
+  const fetchMasterGrids = () => {
+    setMasterGridsLoading(true);
+    fetch(`/api/admin/master-grids`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setMasterGrids(d.data);
+        setMasterGridsLoading(false);
+      })
+      .catch(() => setMasterGridsLoading(false));
+  };
+
+  const handleSaveMasterGrid = async (gridName: string) => {
+    setIsSavingMasterGrid(true);
+    try {
+        const res = await fetch('/api/admin/master-grids', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gridName, data: masterGrids[gridName as keyof typeof masterGrids] })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert('Failed to save grid');
+        } else {
+            alert('Grid updated successfully!');
+        }
+    } catch (e) {
+        alert('Error saving grid');
+    } finally {
+        setIsSavingMasterGrid(false);
+    }
+  };
+
+  const handleSaveGrid = async () => {
+    setIsSavingGrid(true);
+    try {
+      const res = await fetch('/api/admin/special-grid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grid: specialGrid })
+      });
+      if (res.ok) {
+          alert('Grid updated successfully');
+          fetchSpecialGrid();
+      } else {
+          alert('Failed to update grid');
+      }
+    } catch (e) {
+      alert("Error updating grid");
+    } finally {
+      setIsSavingGrid(false);
+    }
+  };
+
+  const handleToggleSpecial = async (empId: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/admin/special', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_id: empId, is_special: !currentStatus })
+      });
+      if (res.ok) fetchSpecialEmployees(specialSearch);
+    } catch (e) {
+      alert("Error updating special status");
+    }
+  };
 
   const fetchClients = () => {
     setClientsLoading(true);
@@ -457,13 +575,15 @@ export default function AdminPage() {
     { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-indigo-500" /> },
     { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} className="text-orange-500" /> },
     { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileSpreadsheet size={20} className="text-orange-600" /> },
+    { id: 'special', title: 'Special Exceptions', subtitle: 'Toggle 350k+ only rule for specific employees', icon: <AlertCircle size={20} className="text-red-500" /> },
+    { id: 'master-grids', title: 'Master Grids', subtitle: 'Dynamic matrices for normal logic', icon: <Settings size={20} className="text-purple-500" /> },
   ];
 
   const renderContent = () => {
     switch(activeItem) {
       case 'clients':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Processes & Clients</h2>
@@ -563,7 +683,7 @@ export default function AdminPage() {
         const currentDay = today.getDate();
 
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-full mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-full mx-auto min-h-full relative">
             <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-slate-800 to-slate-500 bg-clip-text text-transparent flex items-center gap-2">
@@ -680,7 +800,7 @@ export default function AdminPage() {
         );
       case 'excels':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Uploaded Excels</h2>
@@ -692,6 +812,7 @@ export default function AdminPage() {
                   value={deleteMonth}
                   onChange={(e) => setDeleteMonth(parseInt(e.target.value))}
                 >
+                  <option value={0}>All Months</option>
                   {Array.from({ length: 12 }, (_, i) => (
                     <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
                   ))}
@@ -701,6 +822,7 @@ export default function AdminPage() {
                   value={deleteYear}
                   onChange={(e) => setDeleteYear(parseInt(e.target.value))}
                 >
+                  <option value={0}>All Years</option>
                   {[2024, 2025, 2026, 2027].map(y => (
                     <option key={y} value={y}>{y}</option>
                   ))}
@@ -810,7 +932,7 @@ export default function AdminPage() {
         );
       case 'users':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
@@ -981,7 +1103,7 @@ export default function AdminPage() {
         );
       case 'keka':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Keka Upload</h2>
@@ -1216,7 +1338,7 @@ export default function AdminPage() {
         );
       case 'keka-excels':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative">
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Keka Excels</h2>
@@ -1350,6 +1472,396 @@ export default function AdminPage() {
             <Settings size={48} className="opacity-20 mb-4" />
             <h2 className="text-xl font-medium">{adminModules.find(m => m.id === activeItem)?.title}</h2>
             <p className="text-sm">Configuration section under development.</p>
+          </div>
+        );
+      case 'master-grids':
+        return (
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative overflow-y-auto">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Master Grids</h2>
+                <p className="text-muted-foreground">Manage dynamic matrices for Normal Cases logic.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 border-b">
+              {['associateTenured', 'associateVintage', 'leadership', 'specialExceptions'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveMasterGridTab(tab)}
+                  className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
+                    activeMasterGridTab === tab
+                      ? 'border-purple-600 text-purple-600'
+                      : 'border-transparent text-muted-foreground hover:text-slate-800'
+                  }`}
+                >
+                  {tab === 'associateTenured' ? 'Associate Tenured (>3M)' : 
+                   tab === 'associateVintage' ? 'Associate Vintage (0-3M)' : 
+                   tab === 'specialExceptions' ? 'Special Exceptions (>=3.5L)' : 'Leadership (TL/ATL/AM)'}
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b bg-muted/50 flex justify-between items-center">
+                <h3 className="font-bold text-slate-800">
+                  {activeMasterGridTab === 'associateTenured' ? 'Tenured Logic Matrix' : 
+                   activeMasterGridTab === 'associateVintage' ? 'Vintage Fixed Matrix' : 'Leadership Matrix'}
+                </h3>
+                <button 
+                    disabled={isSavingMasterGrid}
+                    onClick={() => handleSaveMasterGrid(activeMasterGridTab)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                >
+                    {isSavingMasterGrid ? 'Saving...' : 'Save Grid'}
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/30 text-muted-foreground border-b">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
+                      {activeMasterGridTab === 'associateTenured' && (
+                        <>
+                          <th className="px-4 py-3 font-medium">&lt;16k (%)</th>
+                          <th className="px-4 py-3 font-medium">16k-18k (%)</th>
+                          <th className="px-4 py-3 font-medium">18k-24k (%)</th>
+                          <th className="px-4 py-3 font-medium">&gt;24k (%)</th>
+                        </>
+                      )}
+                      {activeMasterGridTab === 'associateVintage' && (
+                        <>
+                          <th className="px-4 py-3 font-medium">Month 0 (₹)</th>
+                          <th className="px-4 py-3 font-medium">Month 1 (₹)</th>
+                          <th className="px-4 py-3 font-medium">Month 2 (₹)</th>
+                          <th className="px-4 py-3 font-medium">Month 3 (₹)</th>
+                        </>
+                      )}
+                      {activeMasterGridTab === 'leadership' && (
+                        <>
+                          <th className="px-4 py-3 font-medium">Role</th>
+                          <th className="px-4 py-3 font-medium">Incentive (%)</th>
+                        </>
+                      )}
+                      {activeMasterGridTab === 'specialExceptions' && (
+                        <th className="px-4 py-3 font-medium">Incentive (%)</th>
+                      )}
+                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                      {masterGridsLoading ? (
+                          <tr><td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
+                      ) : (
+                          masterGrids[activeMasterGridTab as keyof typeof masterGrids]?.map((row: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                  {activeMasterGridTab === 'leadership' && (
+                                    <td className="px-4 py-2">
+                                        <select
+                                            value={row.role || ''}
+                                            onChange={(e) => {
+                                                const newGrids = { ...masterGrids };
+                                                newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].role = e.target.value;
+                                                setMasterGrids(newGrids);
+                                            }}
+                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-purple-500 w-full"
+                                        >
+                                            <option value="TL">TL</option>
+                                            <option value="ATL">ATL</option>
+                                            <option value="AM">AM</option>
+                                        </select>
+                                    </td>
+                                  )}
+                                  <td className="px-4 py-2">
+                                      <input 
+                                          type="number" 
+                                          value={row.target_collection} 
+                                          onChange={(e) => {
+                                              const newGrids = { ...masterGrids };
+                                              newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].target_collection = e.target.value;
+                                              setMasterGrids(newGrids);
+                                          }}
+                                          className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-purple-500 w-full"
+                                      />
+                                  </td>
+                                  {activeMasterGridTab === 'associateTenured' && (
+                                    <>
+                                      {['under_16k', 'between_16_18k', 'between_18_24k', 'over_24k'].map((field) => (
+                                          <td key={field} className="px-4 py-2">
+                                              <input type="number" step="0.01" value={row[field]} onChange={(e) => {
+                                                  const newGrids = { ...masterGrids };
+                                                  newGrids.associateTenured[idx][field] = e.target.value;
+                                                  setMasterGrids(newGrids);
+                                              }} className="border rounded px-2 py-1 outline-none w-full" />
+                                          </td>
+                                      ))}
+                                    </>
+                                  )}
+                                  {activeMasterGridTab === 'associateVintage' && (
+                                    <>
+                                      {['m0', 'm1', 'm2', 'm3'].map((field) => (
+                                          <td key={field} className="px-4 py-2">
+                                              <input type="number" value={row[field]} onChange={(e) => {
+                                                  const newGrids = { ...masterGrids };
+                                                  newGrids.associateVintage[idx][field] = e.target.value;
+                                                  setMasterGrids(newGrids);
+                                              }} className="border rounded px-2 py-1 outline-none w-full" />
+                                          </td>
+                                      ))}
+                                    </>
+                                  )}
+                                  {activeMasterGridTab === 'leadership' && (
+                                    <td className="px-4 py-2">
+                                        <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
+                                            const newGrids = { ...masterGrids };
+                                            newGrids.leadership[idx].incentive_percentage = e.target.value;
+                                            setMasterGrids(newGrids);
+                                        }} className="border rounded px-2 py-1 outline-none w-full" />
+                                    </td>
+                                  )}
+                                  {activeMasterGridTab === 'specialExceptions' && (
+                                    <td className="px-4 py-2">
+                                        <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
+                                            const newGrids = { ...masterGrids };
+                                            newGrids.specialExceptions[idx].incentive_percentage = e.target.value;
+                                            setMasterGrids(newGrids);
+                                        }} className="border rounded px-2 py-1 outline-none w-full" />
+                                    </td>
+                                  )}
+                                  <td className="px-4 py-2 text-right">
+                                      <button 
+                                          onClick={() => {
+                                              const newGrids = { ...masterGrids };
+                                              newGrids[activeMasterGridTab as keyof typeof masterGrids] = newGrids[activeMasterGridTab as keyof typeof masterGrids].filter((_, i) => i !== idx);
+                                              setMasterGrids(newGrids);
+                                          }}
+                                          className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded text-xs"
+                                      >
+                                          Remove
+                                      </button>
+                                  </td>
+                              </tr>
+                          ))
+                      )}
+                      <tr>
+                          <td colSpan={10} className="px-4 py-3 bg-muted/10">
+                              <button 
+                                  onClick={() => {
+                                      const newGrids = { ...masterGrids };
+                                      if (activeMasterGridTab === 'associateTenured') {
+                                          newGrids.associateTenured.push({ target_collection: '', under_16k: '', between_16_18k: '', between_18_24k: '', over_24k: '' });
+                                      } else if (activeMasterGridTab === 'associateVintage') {
+                                          newGrids.associateVintage.push({ target_collection: '', m0: '', m1: '', m2: '', m3: '' });
+                                      } else if (activeMasterGridTab === 'leadership') {
+                                          newGrids.leadership.push({ role: 'TL', target_collection: '', incentive_percentage: '' });
+                                      } else if (activeMasterGridTab === 'specialExceptions') {
+                                          newGrids.specialExceptions.push({ target_collection: '', incentive_percentage: '' });
+                                      }
+                                      setMasterGrids(newGrids);
+                                  }}
+                                  className="text-purple-600 hover:text-purple-800 text-sm font-bold w-full text-left"
+                              >
+                                  + Add New Rule
+                              </button>
+                          </td>
+                      </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      case 'special':
+        return (
+          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Special Exceptions</h2>
+                <p className="text-muted-foreground">Force employees into the Special Exceptions bucket (flat percentage logic) regardless of vintage/salary.</p>
+              </div>
+              <div className="flex gap-2 relative">
+                <input
+                  type="text"
+                  placeholder="Search Employee ID or Name"
+                  className="pl-9 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-red-500/50"
+                  value={specialSearch}
+                  onChange={(e) => {
+                    setSpecialSearch(e.target.value);
+                    if (e.target.value.length >= 3 || e.target.value.length === 0) {
+                      fetchSpecialEmployees(e.target.value);
+                    }
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchSpecialEmployees(specialSearch)}
+                />
+                <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+                <button
+                  onClick={() => fetchSpecialEmployees(specialSearch)}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-6 items-start">
+                <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col flex-1">
+                  <div className="px-4 py-3 border-b bg-muted/50 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">Dynamic Grid Rules</h3>
+                    <button 
+                        disabled={isSavingGrid}
+                        onClick={handleSaveGrid}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                    >
+                        {isSavingGrid ? 'Saving...' : 'Save Grid'}
+                    </button>
+                  </div>
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-muted/30 text-muted-foreground border-b">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
+                        <th className="px-4 py-3 font-medium">Incentive (%)</th>
+                        <th className="px-4 py-3 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {specialGridLoading ? (
+                            <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
+                        ) : (
+                            specialGrid.map((row, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50/50">
+                                    <td className="px-4 py-2">
+                                        <input 
+                                            type="number" 
+                                            value={row.target_collection} 
+                                            onChange={(e) => {
+                                                const newGrid = [...specialGrid];
+                                                newGrid[idx].target_collection = e.target.value;
+                                                setSpecialGrid(newGrid);
+                                            }}
+                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+                                        />
+                                    </td>
+                                    <td className="px-4 py-2">
+                                        <input 
+                                            type="number" 
+                                            step="0.01"
+                                            value={row.incentive_percentage} 
+                                            onChange={(e) => {
+                                                const newGrid = [...specialGrid];
+                                                newGrid[idx].incentive_percentage = e.target.value;
+                                                setSpecialGrid(newGrid);
+                                            }}
+                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+                                        />
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                        <button 
+                                            onClick={() => {
+                                                const newGrid = specialGrid.filter((_, i) => i !== idx);
+                                                setSpecialGrid(newGrid);
+                                            }}
+                                            className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded text-xs"
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                        <tr>
+                            <td colSpan={3} className="px-4 py-3 bg-muted/10">
+                                <button 
+                                    onClick={() => setSpecialGrid([...specialGrid, { target_collection: '', incentive_percentage: '' }])}
+                                    className="text-indigo-600 hover:text-indigo-800 text-sm font-bold w-full text-left"
+                                >
+                                    + Add New Rule
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+
+            <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground border-b">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Emp ID</th>
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Designation</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium text-right">Toggle Exception</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {specialLoading ? (
+                    <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">Loading...</td></tr>
+                  ) : specialEmployees.length === 0 ? (
+                    <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">{specialSearch ? "No results found." : "No special exceptions found. Use search to add one."}</td></tr>
+                  ) : (
+                    specialEmployees.map((emp: any) => (
+                      <tr key={emp.employee_id} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-3 font-medium">{emp.employee_id}</td>
+                        <td className="px-4 py-3 font-bold text-slate-800">{emp.name}</td>
+                        <td className="px-4 py-3 text-slate-500">{emp.designation || 'N/A'}</td>
+                        <td className="px-4 py-3">
+                          {emp.is_special ? (
+                            <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200">SPECIAL APPLIED</span>
+                          ) : (
+                            <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-full text-xs font-medium border">Normal Logic</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleToggleSpecial(emp.employee_id, emp.is_special)}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                              emp.is_special 
+                                ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                                : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
+                            }`}
+                          >
+                            {emp.is_special ? 'Remove Exception' : 'Mark as Special'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              
+              {!specialLoading && specialTotal > specialLimit && (
+                <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
+                  <span className="text-sm text-muted-foreground">
+                    Showing {(specialPage - 1) * specialLimit + 1} to {Math.min(specialPage * specialLimit, specialTotal)} of {specialTotal} employees
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={specialPage === 1}
+                      onClick={() => {
+                        const newPage = specialPage - 1;
+                        setSpecialPage(newPage);
+                        fetchSpecialEmployees(specialSearch, newPage);
+                      }}
+                      className="px-3 py-1.5 border rounded-md text-sm font-medium hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      disabled={specialPage * specialLimit >= specialTotal}
+                      onClick={() => {
+                        const newPage = specialPage + 1;
+                        setSpecialPage(newPage);
+                        fetchSpecialEmployees(specialSearch, newPage);
+                      }}
+                      className="px-3 py-1.5 border rounded-md text-sm font-medium hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         );
     }

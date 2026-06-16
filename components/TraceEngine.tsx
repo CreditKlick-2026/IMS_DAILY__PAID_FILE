@@ -17,33 +17,33 @@ const CustomNode = ({ data }: any) => (
     <div className="text-sm text-slate-600 leading-relaxed font-medium space-y-1">
       {data.content && data.content.split('\n').map((line: string, i: number) => {
         if (line.includes(':')) {
-            const [k, v] = line.split(':');
-            return <div key={i} className="flex justify-between items-center"><span className="text-slate-400">{k}</span><span className="font-bold text-slate-800">{v}</span></div>;
+          const [k, v] = line.split(':');
+          return <div key={i} className="flex justify-between items-center"><span className="text-slate-400">{k}</span><span className="font-bold text-slate-800">{v}</span></div>;
         }
         return <div key={i}>{line}</div>;
       })}
     </div>
     {data.tableData && (
-        <div className="mt-4 rounded-lg overflow-hidden border border-slate-200">
-            <table className="w-full text-[11px] text-center border-collapse">
-                <thead className="bg-slate-100 text-slate-600">
-                    <tr>
-                        {data.tableData.headers.map((h: string, idx: number) => (
-                            <th key={idx} className="border border-slate-200 p-1.5 font-bold whitespace-nowrap">{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.tableData.rows.map((row: any, rIdx: number) => (
-                        <tr key={rIdx} className={row.highlighted ? "bg-amber-50" : ""}>
-                            {row.cells.map((c: any, cIdx: number) => (
-                                <td key={cIdx} className={`border border-slate-200 p-1.5 ${c.highlighted ? "bg-amber-200 font-bold text-amber-900" : "text-slate-600"}`}>{c.val}</td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+      <div className="mt-4 rounded-lg overflow-hidden border border-slate-200">
+        <table className="w-full text-[11px] text-center border-collapse">
+          <thead className="bg-slate-100 text-slate-600">
+            <tr>
+              {data.tableData.headers.map((h: string, idx: number) => (
+                <th key={idx} className="border border-slate-200 p-1.5 font-bold whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.tableData.rows.map((row: any, rIdx: number) => (
+              <tr key={rIdx} className={row.highlighted ? "bg-amber-50" : ""}>
+                {row.cells.map((c: any, cIdx: number) => (
+                  <td key={cIdx} className={`border border-slate-200 p-1.5 ${c.highlighted ? "bg-amber-200 font-bold text-amber-900" : "text-slate-600"}`}>{c.val}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     )}
     <Handle type="source" position={Position.Right} className="w-3 h-3 !bg-indigo-400 border-2 border-white" />
   </div>
@@ -51,7 +51,21 @@ const CustomNode = ({ data }: any) => (
 
 const nodeTypes = { custom: CustomNode };
 
-export default function TraceEngine({ record, onClose }: { record: any, onClose: () => void }) {
+export default function TraceEngine({
+  record,
+  specialGridRules,
+  associateTenuredGrid,
+  associateVintageGrid,
+  leadershipGrid,
+  onClose
+}: {
+  record: any,
+  specialGridRules?: any[],
+  associateTenuredGrid?: any[],
+  associateVintageGrid?: any[],
+  leadershipGrid?: any[],
+  onClose: () => void
+}) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
@@ -63,12 +77,12 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
 
   const generateFlow = (record: any) => {
     const formatCurrency = (amt: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
-    
+
     let nodesList: Node[] = [];
     let edgesList: Edge[] = [];
-    
+
     const isTlOrAm = record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl' || record.designation?.toLowerCase() === 'atl' || record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am';
-    
+
     let contentStr = `Name: ${record.name || record.employee_name}\nDesignation: ${record.designation}`;
     if (!isTlOrAm) {
       contentStr += `\nVintage: ${record.vintage} Days\nSalary: ${record.salary ? formatCurrency(record.salary) : 'N/A'}`;
@@ -93,202 +107,188 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
     let ruleName = "";
     let mathStr = "";
     if (record.designation?.toLowerCase() === 'atl') {
-        ruleName = "SME Team (ATL) Percent Slab";
-        mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      ruleName = "SME Team (ATL) Percent Slab";
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
-        ruleName = "Team Leader Percent Slab";
-        mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      ruleName = "Team Leader Percent Slab";
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else if (record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am') {
-        ruleName = "AM Percent Slab";
-        mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      ruleName = "AM Percent Slab";
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else {
-        if (record.vintage <= 120) {
-            ruleName = "Associate Fixed Slab";
-            mathStr = `Rule: Vintage <= 120 Days\nLogic: Fixed Tier Table lookup\nTarget: ${formatCurrency(record.total_collection)}`;
-        } else {
-            ruleName = "Associate Tenured Percentage";
-            mathStr = `Rule: Vintage > 120 Days\nLogic: Percentage logic\nSalary Check: ${formatCurrency(record.salary)}\nApplied Rate: ${record.incentive_percent}`;
-        }
+      if (record.is_special) {
+        ruleName = "Special Exception (>=3.5L)";
+        mathStr = `Rule: Special Exception Override\nTarget: ${formatCurrency(record.total_collection)}\nApplied Rate: ${record.incentive_percent}`;
+      } else if (record.vintage <= 120) {
+        ruleName = "Associate Fixed Slab";
+        mathStr = `Rule: Vintage <= 120 Days\nLogic: Fixed Tier Table lookup\nTarget: ${formatCurrency(record.total_collection)}`;
+      } else {
+        ruleName = "Associate Tenured Percentage";
+        mathStr = `Rule: Vintage > 120 Days\nLogic: Percentage logic\nSalary Check: ${formatCurrency(record.salary)}\nApplied Rate: ${record.incentive_percent}`;
+      }
     }
 
     let formulaNodeText = "";
     let formulaTableData: any = null;
 
-    if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
-        formulaNodeText = "";
-        const targets = [200000, 215000, 230000, 250000, 270000, 300000];
-        const rates = ['0.45%', '0.60%', '0.70%', '0.80%', '1.00%', '1.15%'];
-        const additional = ['', '', '1,449', '2,700', '4,860', '7,763'];
-        const ztText = ['', '', 'With 0 ZT', 'With 0 ZT', 'With 0 ZT', 'With 0 ZT'];
-        const deductRules = ['1 ZT - 50% Incentive', '2 ZT - 100% Incentive', '2,174', '2,700', '3,645', '4,658'];
-        const headcount = record.team_headcount || 1;
-        
-        let rowHighlightIdx = -1;
-        for (let i = targets.length - 1; i >= 0; i--) {
-            if (record.pcp >= targets[i]) {
-                rowHighlightIdx = i; break;
-            }
-        }
+    const designation = (record.designation || '').toLowerCase();
+    const vintageMonths = parseInt(record.vintage) || 0;
+    const salary = parseFloat(record.salary) || 25000;
+    const isSpecial = record.is_special || false;
 
-        formulaTableData = {
-            headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount', 'Additional', 'ZT', 'Deduction'],
-            rows: targets.map((t, i) => {
-                const totalRecovery = t * headcount;
-                const amt = totalRecovery * (parseFloat(rates[i]) / 100);
-                return {
-                    highlighted: i === rowHighlightIdx,
-                    cells: [
-                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: headcount.toString(), highlighted: false },
-                        { val: formatCurrency(totalRecovery), highlighted: false },
-                        { val: rates[i], highlighted: i === rowHighlightIdx },
-                        { val: formatCurrency(amt), highlighted: i === rowHighlightIdx },
-                        { val: additional[i], highlighted: false },
-                        { val: ztText[i], highlighted: false },
-                        { val: deductRules[i], highlighted: false }
-                    ]
-                };
-            })
-        };
-    } else if (record.designation?.toLowerCase() === 'atl') {
-        formulaNodeText = "";
-        const targets = [270000, 300000, 325000, 350000, 375000, 400000];
-        const rates = ['0.60%', '0.80%', '1.05%', '1.20%', '1.27%', '1.39%'];
-        const headcount = record.team_headcount || 1;
-        
-        let rowHighlightIdx = -1;
-        for (let i = targets.length - 1; i >= 0; i--) {
-            if (record.pcp >= targets[i]) {
-                rowHighlightIdx = i; break;
-            }
-        }
+    formulaNodeText = "Standard Logic Applied";
 
-        formulaTableData = {
-            headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'],
-            rows: targets.map((t, i) => {
-                const totalRecovery = t * headcount;
-                const amt = totalRecovery * (parseFloat(rates[i]) / 100);
-                return {
-                    highlighted: i === rowHighlightIdx,
-                    cells: [
-                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: headcount.toString(), highlighted: false },
-                        { val: formatCurrency(totalRecovery), highlighted: false },
-                        { val: rates[i], highlighted: i === rowHighlightIdx },
-                        { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
-                    ]
-                };
-            })
-        };
-    } else if (record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am') {
-        formulaNodeText = "";
-        const targets = [215000, 225000, 235000, 240000, 250000, 275000];
-        const rates = ['0.12%', '0.20%', '0.25%', '0.30%', '0.35%', '0.40%'];
-        const additional = ['', '', '1,763', '3,240', '5,250', '8,250'];
-        const ztText = ['', '', 'With 0 ZT', 'With 0 ZT', 'With 0 ZT', 'With 0 ZT'];
-        const deductRules = ['1 ZT - 25% Incentive', '2 ZT - 50% Incentive', '', '', '', ''];
-        const headcount = record.team_headcount || 1;
-        
-        let rowHighlightIdx = -1;
-        for (let i = targets.length - 1; i >= 0; i--) {
-            if (record.pcp >= targets[i]) {
-                rowHighlightIdx = i; break;
-            }
-        }
+    if (designation.includes('leader') || designation === 'tl' || designation === 'atl') {
+      const role = designation.includes('atl') ? 'ATL' : 'TL';
+      formulaNodeText = `Leadership Logic (${role}). Based on Team PCP.`;
+      const grid = leadershipGrid?.filter(r => r.role === role) || [];
+      const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+      const headcount = record.team_headcount || 1;
 
-        formulaTableData = {
-            headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount', 'Additional', 'ZT', 'Deduction if any defect is there'],
-            rows: targets.map((t, i) => {
-                const totalRecovery = t * headcount;
-                const amt = totalRecovery * (parseFloat(rates[i]) / 100);
-                return {
-                    highlighted: i === rowHighlightIdx,
-                    cells: [
-                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: headcount.toString(), highlighted: false },
-                        { val: formatCurrency(totalRecovery), highlighted: false },
-                        { val: rates[i], highlighted: i === rowHighlightIdx },
-                        { val: formatCurrency(amt), highlighted: i === rowHighlightIdx },
-                        { val: additional[i], highlighted: false },
-                        { val: ztText[i], highlighted: false },
-                        { val: deductRules[i], highlighted: false }
-                    ]
-                };
-            })
-        };
+      let rowHighlightIdx = -1;
+      for (let i = sortedGrid.length - 1; i >= 0; i--) {
+        if (record.pcp >= sortedGrid[i].target_collection) {
+          rowHighlightIdx = i; break;
+        }
+      }
+
+      formulaTableData = {
+        headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'],
+        rows: sortedGrid.map((rule, i) => {
+          const totalRecovery = rule.target_collection * headcount;
+          const amt = totalRecovery * (parseFloat(rule.incentive_percentage) / 100);
+          return {
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: headcount.toString(), highlighted: false },
+              { val: formatCurrency(totalRecovery), highlighted: false },
+              { val: parseFloat(rule.incentive_percentage).toFixed(2) + '%', highlighted: i === rowHighlightIdx },
+              { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
+            ]
+          };
+        })
+      };
+    } else if (designation.includes('manager') || designation === 'am') {
+      formulaNodeText = "Assistant Manager Logic. Based on Team PCP.";
+      const grid = leadershipGrid?.filter(r => r.role === 'AM') || [];
+      const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+      const headcount = record.team_headcount || 1;
+
+      let rowHighlightIdx = -1;
+      for (let i = sortedGrid.length - 1; i >= 0; i--) {
+        if (record.pcp >= sortedGrid[i].target_collection) {
+          rowHighlightIdx = i; break;
+        }
+      }
+
+      formulaTableData = {
+        headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount'],
+        rows: sortedGrid.map((rule, i) => {
+          const totalRecovery = rule.target_collection * headcount;
+          const amt = totalRecovery * (parseFloat(rule.incentive_percentage) / 100);
+          return {
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: headcount.toString(), highlighted: false },
+              { val: formatCurrency(totalRecovery), highlighted: false },
+              { val: parseFloat(rule.incentive_percentage).toFixed(2) + '%', highlighted: i === rowHighlightIdx },
+              { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
+            ]
+          };
+        })
+      };
     } else {
-        if (record.vintage <= 120) {
-            formulaNodeText = ""; 
-            
-            let targetColIdx = 1;
-            if (record.vintage <= 30) targetColIdx = 1;
-            else if (record.vintage <= 60) targetColIdx = 2;
-            else if (record.vintage <= 90) targetColIdx = 3;
-            else targetColIdx = 4;
+      // Associate Logic
+      if (isSpecial) {
+        formulaNodeText = "Special Exception Logic. Flat percentage payout based on special targets.";
+        
+        const grid = specialGridRules || [];
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
 
-            const targets = [25000, 50000, 75000, 100000, 150000, 175000, 200000, 250000, 300000, 350000, 400000];
-            const m0 = [500, 1000, 2000, 3000, 4000, 5000, 6000, 7500, 9000, 10500, 16000];
-            const m1 = ['', 0, 500, 1500, 2750, 3500, 5000, 7500, 9000, 10500, 16000];
-            const m2 = ['', '', '', 500, 2500, 3375, 4000, 7500, 9000, 10500, 16000];
-            const m3 = ['', '', '', '', 1000, 2000, 4000, 7500, 9000, 10500, 16000];
-
-            let rowHighlightIdx = -1;
-            for (let i = targets.length - 1; i >= 0; i--) {
-                if (record.total_collection >= targets[i]) {
-                    rowHighlightIdx = i; break;
-                }
-            }
-
-            formulaTableData = {
-                headers: ['TARGET', '0 M', '1 M', '2 M', '3 M'],
-                rows: targets.map((t, i) => ({
-                    highlighted: i === rowHighlightIdx,
-                    cells: [
-                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: formatCurrency(Number(m0[i])), highlighted: i === rowHighlightIdx && targetColIdx === 1 },
-                        { val: m1[i] !== '' ? formatCurrency(Number(m1[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 2 },
-                        { val: m2[i] !== '' ? formatCurrency(Number(m2[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 3 },
-                        { val: m3[i] !== '' ? formatCurrency(Number(m3[i])) : '', highlighted: i === rowHighlightIdx && targetColIdx === 4 }
-                    ]
-                }))
-            };
-        } else {
-            formulaNodeText = "";
-            
-            let targetColIdx = 1;
-            const s = record.salary;
-            if (s < 16000) targetColIdx = 1;
-            else if (s >= 16000 && s <= 18000) targetColIdx = 2;
-            else if (s > 18000 && s <= 24000) targetColIdx = 3;
-            else targetColIdx = 4;
-
-            const targets = [225000, 260000, 280000, 300000, 350000, 400000];
-            const s1 = ['2.50%', '2.50%', '2.50%', '3.00%', '3.25%', '4.00%'];
-            const s2 = ['0.00%', '2.50%', '2.50%', '3.00%', '3.25%', '4.00%'];
-            const s3 = ['0.00%', '0.00%', '2.50%', '3.00%', '3.25%', '4.00%'];
-            const s4 = ['0.00%', '0.00%', '0.00%', '0.00%', '3.25%', '4.00%'];
-
-            let rowHighlightIdx = -1;
-            for (let i = targets.length - 1; i >= 0; i--) {
-                if (record.total_collection >= targets[i]) {
-                    rowHighlightIdx = i; break;
-                }
-            }
-
-            formulaTableData = {
-                headers: ['Coll.', '<16k', '16-18k', '18-24k', '>24k'],
-                rows: targets.map((t, i) => ({
-                    highlighted: i === rowHighlightIdx,
-                    cells: [
-                        { val: formatCurrency(t), highlighted: i === rowHighlightIdx },
-                        { val: s1[i], highlighted: i === rowHighlightIdx && targetColIdx === 1 },
-                        { val: s2[i], highlighted: i === rowHighlightIdx && targetColIdx === 2 },
-                        { val: s3[i], highlighted: i === rowHighlightIdx && targetColIdx === 3 },
-                        { val: s4[i], highlighted: i === rowHighlightIdx && targetColIdx === 4 }
-                    ]
-                }))
-            };
+        let rowHighlightIdx = -1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.total_collection >= sortedGrid[i].target_collection) {
+            rowHighlightIdx = i; break;
+          }
         }
+
+        formulaTableData = {
+          headers: ['Target Collection', 'Incentive Percentage'],
+          rows: sortedGrid.map((rule, i) => ({
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: (parseFloat(rule.incentive_percentage) * 100).toFixed(2) + '%', highlighted: i === rowHighlightIdx }
+            ]
+          }))
+        };
+      } else if (vintageMonths <= 120) {
+        formulaNodeText = `Associate Vintage Logic (Month ${Math.floor(vintageMonths / 30) || 0}). Fixed incentive payout based on collection.`;
+
+        let targetColIdx = 1;
+        if (vintageMonths <= 30) targetColIdx = 1;
+        else if (vintageMonths <= 60) targetColIdx = 2;
+        else if (vintageMonths <= 90) targetColIdx = 3;
+        else targetColIdx = 4;
+
+        const grid = associateVintageGrid || [];
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+
+        let rowHighlightIdx = -1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.total_collection >= sortedGrid[i].target_collection) {
+            rowHighlightIdx = i; break;
+          }
+        }
+
+        formulaTableData = {
+          headers: ['TARGET', '0 M', '1 M', '2 M', '3 M'],
+          rows: sortedGrid.map((rule, i) => ({
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: formatCurrency(Number(rule.m0)), highlighted: i === rowHighlightIdx && targetColIdx === 1 },
+              { val: Number(rule.m1) > 0 ? formatCurrency(Number(rule.m1)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 2 },
+              { val: Number(rule.m2) > 0 ? formatCurrency(Number(rule.m2)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 3 },
+              { val: Number(rule.m3) > 0 ? formatCurrency(Number(rule.m3)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 4 }
+            ]
+          }))
+        };
+      } else {
+        formulaNodeText = "Associate Tenured Logic (>3 Months). Percentage incentive based on collection and salary slab.";
+
+        let colHighlightIdx = -1;
+        if (salary < 16000) colHighlightIdx = 1;
+        else if (salary >= 16000 && salary < 18000) colHighlightIdx = 2;
+        else if (salary >= 18000 && salary < 24000) colHighlightIdx = 3;
+        else colHighlightIdx = 4;
+
+        const grid = associateTenuredGrid || [];
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+
+        let rowHighlightIdx = -1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.total_collection >= sortedGrid[i].target_collection) {
+            rowHighlightIdx = i; break;
+          }
+        }
+
+        formulaTableData = {
+          headers: ['Coll.', '<16k', '16-18k', '18-24k', '>24k'],
+          rows: sortedGrid.map((rule, i) => ({
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: parseFloat(rule.under_16k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 1 },
+              { val: parseFloat(rule.between_16_18k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 2 },
+              { val: parseFloat(rule.between_18_24k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 3 },
+              { val: parseFloat(rule.over_24k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 4 }
+            ]
+          }))
+        };
+      }
     }
 
     nodesList.push({
@@ -349,13 +349,13 @@ export default function TraceEngine({ record, onClose }: { record: any, onClose:
         </button>
       </div>
       <div className="absolute top-4 left-6 z-10 bg-white/80 backdrop-blur-md px-2 py-1 rounded border border-slate-200 shadow-sm pointer-events-none">
-          <h2 className="text-[10px] font-bold text-slate-800 leading-tight">Incentive Trace Engine</h2>
-          <p className="text-[8px] font-medium text-slate-400 uppercase tracking-wide">{record.name} ({record.employee_id})</p>
+        <h2 className="text-[10px] font-bold text-slate-800 leading-tight">Incentive Trace Engine</h2>
+        <p className="text-[8px] font-medium text-slate-400 uppercase tracking-wide">{record.name} ({record.employee_id})</p>
       </div>
       <div className="flex-1 w-full relative">
-        <ReactFlow 
-          nodes={nodes} 
-          edges={edges} 
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
           nodeTypes={nodeTypes}
           fitView
           className="bg-slate-50/50"
