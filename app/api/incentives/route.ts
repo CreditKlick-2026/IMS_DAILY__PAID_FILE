@@ -54,6 +54,32 @@ function calculateVintageDays(doc: Date, currentCalcDate: Date) {
     return Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
 }
 
+function calculateAssociateIncentive(collection: number, salary: number, doc: Date | null, vintageMonths: number, associateVintageGrid: any[], associateTenuredGrid: any[]) {
+    let incentive = 0;
+    let incentivePercent = 0;
+
+    if (doc) {
+        let slabMonth = -1;
+        if (vintageMonths <= 30) slabMonth = 0;
+        else if (vintageMonths <= 60) slabMonth = 1;
+        else if (vintageMonths <= 90) slabMonth = 2;
+        else if (vintageMonths <= 120) slabMonth = 3;
+
+        if (slabMonth !== -1) {
+            incentive = getAssociateFixedIncentive(collection, slabMonth, associateVintageGrid);
+            incentivePercent = (collection > 0) ? incentive / collection : 0;
+        } else {
+            incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary, associateTenuredGrid);
+            incentive = collection * incentivePercent;
+        }
+    } else {
+        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid);
+        incentive = collection * incentivePercent;
+    }
+    
+    return { incentive, incentivePercent };
+}
+
 export async function GET(req: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -224,10 +250,15 @@ export async function GET(req: Request) {
             const isKekaLeader = rawDesignation.includes('leader') || rawDesignation === 'tl' || rawDesignation === 'atl';
             const isKekaManager = rawDesignation.includes('manager') || rawDesignation === 'am';
 
-            if (isKekaManager) designation = 'am';
-            else if (isKekaLeader) designation = 'tl';
-            else designation = 'associate';
-
+            if (rawDesignation === 'atl' || rawDesignation.includes('assistant team leader')) {
+                designation = 'atl';
+            } else if (isKekaManager) {
+                designation = 'am';
+            } else if (isKekaLeader) {
+                designation = 'tl';
+            } else {
+                designation = 'associate';
+            }
             if (outMin && !isNaN(Number(outMin)) && collection < Number(outMin)) {
                 if (!designation.includes('manager') && designation !== 'am' && !designation.includes('leader') && designation !== 'tl' && designation !== 'atl') {
                     continue; // Skip associates under min, but AM/TL still get team incentive
@@ -236,6 +267,8 @@ export async function GET(req: Request) {
 
             let incentive = 0;
             let incentivePercent = 0;
+            let individualIncentiveAmount = 0;
+            let teamIncentiveAmount = 0;
             let vintageMonths = 0;
             let pcp = 0;
             let teamCollection = 0;
@@ -249,71 +282,72 @@ export async function GET(req: Request) {
 
             if (designation === 'atl') {
                 const tlKeyMatch = Object.keys(tlTeamData).find(tl => nameKey.includes(tl) || tl.includes(firstName));
-                const tlKey = tlKeyMatch || record.tl_name?.toLowerCase().trim() || '';
+                const tlKey = tlKeyMatch || '';
                 const tlData = tlTeamData[tlKey] || { collection: 0, headcount: new Set() };
                 teamCollection = tlData.collection;
                 teamHeadcount = tlData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
-
-                incentivePercent = getLeadershipIncentivePercentage(pcp, 'ATL', leadershipGrid);
-                incentive = teamCollection * incentivePercent;
-
             } else if (designation.includes('leader') || designation === 'tl') {
-                // Team Leader Logic
                 const tlKeyMatch = Object.keys(tlTeamData).find(tl => nameKey.includes(tl) || tl.includes(firstName));
-                const tlKey = tlKeyMatch || record.tl_name?.toLowerCase().trim() || '';
+                const tlKey = tlKeyMatch || '';
                 const tlData = tlTeamData[tlKey] || { collection: 0, headcount: new Set() };
                 teamCollection = tlData.collection;
                 teamHeadcount = tlData.headcount.size || 1; // avoid div by 0
                 pcp = teamCollection / teamHeadcount;
-
-                incentivePercent = getLeadershipIncentivePercentage(pcp, 'TL', leadershipGrid);
-                incentive = teamCollection * incentivePercent;
-
             } else if (designation.includes('manager') || designation === 'am') {
-                // Assistant Manager Logic
                 const amKeyMatch = Object.keys(amTeamData).find(am => nameKey.includes(am) || am.includes(firstName));
-                const amKey = amKeyMatch || record.am_name?.toLowerCase().trim() || '';
+                const amKey = amKeyMatch || '';
                 const amData = amTeamData[amKey] || { collection: 0, headcount: new Set() };
                 teamCollection = amData.collection;
                 teamHeadcount = amData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
+            }
 
+            if (kekaData?.is_special) {
+                incentivePercent = 0;
+                for (const rule of specialGridRules) {
+                    if (collection >= rule.target_collection) {
+                        incentivePercent = rule.incentive_percentage;
+                        break; // Because it's ordered DESC, first match is the highest applicable
+                    }
+                }
+                
+                individualIncentiveAmount = collection * incentivePercent;
+                incentive = individualIncentiveAmount;
+            } else if (designation === 'atl') {
+                const teamIncentivePercent = getLeadershipIncentivePercentage(pcp, 'ATL', leadershipGrid);
+                teamIncentiveAmount = teamCollection * teamIncentivePercent;
+
+                const { incentive: indInc, incentivePercent: indIncPct } = calculateAssociateIncentive(
+                    collection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid
+                );
+                individualIncentiveAmount = indInc;
+
+                incentive = teamIncentiveAmount + individualIncentiveAmount;
+                // For reporting, we can either blend the percent or just show team percent. 
+                // Showing team percent is standard for ATL display, but the amount will be higher.
+                incentivePercent = teamIncentivePercent; 
+
+            } else if (designation.includes('leader') || designation === 'tl') {
+                // Team Leader Logic
+                incentivePercent = getLeadershipIncentivePercentage(pcp, 'TL', leadershipGrid);
+                teamIncentiveAmount = teamCollection * incentivePercent;
+                incentive = teamIncentiveAmount;
+
+            } else if (designation.includes('manager') || designation === 'am') {
+                // Assistant Manager Logic
                 incentivePercent = getLeadershipIncentivePercentage(pcp, 'AM', leadershipGrid);
-                incentive = teamCollection * incentivePercent;
+                teamIncentiveAmount = teamCollection * incentivePercent;
+                incentive = teamIncentiveAmount;
 
             } else {
                 // Associate Logic
-                if (kekaData?.is_special) {
-                    incentivePercent = 0;
-                    for (const rule of specialGridRules) {
-                        if (collection >= rule.target_collection) {
-                            incentivePercent = rule.incentive_percentage;
-                            break; // Because it's ordered DESC, first match is the highest applicable
-                        }
-                    }
-                    
-                    incentive = collection * incentivePercent;
-                } else if (doc) {
-                    let slabMonth = -1;
-                    if (vintageMonths <= 30) slabMonth = 0;
-                    else if (vintageMonths <= 60) slabMonth = 1;
-                    else if (vintageMonths <= 90) slabMonth = 2;
-                    else if (vintageMonths <= 120) slabMonth = 3;
-
-                    if (slabMonth !== -1) {
-                        incentive = getAssociateFixedIncentive(collection, slabMonth, associateVintageGrid);
-                        incentivePercent = (collection > 0) ? incentive / collection : 0;
-                    } else {
-                        // >=4 months (tenured)
-                        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary, associateTenuredGrid);
-                        incentive = collection * incentivePercent;
-                    }
-                } else {
-                    // If no DOC, assume tenured with base salary rule (worst case)
-                    incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid);
-                    incentive = collection * incentivePercent;
-                }
+                const associateData = calculateAssociateIncentive(
+                    collection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid
+                );
+                individualIncentiveAmount = associateData.incentive;
+                incentive = individualIncentiveAmount;
+                incentivePercent = associateData.incentivePercent;
             }
 
             calculatedResults.push({
@@ -337,6 +371,8 @@ export async function GET(req: Request) {
                 pcp: pcp,
                 incentive_percent: (incentivePercent * 100).toFixed(2) + '%',
                 incentive: incentive,
+                individual_incentive: individualIncentiveAmount,
+                team_incentive: teamIncentiveAmount,
                 is_special: kekaData?.is_special || false
             });
         }
@@ -359,6 +395,8 @@ export async function GET(req: Request) {
                     total_records: 0,
                     total_collection: 0,
                     incentive: 0,
+                    individual_incentive: 0,
+                    team_incentive: 0,
                     // Additional fields for detail view
                     designation: res.designation,
                     vintage: res.vintage,
@@ -376,6 +414,8 @@ export async function GET(req: Request) {
             groupedData[groupKey].total_records += 1;
             groupedData[groupKey].total_collection += res.total_collection;
             groupedData[groupKey].incentive += res.incentive;
+            groupedData[groupKey].individual_incentive += (res.individual_incentive || 0);
+            groupedData[groupKey].team_incentive += (res.team_incentive || 0);
 
             // If grouped by employee, keep precise details
             if (groupBy === 'employee_code' || groupBy === 'employee_name') {

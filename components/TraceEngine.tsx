@@ -45,6 +45,31 @@ const CustomNode = ({ data }: any) => (
         </table>
       </div>
     )}
+    {data.tables && data.tables.map((tbl: any, tIdx: number) => (
+      <div key={tIdx} className="mt-4">
+        {tbl.title && <h4 className="text-[11px] font-bold text-slate-700 mb-1.5 bg-slate-100 px-2 py-1 rounded inline-block">{tbl.title}</h4>}
+        <div className="rounded-lg overflow-hidden border border-slate-200">
+          <table className="w-full text-[11px] text-center border-collapse">
+            <thead className="bg-slate-100 text-slate-600">
+              <tr>
+                {tbl.headers.map((h: string, idx: number) => (
+                  <th key={idx} className="border border-slate-200 p-1.5 font-bold whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tbl.rows.map((row: any, rIdx: number) => (
+                <tr key={rIdx} className={row.highlighted ? "bg-amber-50" : ""}>
+                  {row.cells.map((c: any, cIdx: number) => (
+                    <td key={cIdx} className={`border border-slate-200 p-1.5 ${c.highlighted ? "bg-amber-200 font-bold text-amber-900" : "text-slate-600"}`}>{c.val}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))}
     <Handle type="source" position={Position.Right} className="w-3 h-3 !bg-indigo-400 border-2 border-white" />
   </div>
 );
@@ -106,7 +131,10 @@ export default function TraceEngine({
     // 2. Rule Selected Node
     let ruleName = "";
     let mathStr = "";
-    if (record.designation?.toLowerCase() === 'atl') {
+    if (record.is_special) {
+      ruleName = "Special Exception (>=3.5L)";
+      mathStr = `Rule: Special Exception Override\nTarget: ${formatCurrency(record.total_collection)}\nApplied Rate: ${record.incentive_percent}`;
+    } else if (record.designation?.toLowerCase() === 'atl') {
       ruleName = "SME Team (ATL) Percent Slab";
       mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
@@ -116,10 +144,7 @@ export default function TraceEngine({
       ruleName = "AM Percent Slab";
       mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
     } else {
-      if (record.is_special) {
-        ruleName = "Special Exception (>=3.5L)";
-        mathStr = `Rule: Special Exception Override\nTarget: ${formatCurrency(record.total_collection)}\nApplied Rate: ${record.incentive_percent}`;
-      } else if (record.vintage <= 120) {
+      if (record.vintage <= 120) {
         ruleName = "Associate Fixed Slab";
         mathStr = `Rule: Vintage <= 120 Days\nLogic: Fixed Tier Table lookup\nTarget: ${formatCurrency(record.total_collection)}`;
       } else {
@@ -130,17 +155,111 @@ export default function TraceEngine({
 
     let formulaNodeText = "";
     let formulaTableData: any = null;
+    let formulaTables: any[] | null = null;
 
     const designation = (record.designation || '').toLowerCase();
     const vintageMonths = parseInt(record.vintage) || 0;
     const salary = parseFloat(record.salary) || 25000;
     const isSpecial = record.is_special || false;
 
+    const getAssociateTableData = () => {
+      let tblData: any = null;
+      if (vintageMonths <= 120) {
+        let targetColIdx = 1;
+        if (vintageMonths <= 30) targetColIdx = 1;
+        else if (vintageMonths <= 60) targetColIdx = 2;
+        else if (vintageMonths <= 90) targetColIdx = 3;
+        else targetColIdx = 4;
+
+        const grid = associateVintageGrid || [];
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+
+        let rowHighlightIdx = -1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.total_collection >= sortedGrid[i].target_collection) {
+            rowHighlightIdx = i; break;
+          }
+        }
+
+        tblData = {
+          title: `Individual Payout (Vintage Month ${Math.floor(vintageMonths / 30) || 0})`,
+          headers: ['TARGET', '0 M', '1 M', '2 M', '3 M'],
+          rows: sortedGrid.map((rule, i) => ({
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: formatCurrency(Number(rule.m0)), highlighted: i === rowHighlightIdx && targetColIdx === 1 },
+              { val: Number(rule.m1) > 0 ? formatCurrency(Number(rule.m1)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 2 },
+              { val: Number(rule.m2) > 0 ? formatCurrency(Number(rule.m2)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 3 },
+              { val: Number(rule.m3) > 0 ? formatCurrency(Number(rule.m3)) : '', highlighted: i === rowHighlightIdx && targetColIdx === 4 }
+            ]
+          }))
+        };
+      } else {
+        let colHighlightIdx = -1;
+        if (salary < 16000) colHighlightIdx = 1;
+        else if (salary >= 16000 && salary < 18000) colHighlightIdx = 2;
+        else if (salary >= 18000 && salary < 24000) colHighlightIdx = 3;
+        else colHighlightIdx = 4;
+
+        const grid = associateTenuredGrid || [];
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+
+        let rowHighlightIdx = -1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.total_collection >= sortedGrid[i].target_collection) {
+            rowHighlightIdx = i; break;
+          }
+        }
+
+        tblData = {
+          title: "Individual Payout (Tenured >3 Months)",
+          headers: ['Coll.', '<16k', '16-18k', '18-24k', '>24k'],
+          rows: sortedGrid.map((rule, i) => ({
+            highlighted: i === rowHighlightIdx,
+            cells: [
+              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+              { val: parseFloat(rule.under_16k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 1 },
+              { val: parseFloat(rule.between_16_18k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 2 },
+              { val: parseFloat(rule.between_18_24k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 3 },
+              { val: parseFloat(rule.over_24k).toFixed(2) + '%', highlighted: i === rowHighlightIdx && colHighlightIdx === 4 }
+            ]
+          }))
+        };
+      }
+      return tblData;
+    };
+
     formulaNodeText = "Standard Logic Applied";
 
-    if (designation.includes('leader') || designation === 'tl' || designation === 'atl') {
+    if (isSpecial) {
+      formulaNodeText = "Special Exception Logic. Flat percentage payout based on special targets.";
+      
+      const grid = specialGridRules || [];
+      const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+
+      let rowHighlightIdx = -1;
+      for (let i = sortedGrid.length - 1; i >= 0; i--) {
+        if (record.total_collection >= sortedGrid[i].target_collection) {
+          rowHighlightIdx = i; break;
+        }
+      }
+
+      formulaTableData = {
+        headers: ['Target Collection', 'Incentive Percentage'],
+        rows: sortedGrid.map((rule, i) => ({
+          highlighted: i === rowHighlightIdx,
+          cells: [
+            { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+            { val: (parseFloat(rule.incentive_percentage) * 100).toFixed(2) + '%', highlighted: i === rowHighlightIdx }
+          ]
+        }))
+      };
+    } else if (designation.includes('leader') || designation === 'tl' || designation === 'atl') {
       const role = designation.includes('atl') ? 'ATL' : 'TL';
-      formulaNodeText = `Leadership Logic (${role}). Based on Team PCP.`;
+      formulaNodeText = role === 'ATL' 
+        ? `Dual Incentive (Player-Coach). Team payout shown below. Plus Associate-level individual payout.`
+        : `Leadership Logic (${role}). Based on Team PCP.`;
       const grid = leadershipGrid?.filter(r => r.role === role) || [];
       const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
       const headcount = record.team_headcount || 1;
@@ -152,7 +271,8 @@ export default function TraceEngine({
         }
       }
 
-      formulaTableData = {
+      const teamTableData = {
+        title: "Team Payout (Leadership Logic)",
         headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'],
         rows: sortedGrid.map((rule, i) => {
           const totalRecovery = rule.target_collection * headcount;
@@ -169,6 +289,17 @@ export default function TraceEngine({
           };
         })
       };
+
+      if (role === 'ATL') {
+        const indTable = getAssociateTableData();
+        if (indTable) {
+          formulaTables = [teamTableData, indTable];
+        } else {
+          formulaTableData = teamTableData;
+        }
+      } else {
+        formulaTableData = teamTableData;
+      }
     } else if (designation.includes('manager') || designation === 'am') {
       formulaNodeText = "Assistant Manager Logic. Based on Team PCP.";
       const grid = leadershipGrid?.filter(r => r.role === 'AM') || [];
@@ -315,11 +446,19 @@ export default function TraceEngine({
         color: 'bg-rose-50 text-rose-600 border border-rose-100',
         icon: <Percent className="w-6 h-6" />,
         content: formulaNodeText,
-        tableData: formulaTableData
+        tableData: formulaTableData,
+        tables: formulaTables
       }
     });
 
     // 4. Output Node
+    let outputContent = `Earned Incentive: ${formatCurrency(record.final_incentive || record.incentive || 0)}`;
+    if (record.designation?.toLowerCase() === 'atl' || record.designation?.toLowerCase().includes('assistant team leader')) {
+      if (!record.is_special) {
+        outputContent = `Team Payout: ${formatCurrency(record.team_incentive || 0)}\nIndividual Payout: ${formatCurrency(record.individual_incentive || 0)}\nTotal Earned: ${formatCurrency(record.final_incentive || record.incentive || 0)}`;
+      }
+    }
+
     nodesList.push({
       id: 'output',
       type: 'custom',
@@ -329,7 +468,7 @@ export default function TraceEngine({
         stripeColor: 'bg-emerald-500',
         color: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
         icon: <Wallet className="w-6 h-6" />,
-        content: `Earned Incentive: ${formatCurrency(record.final_incentive || record.incentive || 0)}`
+        content: outputContent
       }
     });
 

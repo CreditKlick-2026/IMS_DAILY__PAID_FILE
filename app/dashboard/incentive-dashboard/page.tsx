@@ -186,7 +186,7 @@ export default function IncentiveDashboard() {
             {/* Designation Chart */}
             <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm h-[350px] flex flex-col">
               <h3 className="text-sm font-bold text-[var(--txt)] mb-4">Payout by Designation</h3>
-              <div className="flex-1 min-h-0">
+              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -213,7 +213,7 @@ export default function IncentiveDashboard() {
             {/* Location Chart */}
             <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm h-[350px] flex flex-col">
               <h3 className="text-sm font-bold text-[var(--txt)] mb-4">Payout by Location</h3>
-              <div className="flex-1 min-h-0">
+              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={locChartData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bdr)" />
