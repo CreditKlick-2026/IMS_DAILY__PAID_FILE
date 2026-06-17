@@ -216,74 +216,88 @@ async function startWorker() {
              
              let processed = 0;
              let failed = 0;
+             let duplicatesCount = 0;
              let errorDetails: string[] = [];
              
              await pool.query('BEGIN');
              
-             for (let i = 0; i < dataRows.length; i++) {
-                 const row = dataRows[i];
-                 const get = (keys: string[]) => {
-                     for (const k of keys) {
-                         const target = normalize(k);
-                         const foundKey = Object.keys(row).find(r => normalize(r) === target);
-                         if (foundKey !== undefined && row[foundKey] !== undefined) {
-                             const val = row[foundKey];
-                             if (val === '') continue;
-                             const s = String(val).trim().toLowerCase();
-                             if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
-                             return val;
+             const BATCH_SIZE = 500;
+             for (let i = 0; i < dataRows.length; i += BATCH_SIZE) {
+                 const batch = dataRows.slice(i, i + BATCH_SIZE);
+                 let valueStrings = [];
+                 let params: any[] = [];
+                 let paramIdx = 1;
+                 let batchValidRows = 0;
+
+                 for (let j = 0; j < batch.length; j++) {
+                     const row = batch[j];
+                     const absoluteIndex = i + j;
+                     const get = (keys: string[]) => {
+                         for (const k of keys) {
+                             const target = normalize(k);
+                             const foundKey = Object.keys(row).find(r => normalize(r) === target);
+                             if (foundKey !== undefined && row[foundKey] !== undefined) {
+                                 const val = row[foundKey];
+                                 if (val === '') continue;
+                                 const s = String(val).trim().toLowerCase();
+                                 if (s === '-' || s === '--' || s === 'na' || s === 'n/a' || s === '#n/a' || s === 'null') return null;
+                                 return val;
+                             }
                          }
+                         return null;
+                     };
+                     
+                     const location = get(['Location']);
+                     const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE']);
+                     const name = get(['Name', 'Employee Name', 'EmpName']);
+                     const designation = get(['Designation', 'Role', 'DESIGNATION']);
+                     const agentOhr = String(get(['Agent OHR', 'AgentOHR', 'OHR']) || '');
+                     const dojRaw = get(['DOJ', 'Date of Joining']);
+                     let dojDate = null;
+                     if (dojRaw) {
+                         if (typeof dojRaw === 'number') dojDate = new Date(Math.round((dojRaw - 25569) * 86400 * 1000));
+                         else dojDate = new Date(dojRaw);
                      }
-                     return null;
-                 };
-                 
-                 const location = get(['Location']);
-                 const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE']);
-                 const name = get(['Name', 'Employee Name', 'EmpName']);
-                 const designation = get(['Designation', 'Role', 'DESIGNATION']);
-                 const agentOhr = String(get(['Agent OHR', 'AgentOHR', 'OHR']) || '');
-                 const dojRaw = get(['DOJ', 'Date of Joining']);
-                 let dojDate = null;
-                 if (dojRaw) {
-                     if (typeof dojRaw === 'number') dojDate = new Date(Math.round((dojRaw - 25569) * 86400 * 1000));
-                     else dojDate = new Date(dojRaw);
+                     const docRaw = get(['DOC', 'Date of Calling']);
+                     let docDate = null;
+                     if (docRaw) {
+                         if (typeof docRaw === 'number') docDate = new Date(Math.round((docRaw - 25569) * 86400 * 1000));
+                         else docDate = new Date(docRaw);
+                     }
+                     const tlName = get(['TL_Name', 'TL Name', 'Team Leader', 'tl', 'TL']);
+                     const amName = get(['AM', 'AM Name', 'Area Manager', 'am']);
+                     const salaryStr = String(get(['Salary', 'CTC', 'Target', 'salary']) || '0').replace(/,/g, '');
+                     const salary = parseFloat(salaryStr) || 0;
+                     
+                     if (!empCode) {
+                         failed++;
+                         errorDetails.push(`Row ${absoluteIndex + 2}: Missing Employee Code`);
+                     } else {
+                         valueStrings.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, CURRENT_TIMESTAMP)`);
+                         params.push(location, empCode, name, designation, agentOhr, dojDate, docDate, salary, tlName, amName);
+                         batchValidRows++;
+                     }
                  }
-                 const docRaw = get(['DOC', 'Date of Calling']);
-                 let docDate = null;
-                 if (docRaw) {
-                     if (typeof docRaw === 'number') docDate = new Date(Math.round((docRaw - 25569) * 86400 * 1000));
-                     else docDate = new Date(docRaw);
-                 }
-                 const tlName = get(['TL_Name', 'TL Name', 'Team Leader', 'tl', 'TL']);
-                 const amName = get(['AM', 'AM Name', 'Area Manager', 'am']);
-                 const salaryStr = String(get(['Salary', 'CTC', 'Target', 'salary']) || '0').replace(/,/g, '');
-                 const salary = parseFloat(salaryStr) || 0;
-                 
-                 if (!empCode) {
-                     failed++;
-                     errorDetails.push(`Row ${i + 2}: Missing Employee Code`);
-                 } else {
+
+                 if (valueStrings.length > 0) {
                      try {
                          const insertRes = await pool.query(`
                              INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, tl_name, am_name, updated_at)
-                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+                             VALUES ${valueStrings.join(', ')}
                              ON CONFLICT (employee_id) DO NOTHING
                              RETURNING employee_id
-                         `, [location, empCode, name, designation, agentOhr, dojDate, docDate, salary, tlName, amName]);
+                         `, params);
                          
-                         if (insertRes.rowCount === 0) {
-                             duplicatesCount++;
-                         } else {
-                             processed++;
-                         }
+                         const inserted = insertRes.rowCount || 0;
+                         processed += inserted;
+                         duplicatesCount += (batchValidRows - inserted);
                      } catch (err: any) {
-                         failed++;
-                         errorDetails.push(`Row ${i + 2} (${empCode}): Database error - ${err.message}`);
+                         failed += batchValidRows;
+                         errorDetails.push(`Batch Database error: ${err.message}`);
                      }
                  }
-                 if ((processed + duplicatesCount + failed) % 50 === 0) {
-                     await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + duplicatesCount + failed, jobId]);
-                 }
+                 
+                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + duplicatesCount + failed, jobId]);
              }
              
              if (failed > 0) {
