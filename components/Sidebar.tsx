@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { ButtonGroup, Button } from '@shopify/polaris';
-import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database, LogOut } from 'lucide-react';
+import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database, LogOut, Network } from 'lucide-react';
 
 interface SidebarProps {
   activePage: string;
@@ -58,7 +58,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     {
       id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
       Icon: LineChart, color: 'text-rose-500'
-
+    },
+    {
+      id: 'keka-master', label: 'Employee Master', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/keka-master',
+      Icon: Database, color: 'text-orange-500'
+    },
+    {
+      id: 'mapping-list', label: 'Mapping List', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/mapping-list',
+      Icon: Network, color: 'text-indigo-500'
     }
   ];
 
@@ -70,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
         } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } fixed lg:relative z-30 lg:z-10 ${!mounted ? 'transition-none' : ''}`}
     >
-      <div className="flex flex-col items-stretch gap-2 py-4 overflow-y-auto no-scrollbar flex-1 px-2 w-full">
+      <div className="flex flex-col items-stretch gap-2 py-4 overflow-y-auto flex-1 px-2 w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {navItems.filter(i => (!i.roles || i.roles.includes(user?.role))).map((item, index) => {
           const isActive = activePage === item.id;
           const Icon = item.Icon;
@@ -94,9 +101,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
           );
         })}
       </div>
-
-      {/* Spacer pushes toggle to bottom */}
-      <div className="flex-1" />
 
       {/* Bottom toggle button */}
       <div className={`flex items-center p-3 border-t border-border/50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>

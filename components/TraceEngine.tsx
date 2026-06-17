@@ -134,15 +134,75 @@ export default function TraceEngine({
     if (record.is_special) {
       ruleName = "Special Exception (>=3.5L)";
       mathStr = `Rule: Special Exception Override\nTarget: ${formatCurrency(record.total_collection)}\nApplied Rate: ${record.incentive_percent}`;
-    } else if (record.designation?.toLowerCase() === 'atl') {
+    } else if (record.designation?.toLowerCase().includes('atl') || record.designation?.toLowerCase() === 'assistant team leader') {
       ruleName = "SME Team (ATL) Percent Slab";
-      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      let appliedRateStr = record.incentive_percent;
+      let pcpStr = formatCurrency(record.pcp);
+      let headCountStr = record.team_headcount?.toString();
+      
+      // Override to display correct rate dynamically
+      if (leadershipGrid) {
+        const grid = leadershipGrid.filter(r => r.role === 'ATL');
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+        let matchedPercent = '0%';
+        const hc = record.team_headcount || 1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.team_collection >= sortedGrid[i].target_collection * 5) {
+            matchedPercent = parseFloat(sortedGrid[i].incentive_percentage).toFixed(2) + '%';
+            break;
+          }
+        }
+        appliedRateStr = matchedPercent;
+        pcpStr = formatCurrency(record.team_collection / hc);
+      }
+      
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${headCountStr}\nPCP: ${pcpStr}\nApplied Rate: ${appliedRateStr}`;
     } else if (record.designation?.toLowerCase().includes('leader') || record.designation?.toLowerCase() === 'tl') {
       ruleName = "Team Leader Percent Slab";
-      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      let appliedRateStr = record.incentive_percent;
+      let pcpStr = formatCurrency(record.pcp);
+      let headCountStr = record.team_headcount?.toString();
+      
+      // Override to display correct rate dynamically
+      if (leadershipGrid) {
+        const grid = leadershipGrid.filter(r => r.role === 'TL');
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+        let matchedPercent = '0%';
+        const hc = record.team_headcount || 1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.team_collection >= sortedGrid[i].target_collection * 9) {
+            matchedPercent = parseFloat(sortedGrid[i].incentive_percentage).toFixed(2) + '%';
+            break;
+          }
+        }
+        appliedRateStr = matchedPercent;
+        pcpStr = formatCurrency(record.team_collection / hc);
+      }
+      
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${headCountStr}\nPCP: ${pcpStr}\nApplied Rate: ${appliedRateStr}`;
     } else if (record.designation?.toLowerCase().includes('manager') || record.designation?.toLowerCase() === 'am') {
       ruleName = "AM Percent Slab";
-      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${record.team_headcount}\nPCP: ${formatCurrency(record.pcp)}\nApplied Rate: ${record.incentive_percent}`;
+      let appliedRateStr = record.incentive_percent;
+      let pcpStr = formatCurrency(record.pcp);
+      let headCountStr = record.team_headcount?.toString();
+      
+      // Override to display correct rate dynamically
+      if (leadershipGrid) {
+        const grid = leadershipGrid.filter(r => r.role === 'AM');
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+        let matchedPercent = '0%';
+        const hc = record.team_headcount || 1;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (record.team_collection >= sortedGrid[i].target_collection * 30) {
+            matchedPercent = parseFloat(sortedGrid[i].incentive_percentage).toFixed(2) + '%';
+            break;
+          }
+        }
+        appliedRateStr = matchedPercent;
+        pcpStr = formatCurrency(record.team_collection / hc);
+      }
+      
+      mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${headCountStr}\nPCP: ${pcpStr}\nApplied Rate: ${appliedRateStr}`;
     } else {
       if (record.vintage <= 120) {
         ruleName = "Associate Fixed Slab";
@@ -259,33 +319,75 @@ export default function TraceEngine({
       const role = designation.includes('atl') ? 'ATL' : 'TL';
       formulaNodeText = role === 'ATL' 
         ? `Dual Incentive (Player-Coach). Team payout shown below. Plus Associate-level individual payout.`
-        : `Leadership Logic (${role}). Based on Team PCP.`;
+        : `Leadership Logic (${role}). Based on Team Total Recovery.`;
       const grid = leadershipGrid?.filter(r => r.role === role) || [];
       const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
-      const headcount = record.team_headcount || 1;
+      let headcount = record.team_headcount || 1;
+      const targetMultiplier = role === 'ATL' ? 5 : 9;
 
       let rowHighlightIdx = -1;
       for (let i = sortedGrid.length - 1; i >= 0; i--) {
-        if (record.pcp >= sortedGrid[i].target_collection) {
+        const targetToCompare = sortedGrid[i].target_collection * targetMultiplier;
+        const actualToCompare = record.team_collection;
+        
+        if (actualToCompare >= targetToCompare) {
           rowHighlightIdx = i; break;
         }
       }
 
+      let headers = ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'];
+      if (role === 'TL') {
+        headers = ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount', 'Additional', 'ZT', 'Deduction'];
+      }
+
       const teamTableData = {
         title: "Team Payout (Leadership Logic)",
-        headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive %', 'Amount'],
+        headers: headers,
         rows: sortedGrid.map((rule, i) => {
-          const totalRecovery = rule.target_collection * headcount;
+          const totalRecovery = rule.target_collection * targetMultiplier;
           const amt = totalRecovery * (parseFloat(rule.incentive_percentage) / 100);
+
+          let additional = '';
+          let zt = '';
+          let deduction = '';
+
+          if (role === 'TL') {
+            if (rule.target_collection == 200000) {
+              deduction = '1 ZT - 50% Incentive';
+            } else if (rule.target_collection == 215000) {
+              deduction = '2 ZT - 100% Incentive';
+            } else {
+              zt = 'With 0 ZT';
+              deduction = formatCurrency(amt * 0.15); // 15% deduction
+              if (rule.target_collection == 230000) {
+                additional = formatCurrency(amt * 0.10);
+              } else if (rule.target_collection == 250000) {
+                additional = formatCurrency(amt * 0.15);
+              } else if (rule.target_collection == 270000) {
+                additional = formatCurrency(amt * 0.20);
+              } else if (rule.target_collection >= 300000) {
+                additional = formatCurrency(amt * 0.25);
+              }
+            }
+          }
+
+          const cells = [
+            { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
+            { val: headcount.toString(), highlighted: false },
+            { val: formatCurrency(totalRecovery), highlighted: false },
+            { val: parseFloat(rule.incentive_percentage).toFixed(2) + '%', highlighted: i === rowHighlightIdx },
+            { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
+          ];
+
+          if (role === 'TL') {
+            cells.push({ val: additional, highlighted: i === rowHighlightIdx });
+            cells.push({ val: zt, highlighted: i === rowHighlightIdx });
+            cells.push({ val: deduction, highlighted: i === rowHighlightIdx });
+          }
+
           return {
             highlighted: i === rowHighlightIdx,
-            cells: [
-              { val: formatCurrency(rule.target_collection), highlighted: i === rowHighlightIdx },
-              { val: headcount.toString(), highlighted: false },
-              { val: formatCurrency(totalRecovery), highlighted: false },
-              { val: parseFloat(rule.incentive_percentage).toFixed(2) + '%', highlighted: i === rowHighlightIdx },
-              { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
-            ]
+            cells
           };
         })
       };
@@ -301,23 +403,48 @@ export default function TraceEngine({
         formulaTableData = teamTableData;
       }
     } else if (designation.includes('manager') || designation === 'am') {
-      formulaNodeText = "Assistant Manager Logic. Based on Team PCP.";
+      formulaNodeText = "Assistant Manager Logic. Based on Team Total Recovery.";
       const grid = leadershipGrid?.filter(r => r.role === 'AM') || [];
       const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
       const headcount = record.team_headcount || 1;
+      const targetMultiplier = 30;
 
       let rowHighlightIdx = -1;
       for (let i = sortedGrid.length - 1; i >= 0; i--) {
-        if (record.pcp >= sortedGrid[i].target_collection) {
+        const targetToCompare = sortedGrid[i].target_collection * targetMultiplier;
+        const actualToCompare = record.team_collection;
+        if (actualToCompare >= targetToCompare) {
           rowHighlightIdx = i; break;
         }
       }
 
       formulaTableData = {
-        headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount'],
+        headers: ['PCP', 'Headcount', 'Total Recovery', 'Incentive', 'Amount', 'Additional', 'ZT', 'Deduction'],
         rows: sortedGrid.map((rule, i) => {
-          const totalRecovery = rule.target_collection * headcount;
+          const totalRecovery = rule.target_collection * targetMultiplier;
           const amt = totalRecovery * (parseFloat(rule.incentive_percentage) / 100);
+
+          let additional = '';
+          let zt = '';
+          let deduction = '';
+
+          if (rule.target_collection == 215000) {
+            deduction = '1 ZT - 25% Incentive';
+          } else if (rule.target_collection == 225000) {
+            deduction = '2 ZT - 50% Incentive';
+          } else {
+            zt = 'With 0 ZT';
+            if (rule.target_collection == 235000) {
+              additional = formatCurrency(amt * 0.10);
+            } else if (rule.target_collection == 240000) {
+              additional = formatCurrency(amt * 0.15);
+            } else if (rule.target_collection == 250000) {
+              additional = formatCurrency(amt * 0.20);
+            } else if (rule.target_collection >= 275000) {
+              additional = formatCurrency(amt * 0.25);
+            }
+          }
+
           return {
             highlighted: i === rowHighlightIdx,
             cells: [
@@ -325,7 +452,10 @@ export default function TraceEngine({
               { val: headcount.toString(), highlighted: false },
               { val: formatCurrency(totalRecovery), highlighted: false },
               { val: parseFloat(rule.incentive_percentage).toFixed(2) + '%', highlighted: i === rowHighlightIdx },
-              { val: formatCurrency(amt), highlighted: i === rowHighlightIdx }
+              { val: formatCurrency(amt), highlighted: i === rowHighlightIdx },
+              { val: additional, highlighted: i === rowHighlightIdx },
+              { val: zt, highlighted: i === rowHighlightIdx },
+              { val: deduction, highlighted: i === rowHighlightIdx }
             ]
           };
         })
@@ -452,7 +582,51 @@ export default function TraceEngine({
     });
 
     // 4. Output Node
-    let outputContent = `Earned Incentive: ${formatCurrency(record.final_incentive || record.incentive || 0)}`;
+    let finalIncentiveVal = record.final_incentive || record.incentive || 0;
+    
+    // Safety recalculate for ATL, TL & AM to combat cached API
+    const desigLower = record.designation?.toLowerCase() || '';
+    const isATL = desigLower === 'atl' || desigLower.includes('assistant team leader') || desigLower.includes('sme');
+    const isTL = !isATL && (desigLower.includes('leader') || desigLower === 'tl');
+    const isAM = desigLower.includes('manager') || desigLower === 'am';
+    
+    if (isATL || isTL || isAM) {
+      if (leadershipGrid) {
+        let role = 'TL';
+        
+        if (isATL) role = 'ATL';
+        else if (isAM) role = 'AM';
+
+        const fixedHeadcount = record.team_headcount || 1;
+
+        const grid = leadershipGrid.filter(r => r.role === role);
+        const sortedGrid = [...grid].sort((a, b) => a.target_collection - b.target_collection);
+        let matchedPercent = 0;
+        let matchedTarget = 0;
+        const targetMultiplier = role === 'ATL' ? 5 : (role === 'AM' ? 30 : 9);
+        const tCollection = parseFloat(record.team_collection as any) || 0;
+        for (let i = sortedGrid.length - 1; i >= 0; i--) {
+          if (tCollection >= sortedGrid[i].target_collection * targetMultiplier) {
+            matchedPercent = parseFloat(sortedGrid[i].incentive_percentage) / 100;
+            matchedTarget = Number(sortedGrid[i].target_collection);
+            break;
+          }
+        }
+        const baseTeamInc = tCollection * matchedPercent;
+        let additionalAmt = 0;
+        if (role === 'AM') {
+          if (matchedTarget == 235000) additionalAmt = baseTeamInc * 0.10;
+          else if (matchedTarget == 240000) additionalAmt = baseTeamInc * 0.15;
+          else if (matchedTarget == 250000) additionalAmt = baseTeamInc * 0.20;
+          else if (matchedTarget >= 275000) additionalAmt = baseTeamInc * 0.25;
+        }
+
+        const indIncentive = parseFloat(record.individual_incentive as any) || 0;
+        finalIncentiveVal = baseTeamInc + additionalAmt + indIncentive;
+      }
+    }
+
+    let outputContent = `Earned Incentive: ${formatCurrency(finalIncentiveVal)}`;
     if (record.designation?.toLowerCase() === 'atl' || record.designation?.toLowerCase().includes('assistant team leader')) {
       if (!record.is_special) {
         outputContent = `Team Payout: ${formatCurrency(record.team_incentive || 0)}\nIndividual Payout: ${formatCurrency(record.individual_incentive || 0)}\nTotal Earned: ${formatCurrency(record.final_incentive || record.incentive || 0)}`;
@@ -464,7 +638,7 @@ export default function TraceEngine({
       type: 'custom',
       position: { x: 1850, y: 150 },
       data: {
-        title: `${new Date().toLocaleString('en-US', { month: 'long' })} Payout`,
+        title: `Final Payout`,
         stripeColor: 'bg-emerald-500',
         color: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
         icon: <Wallet className="w-6 h-6" />,

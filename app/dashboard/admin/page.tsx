@@ -1307,6 +1307,12 @@ export default function AdminPage() {
                                       <span>Failed to insert {parsed.failed_count} records.</span>
                                     </div>
                                   )}
+                                  {parsed.duplicate_count > 0 && (
+                                    <div className="text-orange-600 flex items-center gap-2">
+                                      <AlertCircle className="w-4 h-4" />
+                                      <span>Ignored {parsed.duplicate_count} duplicate records (Employee already exists).</span>
+                                    </div>
+                                  )}
                                   {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> Error: {parsed.last_error}</div>}
                                   {parsed.details && Array.isArray(parsed.details) && parsed.details.length > 0 && (
                                     <div className="mt-2 max-h-32 overflow-y-auto rounded bg-red-50 p-2 border border-red-100 no-scrollbar">

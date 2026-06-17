@@ -254,6 +254,8 @@ async function startWorker() {
                      if (typeof docRaw === 'number') docDate = new Date(Math.round((docRaw - 25569) * 86400 * 1000));
                      else docDate = new Date(docRaw);
                  }
+                 const tlName = get(['TL_Name', 'TL Name', 'Team Leader', 'tl', 'TL']);
+                 const amName = get(['AM', 'AM Name', 'Area Manager', 'am']);
                  const salaryStr = String(get(['Salary', 'CTC', 'Target', 'salary']) || '0').replace(/,/g, '');
                  const salary = parseFloat(salaryStr) || 0;
                  
@@ -262,35 +264,38 @@ async function startWorker() {
                      errorDetails.push(`Row ${i + 2}: Missing Employee Code`);
                  } else {
                      try {
-                         await pool.query(`
-                             INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, updated_at)
-                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-                             ON CONFLICT (employee_id) DO UPDATE SET 
-                                 location = EXCLUDED.location, name = EXCLUDED.name, designation = EXCLUDED.designation,
-                                 agent_ohr = EXCLUDED.agent_ohr, doj = EXCLUDED.doj, doc = EXCLUDED.doc, salary = EXCLUDED.salary,
-                                 updated_at = CURRENT_TIMESTAMP
-                         `, [location, empCode, name, designation, agentOhr, dojDate, docDate, salary]);
-                         processed++;
+                         const insertRes = await pool.query(`
+                             INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, tl_name, am_name, updated_at)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+                             ON CONFLICT (employee_id) DO NOTHING
+                             RETURNING employee_id
+                         `, [location, empCode, name, designation, agentOhr, dojDate, docDate, salary, tlName, amName]);
+                         
+                         if (insertRes.rowCount === 0) {
+                             duplicatesCount++;
+                         } else {
+                             processed++;
+                         }
                      } catch (err: any) {
                          failed++;
                          errorDetails.push(`Row ${i + 2} (${empCode}): Database error - ${err.message}`);
                      }
                  }
-                 if ((processed + failed) % 50 === 0) {
-                     await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + failed, jobId]);
+                 if ((processed + duplicatesCount + failed) % 50 === 0) {
+                     await pool.query(`UPDATE upload_jobs SET processed_rows = $1 WHERE id = $2`, [processed + duplicatesCount + failed, jobId]);
                  }
              }
              
              if (failed > 0) {
                  await pool.query('ROLLBACK');
                  const finalStatus = 'FAILED';
-                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: failed, status: 'Failed', details: errorDetails }), jobId, finalStatus]);
-                 console.log(`❌ KEKA Job ${jobId} Failed! Rolled back ${processed} inserts. Errors: ${failed}`);
+                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + duplicatesCount + failed, JSON.stringify({ failed_count: failed, duplicate_count: duplicatesCount, status: 'Failed', details: errorDetails }), jobId, finalStatus]);
+                 console.log(`❌ KEKA Job ${jobId} Failed! Rolled back. Errors: ${failed}`);
              } else {
                  await pool.query('COMMIT');
                  const finalStatus = 'COMPLETED';
-                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + failed, JSON.stringify({ failed_count: 0, status: 'Success' }), jobId, finalStatus]);
-                 console.log(`🎉 KEKA Job ${jobId} Finished Successfully! Processed: ${processed}`);
+                 await pool.query(`UPDATE upload_jobs SET processed_rows = $1, status = $4, error_log = $2 WHERE id = $3`, [processed + duplicatesCount + failed, JSON.stringify({ failed_count: 0, duplicate_count: duplicatesCount, status: 'Success' }), jobId, finalStatus]);
+                 console.log(`🎉 KEKA Job ${jobId} Finished Successfully! Processed: ${processed}, Duplicates: ${duplicatesCount}`);
              }
              
         } else {
@@ -469,8 +474,8 @@ async function startWorker() {
                   get(['Location', 'location', 'City']),
                   parseFloat(String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '')) || 0,
                   get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']),
-                  get(['TL_Name', 'TL Name', 'Team Leader']),
-                  get(['AM', 'am', 'Area Manager']),
+                  get(['TL_Name', 'TL Name', 'Team Leader', 'TL', 'tl']),
+                  get(['AM', 'am', 'Area Manager', 'AM Name', 'AM_Name']),
                   get(['APH', 'aph']),
                   get(['PH', 'ph']),
                   String(get(['Phone_No', 'Phone No', 'Mobile', 'Contact']) || '').replace(/\D/g, '').slice(-10) || null,

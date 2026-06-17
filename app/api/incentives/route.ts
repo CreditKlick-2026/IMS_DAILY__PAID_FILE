@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 async function getSession() {
     const cookieStore = await cookies();
     const sessionStr = cookieStore.get('auth_session')?.value;
@@ -40,9 +42,14 @@ function getAssociateTenuredIncentivePercentage(collection: number, salary: numb
 }
 
 // Leadership Incentive Percentage Slab Logic
-function getLeadershipIncentivePercentage(pcp: number, role: string, grid: any[]) {
+function getLeadershipIncentivePercentage(teamCollection: number, role: string, grid: any[]) {
+    let fixedMultiplier = 1;
+    if (role === 'ATL') fixedMultiplier = 5;
+    else if (role === 'TL') fixedMultiplier = 9;
+    else if (role === 'AM') fixedMultiplier = 30;
+
     for (const rule of grid) {
-        if (rule.role === role && pcp >= rule.target_collection) {
+        if (rule.role === role && teamCollection >= rule.target_collection * fixedMultiplier) {
             return parseFloat(rule.incentive_percentage) / 100;
         }
     }
@@ -292,7 +299,7 @@ export async function GET(req: Request) {
                 const tlKey = tlKeyMatch || '';
                 const tlData = tlTeamData[tlKey] || { collection: 0, headcount: new Set() };
                 teamCollection = tlData.collection;
-                teamHeadcount = tlData.headcount.size || 1; // avoid div by 0
+                teamHeadcount = tlData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
             } else if (designation.includes('manager') || designation === 'am') {
                 const amKeyMatch = Object.keys(amTeamData).find(am => nameKey.includes(am) || am.includes(firstName));
@@ -315,7 +322,7 @@ export async function GET(req: Request) {
                 individualIncentiveAmount = collection * incentivePercent;
                 incentive = individualIncentiveAmount;
             } else if (designation === 'atl') {
-                const teamIncentivePercent = getLeadershipIncentivePercentage(pcp, 'ATL', leadershipGrid);
+                const teamIncentivePercent = getLeadershipIncentivePercentage(teamCollection, 'ATL', leadershipGrid);
                 teamIncentiveAmount = teamCollection * teamIncentivePercent;
 
                 const { incentive: indInc, incentivePercent: indIncPct } = calculateAssociateIncentive(
@@ -330,15 +337,30 @@ export async function GET(req: Request) {
 
             } else if (designation.includes('leader') || designation === 'tl') {
                 // Team Leader Logic
-                incentivePercent = getLeadershipIncentivePercentage(pcp, 'TL', leadershipGrid);
+                incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'TL', leadershipGrid);
                 teamIncentiveAmount = teamCollection * incentivePercent;
                 incentive = teamIncentiveAmount;
 
             } else if (designation.includes('manager') || designation === 'am') {
                 // Assistant Manager Logic
-                incentivePercent = getLeadershipIncentivePercentage(pcp, 'AM', leadershipGrid);
+                incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'AM', leadershipGrid);
                 teamIncentiveAmount = teamCollection * incentivePercent;
-                incentive = teamIncentiveAmount;
+                
+                let matchedTarget = 0;
+                for (const rule of leadershipGrid) {
+                    if (rule.role === 'AM' && teamCollection >= rule.target_collection * 30) {
+                        matchedTarget = Number(rule.target_collection);
+                        break;
+                    }
+                }
+                
+                let additionalAmount = 0;
+                if (matchedTarget == 235000) additionalAmount = teamIncentiveAmount * 0.10;
+                else if (matchedTarget == 240000) additionalAmount = teamIncentiveAmount * 0.15;
+                else if (matchedTarget == 250000) additionalAmount = teamIncentiveAmount * 0.20;
+                else if (matchedTarget >= 275000) additionalAmount = teamIncentiveAmount * 0.25;
+
+                incentive = teamIncentiveAmount + additionalAmount;
 
             } else {
                 // Associate Logic
