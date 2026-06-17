@@ -28,14 +28,14 @@ export default function IncentiveDashboard() {
         fetch('/api/keka'),
         fetch(`/api/incentives?${queryParams.toString()}`)
       ]);
-      
+
       const kekaResult = await kekaRes.json();
       const incResult = await incRes.json();
-      
+
       if (kekaResult.success) {
         const kekaData = kekaResult.data;
         const incData = incResult.success ? incResult.data : [];
-        
+
         const mergedData = kekaData.map((emp: any) => {
           const match = incData.find((inc: any) => inc.employee_id === emp.employee_id) || {};
           return {
@@ -49,7 +49,7 @@ export default function IncentiveDashboard() {
             location: match.location || emp.location || 'Unknown'
           };
         });
-        
+
         setData(mergedData);
       }
     } catch (e) {
@@ -98,30 +98,37 @@ export default function IncentiveDashboard() {
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
   return (
-    <div className="w-full h-full flex flex-col p-6 overflow-y-auto no-scrollbar bg-[var(--bg)]">
-      
+    <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+
       {/* Header & Filters */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-[var(--txt)]">Incentive Dashboard</h1>
-          <p className="text-sm text-[var(--txt3)] font-medium">In-depth analysis of collections and payouts</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            </div>
+            Incentive Dashboard
+          </h1>
+          <p className="text-sm text-slate-500 font-medium ml-13 mt-1">In-depth analysis of collections and payouts</p>
         </div>
-        
-        <div className="flex items-center gap-3">
+
+        <div className="flex flex-wrap items-center gap-3">
           <select
-            className="bg-[var(--bg2)] border border-[var(--bdr)] rounded-md px-3 py-1.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/50 text-[var(--txt)]"
+            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors cursor-pointer"
             value={filterMonth}
             onChange={e => setFilterMonth(e.target.value)}
           >
-            {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+            <option value="">All Months</option>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
               <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
             ))}
           </select>
           <select
-            className="bg-[var(--bg2)] border border-[var(--bdr)] rounded-md px-3 py-1.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/50 text-[var(--txt)]"
+            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors cursor-pointer"
             value={filterYear}
             onChange={e => setFilterYear(e.target.value)}
           >
+            <option value="">All Years</option>
             {[2024, 2025, 2026, 2027, 2028].map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -134,20 +141,7 @@ export default function IncentiveDashboard() {
               XLSX.utils.book_append_sheet(wb, ws, "Dashboard");
               XLSX.writeFile(wb, `IncentiveDashboard_${filterMonth || 'All'}_${filterYear || 'All'}.xlsx`);
             }}
-            style={{
-              background: '#4F46E5',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 16px',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)'
-            }}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-indigo-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download Excel
@@ -156,119 +150,169 @@ export default function IncentiveDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-[var(--txt3)]">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="font-bold">Analyzing Data...</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[400px]">
+          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+          <p className="font-bold tracking-wide">Analyzing Data Matrix...</p>
+        </div>
+      ) : data.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[400px] bg-white rounded-2xl border border-slate-200 border-dashed">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 mb-4"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <p className="font-bold text-lg text-slate-500">No Data Found</p>
+          <p className="text-sm">Try selecting a different month or year.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm">
-              <p className="text-xs font-bold text-[var(--txt3)] uppercase tracking-wider mb-1">Total Payout</p>
-              <h2 className="text-3xl font-black text-emerald-500">{formatCurrency(totalPayout)}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-sm shadow-emerald-100 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out"></div>
+              <p className="text-xs font-black text-emerald-600/70 uppercase tracking-widest mb-2 relative z-10">Total Payout</p>
+              <h2 className="text-3xl font-black text-emerald-600 relative z-10">{formatCurrency(totalPayout)}</h2>
             </div>
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm">
-              <p className="text-xs font-bold text-[var(--txt3)] uppercase tracking-wider mb-1">Total Collection</p>
-              <h2 className="text-3xl font-black text-amber-500">{formatCurrency(totalCollection)}</h2>
+
+            <div className="bg-white border border-amber-100 rounded-2xl p-6 shadow-sm shadow-amber-100 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out"></div>
+              <p className="text-xs font-black text-amber-600/70 uppercase tracking-widest mb-2 relative z-10">Total Collection</p>
+              <h2 className="text-3xl font-black text-amber-600 relative z-10">{formatCurrency(totalCollection)}</h2>
             </div>
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm">
-              <p className="text-xs font-bold text-[var(--txt3)] uppercase tracking-wider mb-1">Eligible Employees</p>
-              <h2 className="text-3xl font-black text-indigo-500">{eligibleEmployees} <span className="text-sm font-semibold text-[var(--txt3)]">/ {totalEmployees}</span></h2>
+
+            <div className="bg-white border border-indigo-100 rounded-2xl p-6 shadow-sm shadow-indigo-100 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out"></div>
+              <p className="text-xs font-black text-indigo-600/70 uppercase tracking-widest mb-2 relative z-10">Eligible Employees</p>
+              <div className="flex items-baseline gap-2 relative z-10">
+                <h2 className="text-3xl font-black text-indigo-600">{eligibleEmployees}</h2>
+                <span className="text-sm font-bold text-slate-400">/ {totalEmployees}</span>
+              </div>
             </div>
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm">
-              <p className="text-xs font-bold text-[var(--txt3)] uppercase tracking-wider mb-1">Avg. Incentive</p>
-              <h2 className="text-3xl font-black text-blue-500">{formatCurrency(avgIncentive)}</h2>
+
+            <div className="bg-white border border-blue-100 rounded-2xl p-6 shadow-sm shadow-blue-100 relative overflow-hidden group">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out"></div>
+              <p className="text-xs font-black text-blue-600/70 uppercase tracking-widest mb-2 relative z-10">Avg. Incentive</p>
+              <h2 className="text-3xl font-black text-blue-600 relative z-10">{formatCurrency(avgIncentive)}</h2>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Designation Chart */}
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm h-[350px] flex flex-col">
-              <h3 className="text-sm font-bold text-[var(--txt)] mb-4">Payout by Designation</h3>
-              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={desigChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({name, percent = 0}) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {desigChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: any) => formatCurrency(value)} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+            <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-2 h-6 rounded-full bg-indigo-500"></div>
+                <h3 className="text-base font-bold text-slate-800">Payout by Designation</h3>
+              </div>
+              <div style={{ width: '100%', height: 300, minHeight: 300 }}>
+                {desigChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={desigChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        label={({ name, percent = 0 }) => percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : null}
+                        labelLine={false}
+                      >
+                        {desigChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) => formatCurrency(value)}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium text-sm">No payout data available</div>
+                )}
               </div>
             </div>
 
             {/* Location Chart */}
-            <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl p-5 shadow-sm h-[350px] flex flex-col">
-              <h3 className="text-sm font-bold text-[var(--txt)] mb-4">Payout by Location</h3>
-              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={locChartData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bdr)" />
-                    <XAxis type="number" tickFormatter={(v) => formatCurrency(v).replace('₹', '')} stroke="var(--txt3)" fontSize={11} />
-                    <YAxis dataKey="name" type="category" stroke="var(--txt3)" fontSize={11} />
-                    <Tooltip cursor={{fill: 'var(--bdr)'}} formatter={(value: any) => formatCurrency(value)} />
-                    <Bar dataKey="value" fill="#8B5CF6" radius={[0, 4, 4, 0]}>
-                      {locChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+            <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-2 h-6 rounded-full bg-purple-500"></div>
+                <h3 className="text-base font-bold text-slate-800">Payout by Location</h3>
+              </div>
+              <div style={{ width: '100%', height: 300, minHeight: 300 }}>
+                {locChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={locChartData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                      <XAxis type="number" tickFormatter={(v) => `₹${(v / 1000)}k`} stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} />
+                      <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} fontWeight={600} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        cursor={{ fill: '#f8fafc' }}
+                        formatter={(value: any) => formatCurrency(value)}
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Bar dataKey="value" fill="#8B5CF6" radius={[0, 6, 6, 0]} barSize={32}>
+                        {locChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 font-medium text-sm">No payout data available</div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Top 10 Earners Table */}
-          <div className="bg-[var(--bg-top)] border border-[var(--bdr)] rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-[var(--bdr)] bg-[var(--bg2)]">
-              <h3 className="text-sm font-bold text-[var(--txt)]">Top 10 Incentive Earners</h3>
+          <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center border border-yellow-200 shadow-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <h3 className="text-base font-bold text-slate-800">Top 10 Incentive Earners</h3>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[var(--bg-top)] border-b border-[var(--bdr)]">
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase">Rank</th>
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase">Employee Name</th>
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase">Designation</th>
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase">Location</th>
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase text-right">Collection</th>
-                    <th className="py-3 px-4 text-xs font-bold text-[var(--txt3)] uppercase text-right">Incentive</th>
+                  <tr className="bg-white border-b border-slate-100">
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest">Rank</th>
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest">Employee</th>
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest">Designation</th>
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest">Location</th>
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Collection</th>
+                    <th className="py-4 px-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Incentive</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-50">
                   {topEarners.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-[var(--txt3)] text-sm font-medium">No incentive data found for this month.</td>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 text-sm font-medium">No incentive data found for this month.</td>
                     </tr>
                   ) : (
                     topEarners.map((emp, idx) => (
-                      <tr key={emp.employee_id} className="border-b border-[var(--bdr)] last:border-0 hover:bg-[var(--bg2)] transition-colors">
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${idx < 3 ? 'bg-amber-100 text-amber-600' : 'bg-[var(--bg)] text-[var(--txt3)]'}`}>
-                            {idx + 1}
+                      <tr key={emp.employee_id} className="hover:bg-slate-50/80 transition-colors group">
+                        <td className="py-4 px-6">
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-xl text-sm font-black shadow-sm border ${idx === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white border-yellow-400' :
+                            idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white border-slate-400' :
+                              idx === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white border-amber-700' :
+                                'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
+                            #{idx + 1}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-[var(--txt)] text-sm">{emp.name}</div>
-                          <div className="text-[10px] font-mono text-[var(--txt3)]">{emp.employee_id}</div>
+                        <td className="py-4 px-6">
+                          <div className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{emp.name}</div>
+                          <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">{emp.employee_id}</div>
                         </td>
-                        <td className="py-3 px-4 text-xs text-[var(--txt2)]">{emp.designation || '—'}</td>
-                        <td className="py-3 px-4 text-xs text-[var(--txt2)]">{emp.location || '—'}</td>
-                        <td className="py-3 px-4 text-sm font-bold text-[var(--txt)] text-right">{formatCurrency(emp.total_collection)}</td>
-                        <td className="py-3 px-4 text-sm font-black text-emerald-500 text-right">{formatCurrency(emp.final_incentive)}</td>
+                        <td className="py-4 px-6">
+                          <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold">{emp.designation || '—'}</span>
+                        </td>
+                        <td className="py-4 px-6 text-sm font-medium text-slate-600">{emp.location || '—'}</td>
+                        <td className="py-4 px-6 text-sm font-bold text-slate-700 text-right bg-amber-50/30 group-hover:bg-amber-50/60 transition-colors">{formatCurrency(emp.total_collection)}</td>
+                        <td className="py-4 px-6 text-sm font-black text-emerald-600 text-right bg-emerald-50/30 group-hover:bg-emerald-50/60 transition-colors">{formatCurrency(emp.final_incentive)}</td>
                       </tr>
                     ))
                   )}
