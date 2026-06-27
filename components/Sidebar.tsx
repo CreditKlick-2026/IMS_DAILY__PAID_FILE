@@ -48,6 +48,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       Icon: Settings, color: 'text-indigo-500'
     },
     {
+      id: 'rules-engine', label: 'Rules Engine', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/rules-engine',
+      Icon: Database, color: 'text-rose-500'
+    },
+
+    {
       id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
       Icon: Database, color: 'text-blue-500'
     },

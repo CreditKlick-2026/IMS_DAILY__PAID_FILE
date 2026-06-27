@@ -96,6 +96,7 @@ async function startWorker() {
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
     ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50) DEFAULT 'DPF';
+    ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS process_id INTEGER;
 
     CREATE TABLE IF NOT EXISTS dpf_records (
       id SERIAL PRIMARY KEY,
@@ -129,6 +130,7 @@ async function startWorker() {
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS is_duplicate BOOLEAN DEFAULT FALSE;
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS duplicate_of INT;
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS fraud_flag VARCHAR(255);
+    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS process_id INTEGER;
   `);
 
   let isProcessing = false;
@@ -162,9 +164,26 @@ async function startWorker() {
       const uploadAt = job.upload_at;
       const uploadedByEmpId = job.uploaded_by_employee_id;
       const uploadedByName = job.uploaded_by_name;
-      const clientOverride = job.client_override;
+      const processId = job.process_id;
 
-      console.log(`\n⏳ Found New Upload! Processing Job: ${jobId} (Type: ${jobType})`);
+      // Automatically fetch correct client/location if process is selected
+      let processClientName = null;
+      let processLocationName = null;
+      if (processId) {
+        const pRes = await pool.query(`
+          SELECT c.name as client_name, l.name as location_name 
+          FROM master_process p
+          LEFT JOIN master_client c ON p.client_id = c.id
+          LEFT JOIN master_location l ON p.location_id = l.id
+          WHERE p.id = $1
+        `, [processId]);
+        if (pRes.rows.length > 0) {
+          processClientName = pRes.rows[0].client_name;
+          processLocationName = pRes.rows[0].location_name;
+        }
+      }
+
+      console.log(`\n⏳ Found New Upload! Processing Job: ${jobId} (Type: ${jobType}, Process: ${processId || 'None'})`);
       
       let currentFilePath = '';
       let decFilePath = '';
@@ -477,15 +496,15 @@ async function startWorker() {
                   return null;
                 };
                 
-                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
                 values.push(
                   get(['Account_No', 'Account No', 'LAN', 'Loan No']),
                   get(['Employee_Code', 'Employee Code', 'EmpCode']),
                   get(['Employee_Name', 'Employee Name', 'EmpName']),
-                  clientOverride ? clientOverride : get(['Client', 'client', 'Customer']),
+                  processClientName ? processClientName : get(['Client', 'client', 'Customer']),
                   get(['Product', 'product', 'Scheme']),
                   get(['Bucket', 'bucket', 'Delinquency']),
-                  get(['Location', 'location', 'City']),
+                  processLocationName ? processLocationName : get(['Location', 'location', 'City']),
                   parseFloat(String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '')) || 0,
                   get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']),
                   get(['TL_Name', 'TL Name', 'Team Leader', 'TL', 'tl']),
@@ -498,13 +517,14 @@ async function startWorker() {
                   uploadedByEmpId,
                   uploadedByName,
                   row._isDuplicate ? true : false,
-                  row._duplicateReason || null
+                  row._duplicateReason || null,
+                  processId || null
                 );
               }
 
               await client.query(`
                 INSERT INTO dpf_records 
-                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag)
+                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag, process_id)
                 VALUES ${placeholders.join(', ')}
               `, values);
               processed += batch.length;

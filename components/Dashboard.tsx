@@ -152,8 +152,14 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
           <div>
             {user?.name && (
-              <div className="text-xl font-bold text-foreground mb-1">
-                Welcome, <span className="text-primary">{user.name}</span>
+              <div className="text-xl font-bold text-foreground mb-1 flex items-center gap-3">
+                <span>Welcome, <span className="text-primary">{user.name}</span></span>
+                {user.location && (
+                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200 font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {user.location}
+                  </span>
+                )}
               </div>
             )}
             <div className="text-sm font-bold text-foreground flex items-center gap-2">

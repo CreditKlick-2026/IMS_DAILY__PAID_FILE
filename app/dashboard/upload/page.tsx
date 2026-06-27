@@ -62,13 +62,13 @@ export default function UploadPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [targetEmployeeId, setTargetEmployeeId] = useState<string>('');
   
-  const [clientsList, setClientsList] = useState<any[]>([]);
-  const [selectedClient, setSelectedClient] = useState<string>('');
+  const [processesList, setProcessesList] = useState<any[]>([]);
+  const [selectedProcess, setSelectedProcess] = useState<string>('');
 
   useEffect(() => {
-    // Fetch clients
-    fetch('/api/admin/clients').then(r => r.json()).then(d => {
-      if (d.success) setClientsList(d.clients);
+    // Fetch processes
+    fetch('/api/universal/processes').then(r => r.json()).then(d => {
+      if (d.success) setProcessesList(d.data);
     });
 
     if (user?.role === 'admin') {
@@ -375,7 +375,7 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (!file || (validationResult && !validationResult.isValid)) return;
     
-    if (!selectedClient) {
+    if (!selectedProcess) {
       setMessage("Error: Please select a Process from the dropdown before uploading!");
       return;
     }
@@ -390,8 +390,8 @@ export default function UploadPage() {
     if (selectedDate) {
       formData.append('upload_at', selectedDate);
     }
-    if (selectedClient) {
-      formData.append('client_override', selectedClient);
+    if (selectedProcess) {
+      formData.append('process_id', selectedProcess);
     }
     if (user?.employee_id) formData.append('employee_id', user.employee_id);
     if (user?.name) formData.append('name', user.name);
@@ -578,12 +578,12 @@ export default function UploadPage() {
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Process:</span>
                     <select 
                       className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/50"
-                      value={selectedClient}
-                      onChange={e => setSelectedClient(e.target.value)}
+                      value={selectedProcess}
+                      onChange={e => setSelectedProcess(e.target.value)}
                     >
                       <option value="">-- Select Process --</option>
-                      {clientsList.map(c => (
-                        <option key={c.id} value={c.client_name}>{c.client_name}</option>
+                      {processesList.map(p => (
+                        <option key={p.id} value={p.id}>{p.location_name} | {p.client_name} - {p.name}</option>
                       ))}
                     </select>
                   </div>
@@ -756,8 +756,8 @@ export default function UploadPage() {
 
                   <Button
                     onClick={handleUpload}
-                    disabled={!file || uploading || !validationResult?.isValid || !selectedDate}
-                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedClient) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    disabled={!file || uploading || !validationResult?.isValid || !selectedDate || !selectedProcess}
+                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedProcess) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     size="lg"
                   >
                     {uploading ? (

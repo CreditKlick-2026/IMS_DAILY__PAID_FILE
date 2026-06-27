@@ -20,37 +20,15 @@ export default function IncentiveDashboard() {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
-      queryParams.append('groupBy', 'employee_code');
       if (filterMonth) queryParams.append('month', filterMonth);
       if (filterYear) queryParams.append('year', filterYear);
 
-      const [kekaRes, incRes] = await Promise.all([
-        fetch('/api/keka'),
-        fetch(`/api/incentives?${queryParams.toString()}`)
-      ]);
+      const res = await fetch(`/api/universal/dashboard?${queryParams.toString()}`);
+      const result = await res.json();
 
-      const kekaResult = await kekaRes.json();
-      const incResult = await incRes.json();
-
-      if (kekaResult.success) {
-        const kekaData = kekaResult.data;
-        const incData = incResult.success ? incResult.data : [];
-
-        const mergedData = kekaData.map((emp: any) => {
-          const match = incData.find((inc: any) => inc.employee_id === emp.employee_id) || {};
-          return {
-            ...emp,
-            ...match,
-            final_incentive: match.incentive || 0,
-            total_collection: match.total_collection || 0,
-            am_name: match.am_name || emp.am_name || '—',
-            tl_name: match.tl_name || emp.tl_name || '—',
-            designation: match.designation || emp.designation || '—',
-            location: match.location || emp.location || 'Unknown'
-          };
-        });
-
-        setData(mergedData);
+      if (result.success) {
+        // Data is already joined in the backend now!
+        setData(result.data);
       }
     } catch (e) {
       console.error(e);

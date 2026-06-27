@@ -7,7 +7,6 @@ export default function Home() {
   const [authData, setAuthData] = useState({ employee_id: '', password: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [userType, setUserType] = useState("user");
-  const [location, setLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e?: React.FormEvent) => {
@@ -20,8 +19,7 @@ export default function Home() {
         body: JSON.stringify({
           employee_id: authData.employee_id,
           password: authData.password,
-          role: userType,
-          location: userType === 'user' ? location : null
+          role: userType
         })
       });
 
@@ -82,24 +80,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Location Dropdown (Only for Users) */}
-              {userType === 'user' && (
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium leading-none text-foreground">Location</label>
-                  <select
-                    required
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="">Select Location</option>
-                    <option value="UN">Uttam Nagar (UN)</option>
-                    <option value="Puna">Puna (Puna)</option>
-                    <option value="Noida">Noida (Noida)</option>
-                    <option value="GGN">Gurugram (GGN)</option>
-                  </select>
-                </div>
-              )}
+
 
               {/* Emp ID Input */}
               <div className="grid gap-2">

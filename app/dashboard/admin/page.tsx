@@ -569,14 +569,12 @@ export default function AdminPage() {
   };
 
   const adminModules = [
-    { id: 'clients', title: 'Processes / Clients', subtitle: 'Manage available clients for data upload', icon: <Layers size={20} className="text-pink-500" /> },
+    { id: 'rules-engine', title: 'Universal Rules Engine', subtitle: 'Manage Clients, Plans, & Master Grids dynamically', icon: <Settings size={20} className="text-purple-600" />, link: '/dashboard/rules-engine' },
     { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} className="text-emerald-500" /> },
     { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} className="text-blue-500" /> },
     { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-indigo-500" /> },
     { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} className="text-orange-500" /> },
     { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileSpreadsheet size={20} className="text-orange-600" /> },
-    { id: 'special', title: 'Special Exceptions', subtitle: 'Toggle 350k+ only rule for specific employees', icon: <AlertCircle size={20} className="text-red-500" /> },
-    { id: 'master-grids', title: 'Master Grids', subtitle: 'Dynamic matrices for normal logic', icon: <Settings size={20} className="text-purple-500" /> },
   ];
 
   const renderContent = () => {

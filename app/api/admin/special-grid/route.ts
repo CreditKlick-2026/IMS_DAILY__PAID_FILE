@@ -9,7 +9,15 @@ const pool = new Pool({
 
 export async function GET(req: Request) {
     try {
-        const { rows } = await pool.query(`SELECT id, target_collection, incentive_percentage FROM special_grid_rules ORDER BY target_collection ASC`);
+        const { searchParams } = new URL(req.url);
+        const process_id = searchParams.get('process_id');
+        let query = `SELECT id, target_collection, incentive_percentage FROM special_grid_rules WHERE process_id IS NULL ORDER BY target_collection ASC`;
+        let params: any[] = [];
+        if (process_id) {
+            query = `SELECT id, target_collection, incentive_percentage FROM special_grid_rules WHERE process_id = $1 ORDER BY target_collection ASC`;
+            params = [process_id];
+        }
+        const { rows } = await pool.query(query, params);
         return NextResponse.json({ success: true, data: rows });
     } catch (error: any) {
         console.error('Error fetching special grid:', error);
@@ -20,22 +28,25 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { grid } = body;
+        const { grid, process_id } = body;
 
         if (!Array.isArray(grid)) {
             return NextResponse.json({ success: false, error: 'grid array is required' }, { status: 400 });
+        }
+        if (!process_id) {
+            return NextResponse.json({ success: false, error: 'process_id is required' }, { status: 400 });
         }
 
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            await client.query('TRUNCATE TABLE special_grid_rules');
+            await client.query('DELETE FROM special_grid_rules WHERE process_id = $1', [process_id]);
             
             for (const row of grid) {
                 if (row.target_collection != null && row.incentive_percentage != null) {
                     await client.query(
-                        `INSERT INTO special_grid_rules (target_collection, incentive_percentage) VALUES ($1, $2)`,
-                        [parseFloat(row.target_collection), parseFloat(row.incentive_percentage)]
+                        `INSERT INTO special_grid_rules (target_collection, incentive_percentage, process_id) VALUES ($1, $2, $3)`,
+                        [parseFloat(row.target_collection), parseFloat(row.incentive_percentage), process_id]
                     );
                 }
             }

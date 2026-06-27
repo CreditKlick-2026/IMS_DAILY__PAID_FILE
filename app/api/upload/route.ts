@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const file = formData.get('file') as File;
     const password = formData.get('password') as string || null;
     const uploadAt = formData.get('upload_at') as string || null;
-    const clientOverride = formData.get('client_override') as string || null;
+    const processId = formData.get('process_id') as string || null;
     const employeeId = formData.get('employee_id') as string || null;
     const employeeName = formData.get('name') as string || null;
     const targetEmployeeId = formData.get('target_employee_id') as string || employeeId;
@@ -49,15 +49,15 @@ export async function POST(req: Request) {
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS target_employee_id VARCHAR(100);
-      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS client_override VARCHAR(255);
+      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS process_id INTEGER;
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS is_edited_by_admin BOOLEAN DEFAULT FALSE;
     `);
 
     // 3. Create the Job Entry as 'PENDING'
     await query(`
-      INSERT INTO upload_jobs (id, file_path, file_data, password, upload_at, client_override, uploaded_by_employee_id, uploaded_by_name, status, target_employee_id) 
+      INSERT INTO upload_jobs (id, file_path, file_data, password, upload_at, process_id, uploaded_by_employee_id, uploaded_by_name, status, target_employee_id) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PENDING', $9)
-    `, [jobId, fileName, base64Data, password, uploadAt, clientOverride, employeeId, employeeName, targetEmployeeId]);
+    `, [jobId, fileName, base64Data, password, uploadAt, processId ? parseInt(processId) : null, employeeId, employeeName, targetEmployeeId]);
 
     // Track Audit Log
     await logAudit(
