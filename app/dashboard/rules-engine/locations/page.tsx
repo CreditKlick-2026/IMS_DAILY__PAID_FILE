@@ -109,7 +109,7 @@ export default function LocationsPage() {
             <input
               autoFocus
               type="text"
-              placeholder="Enter location name (e.g. Mumbai, Delhi)..."
+              placeholder="Enter location name (e.g. Gurugram, Pune)..."
               className="flex-1 px-4 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}

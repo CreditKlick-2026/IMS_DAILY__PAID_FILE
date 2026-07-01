@@ -113,7 +113,7 @@ async function startWorker() {
       am               VARCHAR(255),
       aph              VARCHAR(255),
       ph               VARCHAR(255),
-      phone_no         VARCHAR(30),
+      mobile_no         VARCHAR(30),
       job_id           UUID,
       upload_at        DATE,
       uploaded_by_employee_id VARCHAR(100),
@@ -130,7 +130,7 @@ async function startWorker() {
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS is_duplicate BOOLEAN DEFAULT FALSE;
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS duplicate_of INT;
     ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS fraud_flag VARCHAR(255);
-    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS process_id INTEGER;
+    ALTER TABLE dpf_records ADD COLUMN IF NOT EXISTS client_id INTEGER;
   `);
 
   let isProcessing = false;
@@ -164,22 +164,35 @@ async function startWorker() {
       const uploadAt = job.upload_at;
       const uploadedByEmpId = job.uploaded_by_employee_id;
       const uploadedByName = job.uploaded_by_name;
-      const processId = job.process_id;
+      const processId = job.client_id || job.process_id;
+      const jobLocationId = job.location_id;
+      const productType = job.product_type;
 
-      // Automatically fetch correct client/location if process is selected
-      let processClientName = null;
-      let processLocationName = null;
+      // Automatically fetch correct client/location from admin-selected client
+      let processClientName: string | null = null;
+      let processLocationName: string | null = null;
       if (processId) {
+        // processId here is actually the client_id from master_client
         const pRes = await pool.query(`
-          SELECT c.name as client_name, l.name as location_name 
-          FROM master_process p
-          LEFT JOIN master_client c ON p.client_id = c.id
-          LEFT JOIN master_location l ON p.location_id = l.id
-          WHERE p.id = $1
+          SELECT 
+            c.name as client_name,
+            l.name as location_name 
+          FROM master_client c
+          LEFT JOIN client_location_mapping clm ON c.id = clm.client_id
+          LEFT JOIN master_location l ON clm.location_id = l.id
+          WHERE c.id = $1
+          LIMIT 1
         `, [processId]);
         if (pRes.rows.length > 0) {
           processClientName = pRes.rows[0].client_name;
           processLocationName = pRes.rows[0].location_name;
+        }
+      }
+      // Location_id from upload form takes highest priority
+      if (jobLocationId) {
+        const lRes = await pool.query(`SELECT name FROM master_location WHERE id = $1`, [jobLocationId]);
+        if (lRes.rows.length > 0) {
+          processLocationName = lRes.rows[0].name;
         }
       }
 
@@ -374,7 +387,7 @@ async function startWorker() {
           throw new Error("No matching headers found in any sheet.");
         }
 
-        // ─── PRE-VALIDATION: FILTER FRAUDS & DUPLICATES BEFORE INSERT ─────────────────
+        // ─── PRE-VALIDATION: FILTER DUPLICATES BEFORE INSERT ─────────────────
         const allAccountNos = bestSheetData.map(row => {
           const get = (keys: string[]) => {
             for (const k of keys) {
@@ -389,27 +402,28 @@ async function startWorker() {
 
         const uniqueAccounts = [...new Set(allAccountNos)];
         
-        let existingRecords: any[] = [];
+        // Fetch ALL existing records for same accounts in same month/year
+        // Duplicate = same account_no already uploaded in same month (regardless of amount/mode)
+        const existingAccountSet = new Set<string>();
         if (uniqueAccounts.length > 0) {
           console.log(`🔍 Fetching existing records for ${uniqueAccounts.length} unique accounts to check duplicates...`);
-          // Chunk unique accounts to avoid query size limits
           for (let i = 0; i < uniqueAccounts.length; i += 1000) {
              const chunk = uniqueAccounts.slice(i, i + 1000);
              const res = await pool.query(`
-               SELECT account_no, money_collected, payment_mode, employee_code, upload_at 
+               SELECT DISTINCT account_no
                FROM dpf_records 
                WHERE account_no = ANY($1) 
                  AND EXTRACT(MONTH FROM upload_at) = EXTRACT(MONTH FROM $2::date)
                  AND EXTRACT(YEAR FROM upload_at) = EXTRACT(YEAR FROM $2::date)
              `, [chunk, uploadAt]);
-             existingRecords.push(...res.rows);
+             res.rows.forEach((r: any) => existingAccountSet.add(String(r.account_no)));
           }
         }
 
         const validData = [];
         let totalDups = 0;
         
-        const intraFileSet = new Set(); // to detect duplicates within the same file
+        const intraFileSet = new Set<string>(); // detect same account_no within the same file
 
         for (const row of bestSheetData) {
             const get = (keys: string[]) => {
@@ -421,40 +435,23 @@ async function startWorker() {
               return null;
             };
             
-            const accNo = get(['Account_No', 'Account No', 'LAN', 'Loan No']);
-            const moneyStr = String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '');
-            const money = parseFloat(moneyStr) || 0;
-            const payMode = String(get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']) || '').toLowerCase();
-            const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode']);
-            
-            // 2. Intra-file duplicate
-            const intraKey = `${accNo}_${money}_${payMode}`;
-            if (intraFileSet.has(intraKey)) {
+            const accNo = String(get(['Account_No', 'Account No', 'LAN', 'Loan No']) || '');
+
+            // 1. Intra-file duplicate: same account_no seen again in this file
+            if (intraFileSet.has(accNo)) {
                 totalDups++;
                 row._isDuplicate = true;
-                row._duplicateReason = 'EXACT_DUPLICATE';
+                row._duplicateReason = 'INTRA_FILE_DUPLICATE';
             }
             
-            // 3. Database existing checks
-            let isBad = false;
-            const matches = existingRecords.filter(r => r.account_no == accNo);
-            
-            for (const match of matches) {
-                const dbMoney = parseFloat(match.money_collected) || 0;
-                const dbPayMode = String(match.payment_mode || '').toLowerCase();
-
-                // Exact Duplicate
-                if (dbMoney === money && dbPayMode === payMode) {
-                   isBad = true; totalDups++; break;
-                }
-            }
-            
-            if (isBad && !row._isDuplicate) {
+            // 2. DB duplicate: same account_no already exists in same month/year
+            if (!row._isDuplicate && accNo && existingAccountSet.has(accNo)) {
+                totalDups++;
                 row._isDuplicate = true;
-                row._duplicateReason = 'EXACT_DUPLICATE';
+                row._duplicateReason = 'ALREADY_UPLOADED_THIS_MONTH';
             }
             
-            intraFileSet.add(intraKey);
+            intraFileSet.add(accNo);
             validData.push(row);
         }
         
@@ -496,22 +493,26 @@ async function startWorker() {
                   return null;
                 };
                 
-                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
                 values.push(
                   get(['Account_No', 'Account No', 'LAN', 'Loan No']),
                   get(['Employee_Code', 'Employee Code', 'EmpCode']),
                   get(['Employee_Name', 'Employee Name', 'EmpName']),
-                  processClientName ? processClientName : get(['Client', 'client', 'Customer']),
-                  get(['Product', 'product', 'Scheme']),
+                   // Use admin-set client name (never from Excel)
+                  processClientName || get(['Client', 'client', 'Customer']),
+                  // Use admin-set product type (never from Excel)
+                  productType || get(['Product', 'product', 'Scheme']),
                   get(['Bucket', 'bucket', 'Delinquency']),
-                  processLocationName ? processLocationName : get(['Location', 'location', 'City']),
-                  parseFloat(String(get(['Money_Collected', 'Money Collected', 'Amount']) || '0').replace(/,/g, '')) || 0,
+                  // Use admin-set location (never from Excel)
+                  processLocationName || get(['Location', 'location', 'City']),
+                  parseFloat(String(get(['Money_Collected', 'Money Collected', 'Money Collect', 'Amount']) || '0').replace(/,/g, '')) || 0,
                   get(['Payment_Mode', 'Payment Mode', 'Mode of Payment']),
                   get(['TL_Name', 'TL Name', 'Team Leader', 'TL', 'tl']),
                   get(['AM', 'am', 'Area Manager', 'AM Name', 'AM_Name']),
+                  get(['CM', 'cm', 'Collection Manager']),
                   get(['APH', 'aph']),
                   get(['PH', 'ph']),
-                  String(get(['Phone_No', 'Phone No', 'Mobile', 'Contact']) || '').replace(/\D/g, '').slice(-10) || null,
+                  String(get(['Phone_No', 'Phone No', 'Mobile No', 'Mobile', 'Contact', 'Phone Number', 'Phone_Number']) || '').replace(/\D/g, '').slice(-10) || null,
                   jobId,
                   uploadAt,
                   uploadedByEmpId,
@@ -524,7 +525,7 @@ async function startWorker() {
 
               await client.query(`
                 INSERT INTO dpf_records 
-                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, aph, ph, phone_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag, process_id)
+                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, cm, aph, ph, mobile_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag, client_id)
                 VALUES ${placeholders.join(', ')}
               `, values);
               processed += batch.length;

@@ -23,9 +23,9 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
 
   try {
-    const res = await pool.query('SELECT process_id FROM user_process_mapping WHERE user_id = $1', [userId]);
-    const processIds = res.rows.map(r => r.process_id);
-    return NextResponse.json({ success: true, processIds });
+    const res = await pool.query('SELECT client_id FROM user_client_mapping WHERE user_id = $1', [userId]);
+    const clientIds = res.rows.map(r => r.client_id);
+    return NextResponse.json({ success: true, clientIds });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -36,20 +36,20 @@ export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
-    const { userId, processIds } = await req.json();
-    if (!userId || !Array.isArray(processIds)) {
+    const { userId, clientIds } = await req.json();
+    if (!userId || !Array.isArray(clientIds)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
     await pool.query('BEGIN');
     
     // Remove existing mappings
-    await pool.query('DELETE FROM user_process_mapping WHERE user_id = $1', [userId]);
+    await pool.query('DELETE FROM user_client_mapping WHERE user_id = $1', [userId]);
     
     // Insert new mappings
-    if (processIds.length > 0) {
-      const values = processIds.map((pid: number) => `(${userId}, ${pid})`).join(', ');
-      await pool.query(`INSERT INTO user_process_mapping (user_id, process_id) VALUES ${values}`);
+    if (clientIds.length > 0) {
+      const values = clientIds.map((pid: number) => `(${userId}, ${pid})`).join(', ');
+      await pool.query(`INSERT INTO user_client_mapping (user_id, client_id) VALUES ${values}`);
     }
 
     await pool.query('COMMIT');

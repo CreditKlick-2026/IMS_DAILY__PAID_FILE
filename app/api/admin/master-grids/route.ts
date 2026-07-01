@@ -1,107 +1,97 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import fs from 'fs/promises';
+import path from 'path';
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-});
+const DATA_FILE = path.join(process.cwd(), 'data', 'master_grids.json');
 
-export async function GET(req: Request) {
+// Initialize data if not exists
+async function initData() {
     try {
-        const { searchParams } = new URL(req.url);
-        const process_id = searchParams.get('process_id');
+        await fs.access(DATA_FILE);
+    } catch {
+        const initialData = {
+            associateTenured: [],
+            associateVintage: [],
+            leadership: [],
+            specialExceptions: [],
+            grid1_mapping: { locations: ['uttam nagar'], clients: ['sbi recovery'], products: ['card'] },
+            column_mappings: {
+                collection: 'total_money_collected',
+                salary: 'ctc',
+                doj: 'date_of_joining',
+                designation: 'job_title',
+                tl_name: 'tl_name',
+                am_name: 'am_name',
+                employee_id: 'employee_no',
+                employee_code: 'employee_code',
+                employee_name: 'employee_name'
+            },
+            tenured_salary_ranges: [
+                { key: 'under_16k', min: 0, max: 15999, label: '<16k (%)' },
+                { key: 'between_16_18k', min: 16000, max: 17999, label: '16k-18k (%)' },
+                { key: 'between_18_24k', min: 18000, max: 23999, label: '18k-24k (%)' },
+                { key: 'over_24k', min: 24000, max: 9999999, label: '>24k (%)' }
+            ]
+        };
+        await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+        await fs.writeFile(DATA_FILE, JSON.stringify(initialData, null, 2));
+    }
+}
 
-        let tenuredRes, vintageRes, leadershipRes, specialRes;
-
-        if (process_id) {
-            tenuredRes = await pool.query(`SELECT * FROM associate_tenured_grid WHERE process_id = $1 ORDER BY target_collection ASC`, [process_id]);
-            vintageRes = await pool.query(`SELECT * FROM associate_vintage_grid WHERE process_id = $1 ORDER BY target_collection ASC`, [process_id]);
-            leadershipRes = await pool.query(`SELECT * FROM leadership_grid WHERE process_id = $1 ORDER BY target_collection ASC`, [process_id]);
-            specialRes = await pool.query(`SELECT * FROM special_grid_rules WHERE process_id = $1 ORDER BY target_collection ASC`, [process_id]);
-        } else {
-            tenuredRes = await pool.query(`SELECT * FROM associate_tenured_grid WHERE process_id IS NULL ORDER BY target_collection ASC`);
-            vintageRes = await pool.query(`SELECT * FROM associate_vintage_grid WHERE process_id IS NULL ORDER BY target_collection ASC`);
-            leadershipRes = await pool.query(`SELECT * FROM leadership_grid WHERE process_id IS NULL ORDER BY target_collection ASC`);
-            specialRes = await pool.query(`SELECT * FROM special_grid_rules WHERE process_id IS NULL ORDER BY target_collection ASC`);
+export async function GET() {
+    try {
+        await initData();
+        const data = JSON.parse(await fs.readFile(DATA_FILE, 'utf-8'));
+        if (!data.grid1_mapping) {
+            data.grid1_mapping = { locations: ['uttam nagar'], clients: ['sbi recovery'], products: ['card'] };
+            await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
         }
-
-        return NextResponse.json({ 
-            success: true, 
-            data: {
-                associateTenured: tenuredRes.rows,
-                associateVintage: vintageRes.rows,
-                leadership: leadershipRes.rows,
-                specialExceptions: specialRes.rows
-            }
-        });
+        if (!data.column_mappings) {
+            data.column_mappings = {
+                collection: 'total_money_collected',
+                salary: 'ctc',
+                doj: 'date_of_joining',
+                designation: 'job_title',
+                tl_name: 'tl_name',
+                am_name: 'am_name',
+                employee_id: 'employee_no',
+                employee_code: 'employee_code',
+                employee_name: 'employee_name'
+            };
+            await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+        }
+        if (!data.tenured_salary_ranges) {
+            data.tenured_salary_ranges = [
+                { key: 'under_16k', min: 0, max: 15999, label: '<16k (%)' },
+                { key: 'between_16_18k', min: 16000, max: 17999, label: '16k-18k (%)' },
+                { key: 'between_18_24k', min: 18000, max: 23999, label: '18k-24k (%)' },
+                { key: 'over_24k', min: 24000, max: 9999999, label: '>24k (%)' }
+            ];
+            await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+        }
+        return NextResponse.json({ success: true, data });
     } catch (error: any) {
-        console.error('Error fetching master grids:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 }
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { gridName, data, process_id } = body;
-
-        if (!Array.isArray(data)) {
-            return NextResponse.json({ success: false, error: 'data array is required' }, { status: 400 });
-        }
-        if (!process_id) {
-            return NextResponse.json({ success: false, error: 'process_id is required' }, { status: 400 });
+        await initData();
+        const { gridName, data } = await req.json();
+        
+        if (!gridName || !data) {
+            return NextResponse.json({ success: false, message: "Missing gridName or data" }, { status: 400 });
         }
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            if (gridName === 'associateTenured') {
-                await client.query('DELETE FROM associate_tenured_grid WHERE process_id = $1', [process_id]);
-                for (const row of data) {
-                    await client.query(
-                        `INSERT INTO associate_tenured_grid (target_collection, under_16k, between_16_18k, between_18_24k, over_24k, process_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-                        [row.target_collection, row.under_16k, row.between_16_18k, row.between_18_24k, row.over_24k, process_id]
-                    );
-                }
-            } else if (gridName === 'associateVintage') {
-                await client.query('DELETE FROM associate_vintage_grid WHERE process_id = $1', [process_id]);
-                for (const row of data) {
-                    await client.query(
-                        `INSERT INTO associate_vintage_grid (target_collection, m0, m1, m2, m3, process_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-                        [row.target_collection, row.m0, row.m1, row.m2, row.m3, process_id]
-                    );
-                }
-            } else if (gridName === 'leadership') {
-                await client.query('DELETE FROM leadership_grid WHERE process_id = $1', [process_id]);
-                for (const row of data) {
-                    await client.query(
-                        `INSERT INTO leadership_grid (role, target_collection, incentive_percentage, process_id) VALUES ($1, $2, $3, $4)`,
-                        [row.role, row.target_collection, row.incentive_percentage, process_id]
-                    );
-                }
-            } else if (gridName === 'specialExceptions') {
-                await client.query('DELETE FROM special_grid_rules WHERE process_id = $1', [process_id]);
-                for (const row of data) {
-                    await client.query(`
-                        INSERT INTO special_grid_rules (target_collection, incentive_percentage, process_id)
-                        VALUES ($1, $2, $3)
-                    `, [row.target_collection, row.incentive_percentage, process_id]);
-                }
-            } else {
-                throw new Error('Invalid grid name');
-            }
-
-            await client.query('COMMIT');
-            return NextResponse.json({ success: true });
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+        const fileData = JSON.parse(await fs.readFile(DATA_FILE, 'utf-8'));
+        
+        fileData[gridName] = data;
+        
+        await fs.writeFile(DATA_FILE, JSON.stringify(fileData, null, 2));
+        
+        return NextResponse.json({ success: true, message: "Grid updated successfully" });
     } catch (error: any) {
-        console.error('Error updating master grid:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 }

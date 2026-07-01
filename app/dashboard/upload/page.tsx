@@ -10,21 +10,7 @@ import { ButtonGroup, Button as PolarisButton } from '@shopify/polaris';
 import { ValidationTable } from '@/components/ValidationTable';
 import { useApp } from '@/context/AppContext';
 
-const REQUIRED_HEADERS = [
-  { key: 'account_no',      labels: ['Account_No', 'Account No', 'LAN', 'Loan No'], display: 'Account_No' },
-  { key: 'employee_code',   labels: ['Employee_Code', 'Employee Code', 'EmpCode'], display: 'Employee_Code' },
-  { key: 'employee_name',   labels: ['Employee_Name', 'Employee Name', 'EmpName'], display: 'Employee_Name' },
-  { key: 'client',          labels: ['Client', 'client', 'Customer'], display: 'Client' },
-  { key: 'product',         labels: ['Product', 'product', 'Scheme'], display: 'Product' },
-  { key: 'bucket',          labels: ['Bucket', 'bucket', 'Delinquency'], display: 'Bucket' },
-  { key: 'location',        labels: ['Location', 'location', 'City'], display: 'Location' },
-  { key: 'money_collected', labels: ['Money_Collected', 'Money Collected', 'Amount'], display: 'Money_Collected' },
-  { key: 'payment_mode',    labels: ['Payment_Mode', 'Payment Mode', 'Mode of Payment'], display: 'Payment_Mode' },
-  { key: 'tl_name',         labels: ['TL_Name', 'TL Name', 'Team Leader'], display: 'TL_Name' },
-  { key: 'am',              labels: ['AM', 'am', 'Area Manager'], display: 'AM' },
-  { key: 'aph',             labels: ['APH', 'aph'], display: 'APH' },
-  { key: 'ph',              labels: ['PH', 'ph'], display: 'PH' },
-];
+
 
 export default function UploadPage() {
   const { user } = useApp();
@@ -62,15 +48,82 @@ export default function UploadPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [targetEmployeeId, setTargetEmployeeId] = useState<string>('');
   
-  const [processesList, setProcessesList] = useState<any[]>([]);
-  const [selectedProcess, setSelectedProcess] = useState<string>('');
+  const [clientsList, setClientsList] = useState<any[]>([]);
+  const [selectedClientName, setSelectedClientName] = useState<string>('');
+  const [selectedProductType, setSelectedProductType] = useState<string>('');
+  
+  const [locationsList, setLocationsList] = useState<any[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [masterColumns, setMasterColumns] = useState<any[]>([]);
+  
+  const selectedClient = React.useMemo(() => {
+    if (!selectedClientName || !selectedProductType) return '';
+    const client = clientsList.find(c => c.name === selectedClientName && c.product_type === selectedProductType);
+    return client ? String(client.id) : '';
+  }, [clientsList, selectedClientName, selectedProductType]);
+  
+  const activeHeaders = React.useMemo(() => {
+    const currentClientData = clientsList.find(c => String(c.id) === String(selectedClient));
+    const locName = locationsList.find(l => String(l.id) === String(selectedLocation))?.name || '';
+
+    if (currentClientData?.required_columns) {
+      let parsed = currentClientData.required_columns;
+      if (typeof parsed === 'string') {
+        try { parsed = JSON.parse(parsed); } catch(e) { parsed = []; }
+      }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const standardKeys = masterColumns.map(h => h.key);
+        const keysList = parsed.map((p: any) => p.key || p);
+        const active = masterColumns.filter(h => keysList.includes(h.key));
+        const customKeys = keysList.filter((k: string) => !standardKeys.includes(k));
+        const customHeaders = customKeys.map((key: string) => ({
+           key,
+           labels: [key, key.toLowerCase(), key.toUpperCase()],
+           display: key
+        }));
+        if (active.length > 0 || customHeaders.length > 0) {
+          return [...active, ...customHeaders];
+        }
+      }
+    }
+    return masterColumns;
+  }, [clientsList, selectedClient, locationsList, selectedLocation, masterColumns]);
 
   useEffect(() => {
-    // Fetch processes
-    fetch('/api/universal/processes').then(r => r.json()).then(d => {
-      if (d.success) setProcessesList(d.data);
+    let url = '/api/universal/clients';
+    const params = new URLSearchParams();
+    if (user?.role === 'admin' && targetEmployeeId) {
+      params.append('proxyUserId', targetEmployeeId);
+    }
+    if (selectedLocation) {
+      params.append('location_id', selectedLocation);
+    }
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    
+    fetch(url).then(r => r.json()).then(d => {
+      if (d.success) {
+        setClientsList(d.data);
+        // Clear selected process if it's not available for the new proxy user or location
+        if (selectedClientName && selectedProductType && !d.data.find((p: any) => p.name === selectedClientName && p.product_type === selectedProductType)) {
+          setSelectedClientName('');
+          setSelectedProductType('');
+        }
+      }
     });
+  }, [user, targetEmployeeId, selectedLocation]);
 
+  useEffect(() => {
+    fetch('/api/universal/locations').then(r => r.json()).then(d => {
+      if (d.success) setLocationsList(d.data);
+    });
+    fetch('/api/admin/columns').then(r => r.json()).then(d => {
+      if (d.success) setMasterColumns(d.data);
+    });
+  }, []);
+
+  useEffect(() => {
     if (user?.role === 'admin') {
       fetch('/api/users').then(r => r.json()).then(d => {
         if (d.users) {
@@ -229,8 +282,8 @@ export default function UploadPage() {
           
           const normalizedRow = row.map(k => normalize(String(k)));
           let matches = 0;
-          REQUIRED_HEADERS.forEach(req => {
-            if (req.labels.some(label => normalizedRow.includes(normalize(label)))) {
+          activeHeaders.forEach((req: any) => {
+            if (req.labels && req.labels.some((label: string) => normalizedRow.includes(normalize(label)))) {
               matches++;
             }
           });
@@ -248,8 +301,8 @@ export default function UploadPage() {
           const missing: string[] = [];
           const found: string[] = [];
 
-          REQUIRED_HEADERS.forEach(req => {
-            if (req.labels.some(label => headerRow.includes(normalize(label)))) found.push(req.display);
+          activeHeaders.forEach((req: any) => {
+            if (req.labels && req.labels.some((label: string) => headerRow.includes(normalize(label)))) found.push(req.display);
             else missing.push(req.display);
           });
 
@@ -267,7 +320,7 @@ export default function UploadPage() {
       if (!bestResult || maxTotalMatches === 0) {
         setValidationResult({
           isValid: false,
-          missingHeaders: REQUIRED_HEADERS.map(r => r.display),
+          missingHeaders: activeHeaders.map((r: any) => r.display),
           foundHeaders: [],
           rowCount: 0
         });
@@ -304,10 +357,12 @@ export default function UploadPage() {
             if (typeof money === 'string') money = parseFloat(money.replace(/,/g, ''));
 
             const errors = [];
-            if (!accNo) errors.push("Missing Account No");
-            if (!location) errors.push("Missing Location");
-            if (!client) errors.push("Missing Process");
-            if (money === null || isNaN(money)) errors.push("Missing/Invalid Amount");
+            const isRequired = (key: string) => activeHeaders.some((h: any) => h.key === key);
+            
+            if (isRequired('account_no') && !accNo) errors.push("Missing Account No");
+            if (isRequired('location') && !location) errors.push("Missing Location");
+            if (isRequired('client') && !client) errors.push("Missing Process");
+            if (isRequired('money_collected') && (money === null || isNaN(money))) errors.push("Missing/Invalid Amount");
             
             if (errors.length > 0) {
               invalidRows.push({ _rowIndex: idx + 2, _errors: errors, ...row });
@@ -326,7 +381,7 @@ export default function UploadPage() {
       if (currentPassword && needsPassword) {
         // Vercel Serverless Bypass: We cannot decrypt files in the browser or on Vercel without Python.
         // We assume it's valid and let the local worker handle decryption and validation.
-        setValidationResult({ isValid: true, missingHeaders: [], foundHeaders: REQUIRED_HEADERS.map(h => h.display), rowCount: 0 });
+        setValidationResult({ isValid: true, missingHeaders: [], foundHeaders: activeHeaders.map((h: any) => h.display), rowCount: 0 });
         setValidatedData(null);
         setNeedsPassword(false); // Hide password prompt
         setFilePassword(currentPassword);
@@ -375,8 +430,8 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (!file || (validationResult && !validationResult.isValid)) return;
     
-    if (!selectedProcess) {
-      setMessage("Error: Please select a Process from the dropdown before uploading!");
+    if (!selectedClient) {
+      setMessage("Error: Please select a Client from the dropdown before uploading!");
       return;
     }
     
@@ -390,8 +445,16 @@ export default function UploadPage() {
     if (selectedDate) {
       formData.append('upload_at', selectedDate);
     }
-    if (selectedProcess) {
-      formData.append('process_id', selectedProcess);
+    if (selectedClient) {
+      formData.append('client_id', selectedClient);
+    }
+    // Always use admin-selected product type (not from Excel)
+    if (selectedProductType) {
+      formData.append('product_type', selectedProductType);
+    }
+    // Send selected location so worker can use it
+    if (selectedLocation) {
+      formData.append('location_id', selectedLocation);
     }
     if (user?.employee_id) formData.append('employee_id', user.employee_id);
     if (user?.name) formData.append('name', user.name);
@@ -418,6 +481,73 @@ export default function UploadPage() {
     <div className="w-full h-full overflow-y-auto no-scrollbar">
       <div className="w-full mx-auto px-4 py-6">
 
+        {/* Global Page Filters */}
+        <div className="mb-6 flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Location:</span>
+              <select 
+                className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-primary/50 min-w-[180px]"
+                value={selectedLocation}
+                onChange={e => setSelectedLocation(e.target.value)}
+              >
+                <option value="">-- All Locations --</option>
+                {locationsList.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className={`flex items-center gap-3 ${user?.role === 'admin' ? 'border-l pl-4 border-slate-200' : ''}`}>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client:</span>
+            <select 
+              className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-primary/50 min-w-[200px]"
+              value={selectedClientName}
+              onChange={e => {
+                setSelectedClientName(e.target.value);
+                setSelectedProductType('');
+              }}
+            >
+              <option value="">-- Select Client --</option>
+              {Array.from(new Set(clientsList.map(p => p.name))).sort().map(name => (
+                <option key={name as string} value={name as string}>{name as string}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Product:</span>
+            <select 
+              className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-primary/50 min-w-[200px]"
+              value={selectedProductType}
+              onChange={e => setSelectedProductType(e.target.value)}
+              disabled={!selectedClientName}
+            >
+              <option value="">-- Select Product --</option>
+              {clientsList.filter(c => c.name === selectedClientName).map(p => (
+                <option key={p.id} value={p.product_type}>{p.product_type}</option>
+              ))}
+            </select>
+          </div>
+
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+              <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">Admin Proxy:</span>
+              <select 
+                className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px]"
+                value={targetEmployeeId}
+                onChange={e => setTargetEmployeeId(e.target.value)}
+              >
+                <option value="">-- Select target User --</option>
+                {usersList.map(u => (
+                  <option key={u.employee_id} value={u.employee_id}>{u.name} ({u.employee_id})</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-5">
           
           {/* Left Side: Validation Status */}
@@ -428,7 +558,9 @@ export default function UploadPage() {
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span className="font-bold">Column Validation</span>
                 </CardTitle>
-                <CardDescription className="text-xs">{REQUIRED_HEADERS.length} required headers checked.</CardDescription>
+                <CardDescription className="text-xs">
+                  {selectedClient ? `${activeHeaders.length} required headers checked.` : 'Select a client to view required columns.'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-4">
                 {isValidating ? (
@@ -444,17 +576,21 @@ export default function UploadPage() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-700">Required Columns</p>
-                        <p className="text-[10px] text-slate-500 font-bold">Must match exactly</p>
+                        <p className="text-[10px] text-slate-500 font-bold">
+                          {selectedClient ? 'Must match exactly' : 'Select a client first'}
+                        </p>
                       </div>
                     </div>
-                    <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
-                      {REQUIRED_HEADERS.map(req => (
-                        <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
-                          <span className="text-[11px] font-semibold text-slate-700">{req.display}</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">Required</span>
-                        </div>
-                      ))}
-                    </div>
+                    {selectedClient && (
+                      <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
+                        {activeHeaders.map((req: any) => (
+                          <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
+                            <span className="text-[11px] font-semibold text-slate-700">{req.display}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Required</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -468,13 +604,13 @@ export default function UploadPage() {
                         <p className={`text-sm font-bold ${validationResult.isValid ? 'text-emerald-700' : 'text-destructive'}`}>
                           {validationResult.isValid ? 'Ready' : 'Errors Found'}
                         </p>
-                        <p className="text-[10px] text-slate-500 font-bold">{validationResult.foundHeaders.length}/{REQUIRED_HEADERS.length} matched</p>
+                        <p className="text-[10px] text-slate-500 font-bold">{validationResult.foundHeaders.length}/{activeHeaders.length} matched</p>
                       </div>
                     </div>
 
                     {/* Header List */}
                     <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
-                      {REQUIRED_HEADERS.map(req => {
+                      {activeHeaders.map((req: any) => {
                         const found = validationResult.foundHeaders.includes(req.display);
                         return (
                           <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
@@ -560,7 +696,7 @@ export default function UploadPage() {
                           pressed={selectedDate === opt.value}
                           onClick={() => setSelectedDate(opt.value)}
                         >
-                          {opt.label} — {opt.display}
+                          {opt.display}
                         </PolarisButton>
                       ))}
                     </ButtonGroup>
@@ -573,36 +709,6 @@ export default function UploadPage() {
                       />
                     )}
                   </div>
-
-                  <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Process:</span>
-                    <select 
-                      className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/50"
-                      value={selectedProcess}
-                      onChange={e => setSelectedProcess(e.target.value)}
-                    >
-                      <option value="">-- Select Process --</option>
-                      {processesList.map(p => (
-                        <option key={p.id} value={p.id}>{p.location_name} | {p.client_name} - {p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {user?.role === 'admin' && (
-                    <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-                      <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Admin Proxy Upload:</span>
-                      <select 
-                        className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-purple-500"
-                        value={targetEmployeeId}
-                        onChange={e => setTargetEmployeeId(e.target.value)}
-                      >
-                        <option value="">-- Select target User --</option>
-                        {usersList.map(u => (
-                          <option key={u.employee_id} value={u.employee_id}>{u.name} ({u.employee_id})</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -742,7 +848,7 @@ export default function UploadPage() {
                 <div className="flex gap-3">
                   <Button
                     onClick={() => validateFile()}
-                    disabled={!file || isValidating || uploading}
+                    disabled={!file || !selectedClient || isValidating || uploading}
                     className="flex-1 py-5 rounded-xl text-sm font-bold shadow-sm transition-all bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-md text-slate-700 border-2 border-slate-200"
                     size="lg"
                     variant="outline"
@@ -756,8 +862,8 @@ export default function UploadPage() {
 
                   <Button
                     onClick={handleUpload}
-                    disabled={!file || uploading || !validationResult?.isValid || !selectedDate || !selectedProcess}
-                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedProcess) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    disabled={!file || uploading || !validationResult?.isValid || !selectedDate || !selectedClient}
+                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedClient) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     size="lg"
                   >
                     {uploading ? (

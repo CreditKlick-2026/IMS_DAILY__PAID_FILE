@@ -1,0 +1,110 @@
+[
+  {
+    "key": "employee_code",
+    "display": "Employee_Code",
+    "labels": [
+      "Employee_Code",
+      "employee_code",
+      "EMPLOYEE_CODE"
+    ]
+  },
+  {
+    "key": "employee_name",
+    "display": "Employee_Name",
+    "labels": [
+      "Employee_Name",
+      "employee_name",
+      "EMPLOYEE_NAME"
+    ]
+  },
+  {
+    "key": "account_no",
+    "display": "Account_No",
+    "labels": [
+      "Account_No",
+      "account_no",
+      "ACCOUNT_NO"
+    ]
+  },
+  {
+    "key": "cm",
+    "display": "CM",
+    "labels": [
+      "CM",
+      "cm",
+      "CM"
+    ]
+  },
+  {
+    "key": "mobile_no",
+    "display": "MOBILE_NO",
+    "labels": [
+      "MOBILE_NO",
+      "mobile_no",
+      "MOBILE_NO"
+    ]
+  },
+  {
+    "key": "money_collected",
+    "display": "Money_Collected",
+    "labels": [
+      "Money_Collected",
+      "money_collected",
+      "MONEY_COLLECTED"
+    ]
+  },
+  {
+    "key": "tl_name",
+    "display": "TL_Name",
+    "labels": [
+      "TL_Name",
+      "tl_name",
+      "TL_NAME"
+    ]
+  },
+  {
+    "key": "am",
+    "display": "AM",
+    "labels": [
+      "AM",
+      "am",
+      "AM"
+    ]
+  },
+  {
+    "key": "aph",
+    "display": "APH",
+    "labels": [
+      "APH",
+      "aph",
+      "APH"
+    ]
+  },
+  {
+    "key": "ph",
+    "display": "PH",
+    "labels": [
+      "PH",
+      "ph",
+      "PH"
+    ]
+  },
+  {
+    "key": "bucket",
+    "display": "Bucket",
+    "labels": [
+      "Bucket",
+      "bucket",
+      "BUCKET"
+    ]
+  },
+  {
+    "key": "payment_mode",
+    "display": "Payment_Mode",
+    "labels": [
+      "Payment_Mode",
+      "payment_mode",
+      "PAYMENT_MODE"
+    ]
+  }
+]

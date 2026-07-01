@@ -1,0 +1,745 @@
+{
+  "associateSlabs": [
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 1",
+      "min": "<100,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 2",
+      "min": 100000,
+      "max": 150000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 3",
+      "min": 150000,
+      "max": 200000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 4",
+      "min": 200000,
+      "max": 250000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 5",
+      "min": 250000,
+      "max": 350000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 6",
+      "min": 350000,
+      "max": 450000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 7",
+      "min": 450000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 1",
+      "min": "<150,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 2",
+      "min": 150000,
+      "max": 200000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 3",
+      "min": 200000,
+      "max": 250000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 4",
+      "min": 250000,
+      "max": 350000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 5",
+      "min": 350000,
+      "max": 450000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 6",
+      "min": 450000,
+      "max": 550000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 7",
+      "min": 550000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 1",
+      "min": "<75,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 2",
+      "min": 75000,
+      "max": 125000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 3",
+      "min": 125000,
+      "max": 175000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 4",
+      "min": 175000,
+      "max": 225000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 5",
+      "min": 225000,
+      "max": 275000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 6",
+      "min": 275000,
+      "max": 325000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90 Days",
+      "level": "Slab 7",
+      "min": 450000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 1",
+      "min": "<100,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 2",
+      "min": 100000,
+      "max": 150000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 3",
+      "min": 150000,
+      "max": 200000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 4",
+      "min": 200000,
+      "max": 300000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 5",
+      "min": 300000,
+      "max": 400000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 6",
+      "min": 400000,
+      "max": 500000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91 Days",
+      "level": "Slab 7",
+      "min": 500000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 1",
+      "min": "<150,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 2",
+      "min": 150000,
+      "max": 200000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 3",
+      "min": 200000,
+      "max": 250000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 4",
+      "min": 250000,
+      "max": 350000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 5",
+      "min": 350000,
+      "max": 450000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 6",
+      "min": 450000,
+      "max": 550000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 7",
+      "min": 550000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 1",
+      "min": "<250,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 2",
+      "min": 250000,
+      "max": 300000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 3",
+      "min": 300000,
+      "max": 350000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 4",
+      "min": 350000,
+      "max": 450000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 5",
+      "min": 450000,
+      "max": 550000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 6",
+      "min": 550000,
+      "max": 650000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Loans (PL, BL, EL) - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 7",
+      "min": 650000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 1",
+      "min": "<150,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 2",
+      "min": 150000,
+      "max": 200000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 3",
+      "min": 200000,
+      "max": 250000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 4",
+      "min": 250000,
+      "max": 300000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 5",
+      "min": 300000,
+      "max": 400000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 6",
+      "min": 400000,
+      "max": 500000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 7",
+      "min": 500000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 1",
+      "min": "<250,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 2",
+      "min": 250000,
+      "max": 300000,
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 3",
+      "min": 300000,
+      "max": 350000,
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 4",
+      "min": 350000,
+      "max": 400000,
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 5",
+      "min": 400000,
+      "max": 500000,
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 6",
+      "min": 500000,
+      "max": 600000,
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Citi Credit Card - Woff - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 7",
+      "min": 600000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 1",
+      "min": "<1,00,000",
+      "max": "<2,00,000",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 2",
+      "min": 100000,
+      "max": 200000,
+      "payout_pct": "0.70"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 3",
+      "min": 150000,
+      "max": 250000,
+      "payout_pct": "0.80"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 4",
+      "min": 200000,
+      "max": 300000,
+      "payout_pct": "0.90"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 5",
+      "min": 275000,
+      "max": 375000,
+      "payout_pct": "1.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 6",
+      "min": 350000,
+      "max": 450000,
+      "payout_pct": "1.10"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": "<90 Days",
+      "level": "Slab 7",
+      "min": ">3,50,000",
+      "max": ">4,50,000",
+      "payout_pct": "1.20"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 1",
+      "min": "<2,00,000",
+      "max": "<2,50,000",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 2",
+      "min": 200000,
+      "max": 250000,
+      "payout_pct": "1.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 3",
+      "min": 250000,
+      "max": 300000,
+      "payout_pct": "1.10"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 4",
+      "min": 300000,
+      "max": 350000,
+      "payout_pct": "1.20"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 5",
+      "min": 375000,
+      "max": 425000,
+      "payout_pct": "1.30"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 6",
+      "min": 450000,
+      "max": 500000,
+      "payout_pct": "1.40"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - NPA - BAU",
+      "vintage": ">91 Days",
+      "level": "Slab 7",
+      "min": ">4,50,000",
+      "max": ">5,00,000",
+      "payout_pct": "1.50"
+    }
+  ],
+  "tlSlabs": [],
+  "amSlabs": [],
+  "riders": [
+    {
+      "role": "Caller - Rider 1 - Quality Score",
+      "docking": ">=85%",
+      "payout": 1
+    },
+    {
+      "role": "Caller - Rider 1 - Quality Score",
+      "docking": "<85%",
+      "payout": 0.7
+    },
+    {
+      "role": "Caller - Rider 2 - UPL",
+      "docking": "<=1 Leaves",
+      "payout": 1
+    },
+    {
+      "role": "Caller - Rider 2 - UPL",
+      "docking": ">=2 Leaves",
+      "payout": 0.7
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": 1,
+      "payout": 1
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": "<=2",
+      "payout": 0.7
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": ">=3",
+      "payout": 0
+    },
+    {
+      "role": "Team leader - Rider 2 - Attrition Control Kicker",
+      "docking": "Zero",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Team leader - Rider 3 - Incentive Eligible Team",
+      "docking": ">70%",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": "<10%",
+      "payout": 1
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": "10% - 20%",
+      "payout": 0.7
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": ">21%",
+      "payout": 0
+    },
+    {
+      "role": "Assistant Manager - Rider 2 - Attrition Control Kicker",
+      "docking": "Zero",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Assistant Manager - Rider 3 - Incentive Eligible Team",
+      "docking": ">70%",
+      "payout": "10% Extra on the Incentive Amt"
+    }
+  ],
+  "column_mappings": {
+    "collection": "total_money_collected",
+    "salary": "ctc",
+    "doj": "date_of_joining",
+    "designation": "job_title",
+    "tl_name": "tl_name",
+    "am_name": "am_name",
+    "employee_id": "employee_no",
+    "employee_code": "employee_code",
+    "employee_name": "employee_name"
+  },
+  "tenured_salary_ranges": [
+    {
+      "key": "under_16k",
+      "min": 0,
+      "max": 15999,
+      "label": "<16k (%)"
+    },
+    {
+      "key": "between_16_18k",
+      "min": 16000,
+      "max": 17999,
+      "label": "16k-18k (%)"
+    },
+    {
+      "key": "between_18_24k",
+      "min": 18000,
+      "max": 23999,
+      "label": "18k-24k (%)"
+    },
+    {
+      "key": "over_24k",
+      "min": 24000,
+      "max": 9999999,
+      "label": ">24k (%)"
+    }
+  ]
+}

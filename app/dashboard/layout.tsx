@@ -45,7 +45,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!mounted) return null;
 
-  const activePage = pathname === '/dashboard' ? 'dashboard' : pathname.split('/').pop() || 'dashboard';
+  let activePage = pathname === '/dashboard' ? 'dashboard' : pathname.split('/').pop() || 'dashboard';
+  if (pathname.includes('/incentive/')) {
+    activePage = 'incentive-' + activePage;
+  }
 
   return (
     <AppProvider>

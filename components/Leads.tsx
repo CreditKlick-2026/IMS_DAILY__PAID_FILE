@@ -1261,7 +1261,7 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
     agent: record?.agent || record?.am || '',
     aph: record?.aph || '',
     ph: record?.ph || '',
-    phone_no: record?.phone_no || ''
+    mobile_no: record?.mobile_no || ''
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useApp();
@@ -1315,7 +1315,7 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
           <div className="ff"><label>Agent Name</label><input className="finp" name="agent" value={formData.agent} onChange={handleChange} /></div>
           <div className="ff"><label>APH</label><input className="finp" name="aph" value={formData.aph} onChange={handleChange} /></div>
           <div className="ff"><label>PH</label><input className="finp" name="ph" value={formData.ph} onChange={handleChange} /></div>
-          <div className="ff"><label>Phone No</label><input className="finp" name="phone_no" value={formData.phone_no} onChange={handleChange} /></div>
+          <div className="ff"><label>Mobile No</label><input className="finp" name="mobile_no" value={formData.mobile_no} onChange={handleChange} /></div>
           
           <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
             <button type="button" onClick={onClose} className="btn">Cancel</button>
@@ -1348,8 +1348,15 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [filterUploadDate, setFilterUploadDate] = useState('');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterClient, setFilterClient] = useState('');
+  const [filterProduct, setFilterProduct] = useState('');
   const [exporting, setExporting] = useState(false);
   const [filterOptions, setFilterOptions] = useState<any>({});
+  // Master data for filter dropdowns (from admin-configured tables)
+  const [masterLocationsList, setMasterLocationsList] = useState<any[]>([]);
+  const [masterClientsList, setMasterClientsList] = useState<any[]>([]);
+  const [masterColumns, setMasterColumns] = useState<any[]>([]);
   const [filters, setFilters] = useState<any>({
     employee_code: [],
     product: [],
@@ -1405,6 +1412,10 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   useEffect(() => {
     fetchMetadata();
+    // Fetch master locations and clients for filter dropdowns
+    fetch('/api/universal/locations').then(r => r.json()).then(d => { if (d.success) setMasterLocationsList(d.data || []); });
+    fetch('/api/universal/clients').then(r => r.json()).then(d => { if (d.success) setMasterClientsList(d.data || []); });
+    fetch('/api/admin/columns').then(r => r.json()).then(d => { if (d.success) setMasterColumns(d.data || []); });
   }, []);
 
   useEffect(() => {
@@ -1432,7 +1443,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, filterLocation, filterClient, filterProduct, JSON.stringify(filters)]);
 
   useEffect(() => {
     setLoading(true);
@@ -1440,7 +1451,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       fetchLeads();
     }, 2000);
     return () => clearTimeout(timer);
-  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, page, limit, user?.id, JSON.stringify(filters)]);
+  }, [search, filterTab, statusFilter, sortBy, portfolioFilter, filterAccountNo, dpdMin, dpdMax, outMin, filterMonth, filterYear, filterUploadDate, filterLocation, filterClient, filterProduct, page, limit, user?.id, JSON.stringify(filters)]);
 
   const fetchMetadata = async () => {
     try {
@@ -1453,6 +1464,14 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
   };
 
   const fetchLeads = async () => {
+    // Don't fetch until required filters are chosen
+    if (!filtersReady) {
+      setLeads([]);
+      setSelectedLead(null);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const query = new URLSearchParams({ q: search, searchType: filterTab, userId: user?.id || '' });
@@ -1466,6 +1485,9 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       if (filterMonth) query.append('month', filterMonth);
       if (filterYear) query.append('year', filterYear);
       if (filterUploadDate) query.append('uploadDate', filterUploadDate);
+      if (filterLocation) query.append('location', filterLocation);
+      if (filterClient) query.append('client', filterClient);
+      if (filterProduct) query.append('product', filterProduct);
       Object.entries(filters).forEach(([k, v]) => {
         if (Array.isArray(v)) {
           v.forEach(val => query.append(k, val));
@@ -1534,6 +1556,9 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       if (outMin) query.append('outMin', outMin);
       if (filterMonth) query.append('month', filterMonth);
       if (filterYear) query.append('year', filterYear);
+      if (filterLocation) query.append('location', filterLocation);
+      if (filterClient) query.append('client', filterClient);
+      if (filterProduct) query.append('product', filterProduct);
       Object.entries(filters).forEach(([k, v]) => {
         if (Array.isArray(v)) {
           v.forEach(val => query.append(k, val));
@@ -1556,8 +1581,33 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
       }
 
       const formattedRecords = records.map((r: any, index: number) => {
-        const { id, upload_at, created_at, outstanding, ...rest } = r;
-        return { 'S.No.': index + 1, ...rest, 'Money_Collected': outstanding };
+        const rowData: any = { 'S.No.': index + 1 };
+        
+        tableCols.forEach(col => {
+          if (!col.visible) return;
+          const lowerKey = col.key.toLowerCase();
+          let val = r[col.key] ?? r[lowerKey];
+          
+          if (val === undefined || val === null || val === '') {
+            if (lowerKey === 'employee_name') val = r.name;
+            else if (lowerKey === 'money_collected') val = r.outstanding;
+            else if (lowerKey === 'am') val = r.agent;
+          }
+          
+          if (col.type === 'amount') {
+            val = Number(val || 0);
+          } else if (col.key.toLowerCase() === 'account_no') {
+            val = String(val || '').replace(/LN-|-/g, '');
+          } else if (col.key.toLowerCase() === 'upload_at' || col.key.toLowerCase() === 'created_at') {
+            val = val ? String(val).split('T')[0] : '';
+          } else {
+            val = val === null || val === undefined ? '' : String(val);
+          }
+          
+          rowData[col.label] = val;
+        });
+
+        return rowData;
       });
 
       const ws = XLSX.utils.json_to_sheet(formattedRecords);
@@ -1574,8 +1624,8 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
   // Fixed column order & label overrides (independent of DB order)
   const COLUMN_ORDER: Record<string, { order: number; label: string }> = {
-    account_no: { order: 1, label: 'Account Number' },
-    name: { order: 2, label: 'Customer Name' },
+    account_no: { order: 1, label: 'Account_No' },
+    employee_name: { order: 2, label: 'Employee_Name' },
     mobile: { order: 3, label: 'Mobile Number' },
     address: { order: 4, label: 'Address' },
     city: { order: 5, label: 'City' },
@@ -1587,7 +1637,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
     bkt_2: { order: 11, label: 'Bucket' },
     min_amt_due: { order: 12, label: 'Min Amount Due' },
     principle_outstanding: { order: 13, label: 'Principle Outstanding' },
-    outstanding: { order: 14, label: 'Money_Collected' },
+    money_collected: { order: 14, label: 'Money_Collected' },
     product: { order: 15, label: 'Product Type' },
     'credit card number': { order: 16, label: 'Credit Card Number' },
     credit_card_number: { order: 16, label: 'Credit Card Number' },
@@ -1596,12 +1646,12 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
     assignedagent: { order: 19, label: 'Assigned Agent' },
   };
 
-  const applyOrder = (cols: any[]) =>
+  const applyOrder = (cols: any[], preserveLabel: boolean = false) =>
     cols
       .map(c => {
         const k = c.key?.toLowerCase();
         const override = COLUMN_ORDER[k];
-        return override ? { ...c, label: override.label, _order: override.order } : { ...c, _order: 999 };
+        return override ? { ...c, label: preserveLabel ? c.label : override.label, _order: override.order } : { ...c, _order: 999 };
       })
       .sort((a, b) => a._order - b._order);
 
@@ -1610,8 +1660,64 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
     return k === 'eligible_for_update' || k === 'eligible_upgrade' || k === 'alt_mobile' || k === 'alt mobile' || k === 'alt_mobile_2' || k === 'alt_mobile_3' || k === 'alt_mobile_4';
   };
 
-  const tableCols = applyOrder(leadColumns.filter(c => c.visible !== false && !excluded(c)));
-  const profileCols = applyOrder(leadColumns.filter(c => c.showInProfile !== false && !excluded(c)));
+  // Are all required filters selected?
+  const filtersReady = user?.role === 'admin'
+    ? !!(filterLocation && filterClient && filterProduct)
+    : !!(filterClient && filterProduct);
+
+  // Derive table columns from selected client's required_columns (if available)
+  const selectedClientData = masterClientsList.find((c: any) => c.name === filterClient && c.product_type === filterProduct);
+
+  const clientRequiredCols: any[] = (() => {
+    if (!filterClient) return [];
+    
+    const locName = filterLocation?.toLowerCase() || '';
+    const cliName = filterClient?.toLowerCase() || '';
+    const prodName = filterProduct?.toLowerCase() || '';
+    
+    const isGurugramOverride = locName.includes('gurugram') && ['axis', 'encore', 'citi', 'sbic'].some(cl => cliName.includes(cl));
+    const isUttamNagarOverride = locName.includes('uttam nagar') && cliName.includes('sbi recovery') && prodName.includes('card');
+    
+    let activeHeaders = masterColumns;
+
+    if (selectedClientData?.required_columns) {
+      let parsed = selectedClientData.required_columns;
+      if (typeof parsed === 'string') {
+        try { parsed = JSON.parse(parsed); } catch(e) { parsed = []; }
+      }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const standardKeys = masterColumns.map(h => h.key);
+        const keysList = parsed.map((p: any) => p.key || p);
+        const active = masterColumns.filter(h => keysList.includes(h.key));
+        const customKeys = keysList.filter((k: string) => !standardKeys.includes(k));
+        const customHeaders = customKeys.map((key: string) => ({
+           key,
+           labels: [key, key.toLowerCase(), key.toUpperCase()],
+           display: key
+        }));
+        if (active.length > 0 || customHeaders.length > 0) {
+          activeHeaders = [...active, ...customHeaders];
+        }
+      }
+    }
+
+    const cols = activeHeaders.map(col => ({
+      key: col.key,
+      label: col.display,
+      visible: true,
+      type: col.key === 'money_collected' ? 'amount' : 'text'
+    }));
+    
+    cols.push({ key: 'upload_at', label: 'Date', visible: true, type: 'text' });
+    return cols;
+  })();
+
+  const tableCols = clientRequiredCols.length > 0
+    ? applyOrder(clientRequiredCols.filter((c: any) => !excluded(c)), true)
+    : applyOrder(leadColumns.filter(c => c.visible !== false && !excluded(c)));
+  const profileCols = clientRequiredCols.length > 0
+    ? applyOrder(clientRequiredCols.filter((c: any) => !excluded(c)), true)
+    : applyOrder(leadColumns.filter(c => c.showInProfile !== false && !excluded(c)));
 
   const RaiseSettlementModal = ({ lead, onDone }: { lead: any, onDone: () => void }) => {
     const { toast, closeModal, user } = useApp();
@@ -2209,6 +2315,36 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                       Approve All
                     </button>
                   )}
+                  {user?.role === 'admin' && (
+                    <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterLocation} onChange={e => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}>
+                      <option value="">All Locations</option>
+                      {masterLocationsList.map((l: any) => (
+                        <option key={l.id} value={l.name}>{l.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterClient} onChange={e => { setFilterClient(e.target.value); setFilterProduct(''); }}>
+                    <option value="">All Clients</option>
+                    {Array.from(new Set(
+                      masterClientsList
+                        .filter((c: any) => !filterLocation || c.location_name === filterLocation)
+                        .map((c: any) => c.name)
+                    )).sort().map((name: any) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterProduct} onChange={e => setFilterProduct(e.target.value)}>
+                    <option value="">All Products</option>
+                    {masterClientsList
+                      .filter((c: any) => !filterClient || c.name === filterClient)
+                      .filter((c: any) => c.product_type)
+                      .map((c: any) => c.product_type)
+                      .filter((v: string, i: number, a: string[]) => a.indexOf(v) === i)
+                      .sort()
+                      .map((pt: string) => (
+                        <option key={pt} value={pt}>{pt}</option>
+                      ))}
+                  </select>
                   <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
                     <option value="">All Months</option>
                     {Array.from({length: 12}, (_, i) => i + 1).map(m => (
@@ -2308,9 +2444,16 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                     { label: 'OUTSTANDING', key: 'outstanding', type: 'amount' }
                   ]).map((item: any, i: number) => {
                     const lowerKey = item.key?.toLowerCase();
-                    const rawVal = selectedLead[item.key] ?? selectedLead[lowerKey]
+                    let rawVal = selectedLead[item.key] ?? selectedLead[lowerKey]
                       ?? selectedLead.metadata?.[item.key] ?? selectedLead.metadata?.[lowerKey]
                       ?? selectedLead.metadata?.[item.label] ?? selectedLead.metadata?.[item.label?.toUpperCase()] ?? '—';
+                      
+                    if (rawVal === '—' || rawVal == null || rawVal === '') {
+                      if (lowerKey === 'employee_name') rawVal = selectedLead.name ?? '—';
+                      else if (lowerKey === 'money_collected') rawVal = selectedLead.outstanding ?? '—';
+                      else if (lowerKey === 'am') rawVal = selectedLead.agent ?? '—';
+                    }
+                    
                     let val = (rawVal && typeof rawVal === 'object') ? (rawVal.name || rawVal.label || '—') : rawVal;
 
                     // Masking logic for Credit Cards (Always show last 4 only)
@@ -2393,60 +2536,48 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
             </div>
           )}
 
-          {/* SEARCH BAR */}
-          <div className="sbar" style={{ padding: '8px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <SButton size="slim" variant="secondary" onClick={() => setShowFilters(!showFilters)}>⊞ More {showFilters ? '▲' : '▼'}</SButton>
-            <span style={{ fontSize: 12, color: 'var(--txt3)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {leads.length} records
-              <button
-                onClick={() => setIsTableMaximized(!isTableMaximized)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--txt2)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: 4, transition: '0.2s', backgroundColor: 'var(--bg3)' }}
-                title={isTableMaximized ? "Restore Layout" : "Maximize Table"}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {isTableMaximized ? (
-                    <>
-                      <polyline points="4 14 12 22 20 14"></polyline>
-                      <line x1="12" y1="2" x2="12" y2="22"></line>
-                    </>
-                  ) : (
-                    <>
-                      <polyline points="4 10 12 2 20 10"></polyline>
-                      <line x1="12" y1="2" x2="12" y2="22"></line>
-                    </>
-                  )}
-                </svg>
-              </button>
-            </span>
-          </div>
-
           {/* FILTER ROW */}
           {showFilters && (
             <div id="fRow" style={{ display: 'flex', padding: '10px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--bdr)', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input className="finp" type="text" placeholder="Account No" style={{ width: '120px', padding: '6px 10px' }} value={filterAccountNo} onChange={e => setFilterAccountNo(e.target.value)} />
-              <input className="finp" type="number" placeholder="DPD Min" style={{ width: '90px', padding: '6px 10px' }} value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
-              <input className="finp" type="number" placeholder="DPD Max" style={{ width: '90px', padding: '6px 10px' }} value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
-              <input className="finp" type="number" placeholder="₹ Min" style={{ width: '100px', padding: '6px 10px' }} value={outMin} onChange={e => setOutMin(e.target.value)} />
-              <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option value="">Sort By</option>
-                <option value="high">Highest Amount</option>
-                <option value="low">Lowest Amount</option>
-              </select>
-              <div style={{ position: 'relative' }}>
-                <input className="finp" type="date" title="Upload Date" style={{ fontSize: 12, padding: '5px 10px', width: 'auto', background: 'var(--bg2)' }} value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
-                <span style={{ position: 'absolute', top: -8, left: 6, fontSize: 8, fontWeight: 700, color: 'var(--txt3)', background: 'var(--bg2)', padding: '0 4px', letterSpacing: 0.5, textTransform: 'uppercase' }}>Upload At</span>
-              </div>
+              {tableCols.some(c => c.key?.toLowerCase() === 'account_no') && (
+                <input className="finp" type="text" placeholder="Account No" style={{ width: '120px', padding: '6px 10px' }} value={filterAccountNo} onChange={e => setFilterAccountNo(e.target.value)} />
+              )}
+              {tableCols.some(c => c.key?.toLowerCase() === 'dpd') && (
+                <>
+                  <input className="finp" type="number" placeholder="DPD Min" style={{ width: '90px', padding: '6px 10px' }} value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
+                  <input className="finp" type="number" placeholder="DPD Max" style={{ width: '90px', padding: '6px 10px' }} value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
+                </>
+              )}
+              {tableCols.some(c => c.type === 'amount' || c.key?.toLowerCase() === 'money_collected' || c.key?.toLowerCase() === 'outstanding' || c.key?.toLowerCase() === 'principle_outstanding') && (
+                <>
+                  <input className="finp" type="number" placeholder="₹ Min" style={{ width: '100px', padding: '6px 10px' }} value={outMin} onChange={e => setOutMin(e.target.value)} />
+                  <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                    <option value="">Sort By</option>
+                    <option value="high">Highest Amount</option>
+                    <option value="low">Lowest Amount</option>
+                  </select>
+                </>
+              )}
+              {tableCols.some(c => c.key?.toLowerCase() === 'upload_at' || c.key?.toLowerCase() === 'createdat') && (
+                <div style={{ position: 'relative' }}>
+                  <input className="finp" type="date" title="Upload Date" style={{ fontSize: 12, padding: '5px 10px', width: 'auto', background: 'var(--bg2)' }} value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
+                  <span style={{ position: 'absolute', top: -8, left: 6, fontSize: 8, fontWeight: 700, color: 'var(--txt3)', background: 'var(--bg2)', padding: '0 4px', letterSpacing: 0.5, textTransform: 'uppercase' }}>Upload At</span>
+                </div>
+              )}
               {[
-                { key: 'employeeCode', filterKey: 'employee_code', label: 'Emp Code', isMulti: true },
-                { key: 'product', filterKey: 'product', label: 'Product Type', isMulti: true },
-                { key: 'bucket', filterKey: 'bucket', label: 'Bucket', isMulti: true },
-                { key: 'location', filterKey: 'location', label: 'Location', isMulti: true },
-                { key: 'aph', filterKey: 'aph', label: 'APH', isMulti: true },
-                { key: 'ph', filterKey: 'ph', label: 'PH', isMulti: true },
-                { key: 'client', filterKey: 'client', label: 'Client', isMulti: true },
-                { key: 'tlName', filterKey: 'tl_name', label: 'TL Name', isMulti: true },
-                { key: 'agentName', filterKey: 'employee_name', label: 'Agent Name', isMulti: true }
-              ].map(opt => (
+                { key: 'employeeCode', filterKey: 'employee_code', label: 'Emp Code', isMulti: true, colKeys: ['employee_code'] },
+                { key: 'product', filterKey: 'product', label: 'Product Type', isMulti: true, colKeys: ['product'] },
+                { key: 'bucket', filterKey: 'bucket', label: 'Bucket', isMulti: true, colKeys: ['bucket'] },
+                { key: 'location', filterKey: 'location', label: 'Location', isMulti: true, colKeys: ['location'] },
+                { key: 'aph', filterKey: 'aph', label: 'APH', isMulti: true, colKeys: ['aph'] },
+                { key: 'ph', filterKey: 'ph', label: 'PH', isMulti: true, colKeys: ['ph'] },
+                { key: 'client', filterKey: 'client', label: 'Client', isMulti: true, colKeys: ['client'] },
+                { key: 'tlName', filterKey: 'tl_name', label: 'TL Name', isMulti: true, colKeys: ['tl_name'] },
+                { key: 'agentName', filterKey: 'employee_name', label: 'Agent Name', isMulti: true, colKeys: ['employee_name', 'name'] },
+                { key: 'am', filterKey: 'am', label: 'AM / CM', isMulti: true, colKeys: ['am', 'agent'] },
+                { key: 'paymentMode', filterKey: 'payment_mode', label: 'Payment Mode', isMulti: true, colKeys: ['payment_mode'] },
+                { key: 'phoneNo', filterKey: 'mobile_no', label: 'Mobile No', isMulti: true, colKeys: ['mobile_no'] }
+              ].filter(opt => tableCols.some(c => opt.colKeys.includes(c.key?.toLowerCase()))).map(opt => (
                 opt.isMulti ? (
                   <MultiSelect
                     key={opt.key}
@@ -2485,7 +2616,43 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
             </div>
           )}
 
-          {/* RESULTS AREA */}
+          {/* RESULTS AREA - only show when filters are ready */}
+          {!filtersReady ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: 'var(--txt3)', padding: 40 }}>
+              <div style={{ fontSize: 48, opacity: 0.15 }}>⊞</div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--txt2)', marginBottom: 6 }}>Filters Required</div>
+                <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+                  {user?.role === 'admin'
+                    ? 'Please select Location, Client, and Product Type to view records.'
+                    : 'Please select Client and Product Type to view records.'}
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+                  {user?.role === 'admin' && (
+                    <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterLocation ? '#10b981' : 'var(--bg3)', color: filterLocation ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                      {filterLocation ? `✓ ${filterLocation}` : '○ Location'}
+                    </span>
+                  )}
+                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterClient ? '#10b981' : 'var(--bg3)', color: filterClient ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                    {filterClient ? `✓ ${filterClient}` : '○ Client'}
+                  </span>
+                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterProduct ? '#10b981' : 'var(--bg3)', color: filterProduct ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                    {filterProduct ? `✓ ${filterProduct}` : '○ Product Type'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+          <>
+          {/* SEARCH BAR */}
+          <div className="sbar" style={{ padding: '8px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <SButton size="slim" variant="secondary" onClick={() => setShowFilters(!showFilters)}>⊞ More {showFilters ? '▲' : '▼'}</SButton>
+            <span style={{ fontSize: 12, color: 'var(--txt3)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+              {leads.length} records
+            </span>
+          </div>
+
+          {/* TABLE */}
           <div className="result-area hide-scrollbar" style={{ flex: 1, overflow: 'auto', background: 'var(--bg2)' }}>
             <div className="result-area-mobile-scroll">
               <table className="tbl" style={{ width: '100%', borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
@@ -2523,9 +2690,19 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                     <tr key={lead.id} onClick={() => setSelectedLead(lead)} style={{ borderBottom: '1px solid var(--faint)', cursor: 'pointer', background: selectedLead?.id === lead.id ? 'var(--accbg)' : 'transparent' }}>
                       {tableCols.length > 0 ? tableCols.map(col => {
                         const lowerKey = col.key?.toLowerCase();
-                        const rawVal = lead[col.key] ?? lead[lowerKey]
+                        let rawVal = lead[col.key] ?? lead[lowerKey]
                           ?? lead.metadata?.[col.key] ?? lead.metadata?.[lowerKey]
                           ?? lead.metadata?.[col.label] ?? lead.metadata?.[col.label?.toUpperCase()] ?? '—';
+                          
+                        if (rawVal === '—' || rawVal == null || rawVal === '') {
+                          if (lowerKey === 'employee_name') rawVal = lead.name ?? '—';
+                          else if (lowerKey === 'money_collected') rawVal = lead.outstanding ?? '—';
+                          else if (lowerKey === 'am') rawVal = lead.agent ?? lead.am ?? '—';
+                          else if (lowerKey === 'cm') rawVal = lead.cm ?? '—';
+                          else if (lowerKey === 'lan' || lowerKey === 'account no') rawVal = lead.account_no ?? '—';
+                          else if (lowerKey === 'mobile_no' || lowerKey === 'mobile no' || lowerKey === 'mobile_no') rawVal = lead.mobile_no ?? '—';
+                        }
+                        
                         const val = (rawVal && typeof rawVal === 'object') ? (rawVal.name || rawVal.label || '—') : rawVal;
                         return (
                           <td key={col.key} style={{ padding: '8px 10px', fontSize: 11, color: col.type === 'amount' ? 'var(--red)' : 'var(--txt2)' }}>
@@ -2596,6 +2773,8 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
               <option value="100">100/page</option>
             </select>
           </div>
+          </>
+          )}
         </div>
       </div>
     </>

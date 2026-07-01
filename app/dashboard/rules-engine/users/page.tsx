@@ -25,7 +25,7 @@ export default function UsersAccessPage() {
     try {
       const [uRes, pRes] = await Promise.all([
         fetch('/api/users'),
-        fetch('/api/universal/processes')
+        fetch('/api/universal/clients')
       ]);
       const uData = await uRes.json();
       const pData = await pRes.json();
@@ -45,18 +45,18 @@ export default function UsersAccessPage() {
       const res = await fetch(`/api/users/mapping?userId=${usr.id}`);
       const data = await res.json();
       if (data.success) {
-        setUserProcessIds(data.processIds);
+        setUserProcessIds(data.clientIds);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleToggleProcess = (processId: number) => {
-    if (userProcessIds.includes(processId)) {
-      setUserProcessIds(userProcessIds.filter(id => id !== processId));
+  const handleToggleProcess = (clientId: number) => {
+    if (userProcessIds.includes(clientId)) {
+      setUserProcessIds(userProcessIds.filter(id => id !== clientId));
     } else {
-      setUserProcessIds([...userProcessIds, processId]);
+      setUserProcessIds([...userProcessIds, clientId]);
     }
   };
 
@@ -68,7 +68,7 @@ export default function UsersAccessPage() {
       const res = await fetch('/api/users/mapping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUser.id, processIds: userProcessIds })
+        body: JSON.stringify({ userId: selectedUser.id, clientIds: userProcessIds })
       });
       const data = await res.json();
       if (data.success) {
@@ -161,9 +161,6 @@ export default function UsersAccessPage() {
                       >
                         <div>
                           <div className="font-bold text-slate-800">{p.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">
-                            {p.location_name} | {p.client_name}
-                          </div>
                         </div>
                         <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
                           isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'

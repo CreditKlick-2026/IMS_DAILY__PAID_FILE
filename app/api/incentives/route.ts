@@ -62,8 +62,9 @@ function calculateVintageDays(doc: Date, currentCalcDate: Date) {
 }
 
 function calculateAssociateIncentive(collection: number, salary: number, doc: Date | null, vintageMonths: number, associateVintageGrid: any[], associateTenuredGrid: any[]) {
-    let incentive = 0;
-    let incentivePercent = 0;
+    let traceData: any = null;
+            let incentive = 0;
+            let incentivePercent = 0;
 
     if (doc) {
         let slabMonth = -1;
@@ -207,8 +208,10 @@ export async function GET(req: Request) {
         });
 
         // 3.5 Inject missing AMs and TLs who have 0 personal collections
+        const filterLocs = searchParams.getAll('location');
         const existingEmpCodes = new Set(individualCollections.map(r => r.employee_code).filter(Boolean));
         for (const emp of kekaEmployees) {
+            if (filterLocs.length > 0 && !filterLocs.includes(emp.location)) continue;
             if (!existingEmpCodes.has(emp.employee_id)) {
                 const nameKey = emp.name?.toLowerCase().trim() || '';
                 const firstName = nameKey.split(' ')[0];

@@ -5,18 +5,18 @@ export async function GET() {
     leadColumns: [
       { label: "Account No", key: "account_no" },
       { label: "Emp Code", key: "employee_code" },
-      { label: "Customer Name", key: "name" },
+      { label: "Customer Name", key: "employee_name" },
       { label: "Client", key: "client" },
-      { label: "Product", key: "product" },
+      { label: "Product Type", key: "product" },
       { label: "Bucket", key: "bucket" },
       { label: "Location", key: "location" },
-      { label: "Outstanding", key: "outstanding" },
+      { label: "Money_Collected", key: "money_collected" },
       { label: "Payment Mode", key: "payment_mode" },
       { label: "TL Name", key: "tl_name" },
-      { label: "Agent Name", key: "agent" },
+      { label: "Agent Name", key: "am" },
       { label: "APH", key: "aph" },
       { label: "PH", key: "ph" },
-      { label: "Phone No", key: "phone_no" },
+      { label: "Mobile No", key: "mobile_no" },
       { label: "Upload At", key: "upload_at" }
     ],
     lists: {

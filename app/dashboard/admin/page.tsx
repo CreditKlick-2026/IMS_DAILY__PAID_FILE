@@ -23,7 +23,7 @@ const REQUIRED_HEADERS_KEKA = [
 ];
 
 export default function AdminPage() {
-  const [activeItem, setActiveItem] = useState('clients');
+  const [activeItem, setActiveItem] = useState('tracker');
   const [clients, setClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -40,6 +40,11 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [excels, setExcels] = useState<any[]>([]);
   const [excelsLoading, setExcelsLoading] = useState(false);
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterClient, setFilterClient] = useState("");
+  const [filterProduct, setFilterProduct] = useState("");
+  const [locationOptions, setLocationOptions] = useState<{id: number, name: string}[]>([]);
+  const [clientOptions, setClientOptions] = useState<any[]>([]);
   
   const [trackerMonth, setTrackerMonth] = useState(new Date().getMonth() + 1);
   const [trackerYear, setTrackerYear] = useState(new Date().getFullYear());
@@ -68,15 +73,7 @@ export default function AdminPage() {
   const [specialGridLoading, setSpecialGridLoading] = useState(false);
   const [isSavingGrid, setIsSavingGrid] = useState(false);
 
-  const [activeMasterGridTab, setActiveMasterGridTab] = useState('associateTenured');
-  const [masterGrids, setMasterGrids] = useState<{
-    associateTenured: any[];
-    associateVintage: any[];
-    leadership: any[];
-    specialExceptions: any[];
-  }>({ associateTenured: [], associateVintage: [], leadership: [], specialExceptions: [] });
-  const [masterGridsLoading, setMasterGridsLoading] = useState(false);
-  const [isSavingMasterGrid, setIsSavingMasterGrid] = useState(false);
+
 
   const { user } = useApp();
   const router = useRouter();
@@ -112,9 +109,36 @@ export default function AdminPage() {
   }, [user, router]);
 
 
+  useEffect(() => {
+    fetch('/api/public/locations').then(r => r.json()).then(d => { if (d.success) setLocationOptions(d.data); });
+  }, []);
+
+  useEffect(() => {
+    let url = '/api/universal/clients';
+    if (filterLocation && locationOptions.length > 0) {
+      const loc = locationOptions.find(l => l.name === filterLocation);
+      if (loc) {
+        url += `?location_id=${loc.id}`;
+      }
+    }
+    fetch(url).then(r => r.json()).then(d => {
+      if (d.success) {
+        setClientOptions(d.data);
+        if (!d.data.find((p: any) => String(p.id) === String(filterClient))) {
+          setFilterClient('');
+        }
+      }
+    });
+  }, [filterLocation, locationOptions]);
+
   const fetchExcels = () => {
     setExcelsLoading(true);
-    fetch(`/api/admin/excels?month=${deleteMonth}&year=${deleteYear}`)
+    let url = `/api/admin/excels?month=${deleteMonth}&year=${deleteYear}`;
+    if (filterLocation) url += `&location=${encodeURIComponent(filterLocation)}`;
+    if (filterClient) url += `&client_id=${filterClient}`;
+    if (filterProduct) url += `&product_type=${encodeURIComponent(filterProduct)}`;
+    
+    fetch(url)
       .then(r => r.json())
       .then(d => {
         if (d.success) {
@@ -160,15 +184,11 @@ export default function AdminPage() {
       fetchExcels();
     } else if (activeItem === 'tracker') {
       fetchTrackerData();
-    } else if (activeItem === 'clients') {
-      fetchClients();
     } else if (activeItem === 'special') {
       fetchSpecialEmployees(specialSearch, specialPage);
       fetchSpecialGrid();
-    } else if (activeItem === 'master-grids') {
-      fetchMasterGrids();
     }
-  }, [activeItem, trackerMonth, trackerYear, deleteMonth, deleteYear]);
+  }, [activeItem, trackerMonth, trackerYear, deleteMonth, deleteYear, filterLocation, filterClient, filterProduct]);
 
   const fetchSpecialEmployees = (search = '', page = 1) => {
     setSpecialLoading(true);
@@ -195,37 +215,7 @@ export default function AdminPage() {
       .catch(() => setSpecialGridLoading(false));
   };
 
-  const fetchMasterGrids = () => {
-    setMasterGridsLoading(true);
-    fetch(`/api/admin/master-grids`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) setMasterGrids(d.data);
-        setMasterGridsLoading(false);
-      })
-      .catch(() => setMasterGridsLoading(false));
-  };
 
-  const handleSaveMasterGrid = async (gridName: string) => {
-    setIsSavingMasterGrid(true);
-    try {
-        const res = await fetch('/api/admin/master-grids', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gridName, data: masterGrids[gridName as keyof typeof masterGrids] })
-        });
-        const data = await res.json();
-        if (!data.success) {
-            alert('Failed to save grid');
-        } else {
-            alert('Grid updated successfully!');
-        }
-    } catch (e) {
-        alert('Error saving grid');
-    } finally {
-        setIsSavingMasterGrid(false);
-    }
-  };
 
   const handleSaveGrid = async () => {
     setIsSavingGrid(true);
@@ -261,51 +251,7 @@ export default function AdminPage() {
     }
   };
 
-  const fetchClients = () => {
-    setClientsLoading(true);
-    fetch('/api/admin/clients')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) setClients(d.clients);
-        setClientsLoading(false);
-      })
-      .catch(() => setClientsLoading(false));
-  };
 
-  const handleAddClient = async () => {
-    if (!newClientName) return;
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/admin/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_name: newClientName })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Process/Client added successfully!');
-        setShowAddClientModal(false);
-        setNewClientName('');
-        fetchClients();
-      } else {
-        alert(data.error || 'Failed to add client');
-      }
-    } catch (e) {
-      alert('Error adding client');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteClient = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete process ${name}?`)) return;
-    try {
-      const res = await fetch(`/api/admin/clients?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchClients();
-    } catch (e) {
-      alert('Error deleting client');
-    }
-  };
 
   const handleAddUser = async () => {
     if (!newUsername || !newPassword) {
@@ -317,7 +263,7 @@ export default function AdminPage() {
         const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_id: newEmployeeId, name: newUsername, username: newUsername, email: newEmail, password: newPassword, role: newRole, location: newRole === 'user' ? newLocation : null })
+        body: JSON.stringify({ employee_id: newEmployeeId, name: newUsername, username: newUsername, email: newEmail, password: newPassword, role: newRole, location_id: newRole === 'user' ? newLocation : null })
       });
       const data = await res.json();
       if (data.success) {
@@ -569,7 +515,6 @@ export default function AdminPage() {
   };
 
   const adminModules = [
-    { id: 'rules-engine', title: 'Universal Rules Engine', subtitle: 'Manage Clients, Plans, & Master Grids dynamically', icon: <Settings size={20} className="text-purple-600" />, link: '/dashboard/rules-engine' },
     { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} className="text-emerald-500" /> },
     { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} className="text-blue-500" /> },
     { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-indigo-500" /> },
@@ -579,100 +524,7 @@ export default function AdminPage() {
 
   const renderContent = () => {
     switch(activeItem) {
-      case 'clients':
-        return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Processes & Clients</h2>
-                <p className="text-muted-foreground">Manage global processes that are available during upload.</p>
-              </div>
-              <button 
-                onClick={() => setShowAddClientModal(true)}
-                className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-              >
-                <Layers size={16} />
-                Add Process / Client
-              </button>
-            </div>
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col max-h-[500px]">
-              <div className="overflow-y-auto no-scrollbar flex-1">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/50 text-muted-foreground sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">ID</th>
-                    <th className="px-4 py-3 font-medium">Client / Process Name</th>
-                    <th className="px-4 py-3 font-medium">Created Date</th>
-                    <th className="px-4 py-3 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {clientsLoading ? (
-                    <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Loading processes...</td></tr>
-                  ) : clients.length === 0 ? (
-                    <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">No processes found.</td></tr>
-                  ) : (
-                    clients.map((c: any) => (
-                      <tr key={c.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 text-muted-foreground">#{c.id}</td>
-                        <td className="px-4 py-3 font-bold text-slate-800">{c.client_name}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button 
-                            onClick={() => handleDeleteClient(c.id, c.client_name)}
-                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-200 transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-                </table>
-              </div>
-            </div>
 
-            {/* ADD CLIENT MODAL */}
-            {showAddClientModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                <div className="bg-white rounded-lg shadow-xl w-[400px] overflow-hidden">
-                  <div className="px-6 py-4 border-b flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">Add New Process / Client</h3>
-                    <button onClick={() => setShowAddClientModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
-                  </div>
-                  <div className="p-6 flex flex-col gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Process Name (e.g., SBI Recovery)</label>
-                      <input 
-                        type="text" 
-                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500" 
-                        value={newClientName} 
-                        onChange={e => setNewClientName(e.target.value)} 
-                        placeholder="Enter process name"
-                      />
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 bg-slate-50 border-t flex justify-end gap-3">
-                    <button 
-                      onClick={() => setShowAddClientModal(false)} 
-                      className="px-4 py-2 border rounded-md hover:bg-slate-100 text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={handleAddClient} 
-                      disabled={isSubmitting}
-                      className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-                    >
-                      {isSubmitting ? 'Creating...' : 'Add Process'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
       case 'tracker':
         const daysInMonth = new Date(trackerYear, trackerMonth, 0).getDate();
         const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -805,6 +657,40 @@ export default function AdminPage() {
                 <p className="text-muted-foreground">View who uploaded which excel and manage records.</p>
               </div>
               <div className="flex gap-4">
+                <select
+                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  value={filterLocation}
+                  onChange={(e) => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}
+                >
+                  <option value="">All Locations</option>
+                  {locationOptions.map(loc => (
+                    <option key={loc.id} value={loc.name}>{loc.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  value={filterClient}
+                  onChange={(e) => { setFilterClient(e.target.value); setFilterProduct(''); }}
+                >
+                  <option value="">All Processes</option>
+                  {clientOptions.filter(c => {
+                      if (!filterLocation) return true;
+                      const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
+                      return locName && c.location_names?.includes(locName);
+                  }).map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  value={filterProduct}
+                  onChange={(e) => setFilterProduct(e.target.value)}
+                >
+                  <option value="">All Products</option>
+                  {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || String(c.id) === String(filterClient)).map((c: any) => c.product_type).filter(Boolean))).map((p: any) => (
+                      <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
                 <select 
                   className="border rounded-md px-3 py-2 outline-none bg-white"
                   value={deleteMonth}
@@ -863,6 +749,10 @@ export default function AdminPage() {
                             <thead className="bg-white text-muted-foreground border-b">
                               <tr>
                                 <th className="px-5 py-3 font-medium">Uploaded Date</th>
+                                <th className="px-5 py-3 font-medium">Location</th>
+                                <th className="px-5 py-3 font-medium">Process</th>
+                                <th className="px-5 py-3 font-medium">Product Type</th>
+                                <th className="px-5 py-3 font-medium">Bucket</th>
                                 <th className="px-5 py-3 font-medium">File Name</th>
                                 <th className="px-5 py-3 font-medium">Status</th>
                                 <th className="px-5 py-3 font-medium">Rows (Processed / Total)</th>
@@ -878,6 +768,10 @@ export default function AdminPage() {
                                       {job.upload_at ? new Date(job.upload_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                                       <span className="block text-xs text-muted-foreground font-normal">Sys: {new Date(job.created_at).toLocaleString()}</span>
                                     </td>
+                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.location_name || '-'}</td>
+                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.client_name || '-'}</td>
+                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.product_type || '-'}</td>
+                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.buckets || '-'}</td>
                                     <td className="px-5 py-3 text-slate-600 font-medium max-w-[200px] truncate" title={fileName}>{fileName}</td>
                                     <td className="px-5 py-3 text-muted-foreground">
                                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${job.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : job.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -975,7 +869,7 @@ export default function AdminPage() {
                             {u.role}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-600">{u.location || '—'}</td>
+                        <td className="px-4 py-3 font-medium text-slate-600">{u.location || '-'}</td>
                         <td className="px-4 py-3 text-green-600">Active</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-2">
@@ -1071,10 +965,9 @@ export default function AdminPage() {
                           onChange={e => setNewLocation(e.target.value)}
                         >
                           <option value="">Select Location</option>
-                          <option value="UN">Uttam Nagar (UN)</option>
-                          <option value="Puna">Puna (Puna)</option>
-                          <option value="Noida">Noida (Noida)</option>
-                          <option value="GGN">Gurugram (GGN)</option>
+                          {locationOptions.map(loc => (
+                            <option key={loc.id} value={loc.id}>{loc.name}</option>
+                          ))}
                         </select>
                       </div>
                     )}
@@ -1478,203 +1371,7 @@ export default function AdminPage() {
             <p className="text-sm">Configuration section under development.</p>
           </div>
         );
-      case 'master-grids':
-        return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto h-full relative overflow-y-auto">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Master Grids</h2>
-                <p className="text-muted-foreground">Manage dynamic matrices for Normal Cases logic.</p>
-              </div>
-            </div>
 
-            <div className="flex gap-4 border-b">
-              {['associateTenured', 'associateVintage', 'leadership', 'specialExceptions'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveMasterGridTab(tab)}
-                  className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeMasterGridTab === tab
-                      ? 'border-purple-600 text-purple-600'
-                      : 'border-transparent text-muted-foreground hover:text-slate-800'
-                  }`}
-                >
-                  {tab === 'associateTenured' ? 'Associate Tenured (>3M)' : 
-                   tab === 'associateVintage' ? 'Associate Vintage (0-3M)' : 
-                   tab === 'specialExceptions' ? 'Special Exceptions (>=3.5L)' : 'Leadership (TL/ATL/AM)'}
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
-              <div className="px-4 py-3 border-b bg-muted/50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">
-                  {activeMasterGridTab === 'associateTenured' ? 'Tenured Logic Matrix' : 
-                   activeMasterGridTab === 'associateVintage' ? 'Vintage Fixed Matrix' : 'Leadership Matrix'}
-                </h3>
-                <button 
-                    disabled={isSavingMasterGrid}
-                    onClick={() => handleSaveMasterGrid(activeMasterGridTab)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
-                >
-                    {isSavingMasterGrid ? 'Saving...' : 'Save Grid'}
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted/30 text-muted-foreground border-b">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
-                      {activeMasterGridTab === 'associateTenured' && (
-                        <>
-                          <th className="px-4 py-3 font-medium">&lt;16k (%)</th>
-                          <th className="px-4 py-3 font-medium">16k-18k (%)</th>
-                          <th className="px-4 py-3 font-medium">18k-24k (%)</th>
-                          <th className="px-4 py-3 font-medium">&gt;24k (%)</th>
-                        </>
-                      )}
-                      {activeMasterGridTab === 'associateVintage' && (
-                        <>
-                          <th className="px-4 py-3 font-medium">Month 0 (₹)</th>
-                          <th className="px-4 py-3 font-medium">Month 1 (₹)</th>
-                          <th className="px-4 py-3 font-medium">Month 2 (₹)</th>
-                          <th className="px-4 py-3 font-medium">Month 3 (₹)</th>
-                        </>
-                      )}
-                      {activeMasterGridTab === 'leadership' && (
-                        <>
-                          <th className="px-4 py-3 font-medium">Role</th>
-                          <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                        </>
-                      )}
-                      {activeMasterGridTab === 'specialExceptions' && (
-                        <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                      )}
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                      {masterGridsLoading ? (
-                          <tr><td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
-                      ) : (
-                          masterGrids[activeMasterGridTab as keyof typeof masterGrids]?.map((row: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-slate-50/50">
-                                  {activeMasterGridTab === 'leadership' && (
-                                    <td className="px-4 py-2">
-                                        <select
-                                            value={row.role || ''}
-                                            onChange={(e) => {
-                                                const newGrids = { ...masterGrids };
-                                                newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].role = e.target.value;
-                                                setMasterGrids(newGrids);
-                                            }}
-                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-purple-500 w-full"
-                                        >
-                                            <option value="TL">TL</option>
-                                            <option value="ATL">ATL</option>
-                                            <option value="AM">AM</option>
-                                        </select>
-                                    </td>
-                                  )}
-                                  <td className="px-4 py-2">
-                                      <input 
-                                          type="number" 
-                                          value={row.target_collection} 
-                                          onChange={(e) => {
-                                              const newGrids = { ...masterGrids };
-                                              newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].target_collection = e.target.value;
-                                              setMasterGrids(newGrids);
-                                          }}
-                                          className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-purple-500 w-full"
-                                      />
-                                  </td>
-                                  {activeMasterGridTab === 'associateTenured' && (
-                                    <>
-                                      {['under_16k', 'between_16_18k', 'between_18_24k', 'over_24k'].map((field) => (
-                                          <td key={field} className="px-4 py-2">
-                                              <input type="number" step="0.01" value={row[field]} onChange={(e) => {
-                                                  const newGrids = { ...masterGrids };
-                                                  newGrids.associateTenured[idx][field] = e.target.value;
-                                                  setMasterGrids(newGrids);
-                                              }} className="border rounded px-2 py-1 outline-none w-full" />
-                                          </td>
-                                      ))}
-                                    </>
-                                  )}
-                                  {activeMasterGridTab === 'associateVintage' && (
-                                    <>
-                                      {['m0', 'm1', 'm2', 'm3'].map((field) => (
-                                          <td key={field} className="px-4 py-2">
-                                              <input type="number" value={row[field]} onChange={(e) => {
-                                                  const newGrids = { ...masterGrids };
-                                                  newGrids.associateVintage[idx][field] = e.target.value;
-                                                  setMasterGrids(newGrids);
-                                              }} className="border rounded px-2 py-1 outline-none w-full" />
-                                          </td>
-                                      ))}
-                                    </>
-                                  )}
-                                  {activeMasterGridTab === 'leadership' && (
-                                    <td className="px-4 py-2">
-                                        <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
-                                            const newGrids = { ...masterGrids };
-                                            newGrids.leadership[idx].incentive_percentage = e.target.value;
-                                            setMasterGrids(newGrids);
-                                        }} className="border rounded px-2 py-1 outline-none w-full" />
-                                    </td>
-                                  )}
-                                  {activeMasterGridTab === 'specialExceptions' && (
-                                    <td className="px-4 py-2">
-                                        <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
-                                            const newGrids = { ...masterGrids };
-                                            newGrids.specialExceptions[idx].incentive_percentage = e.target.value;
-                                            setMasterGrids(newGrids);
-                                        }} className="border rounded px-2 py-1 outline-none w-full" />
-                                    </td>
-                                  )}
-                                  <td className="px-4 py-2 text-right">
-                                      <button 
-                                          onClick={() => {
-                                              const newGrids = { ...masterGrids };
-                                              newGrids[activeMasterGridTab as keyof typeof masterGrids] = newGrids[activeMasterGridTab as keyof typeof masterGrids].filter((_, i) => i !== idx);
-                                              setMasterGrids(newGrids);
-                                          }}
-                                          className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded text-xs"
-                                      >
-                                          Remove
-                                      </button>
-                                  </td>
-                              </tr>
-                          ))
-                      )}
-                      <tr>
-                          <td colSpan={10} className="px-4 py-3 bg-muted/10">
-                              <button 
-                                  onClick={() => {
-                                      const newGrids = { ...masterGrids };
-                                      if (activeMasterGridTab === 'associateTenured') {
-                                          newGrids.associateTenured.push({ target_collection: '', under_16k: '', between_16_18k: '', between_18_24k: '', over_24k: '' });
-                                      } else if (activeMasterGridTab === 'associateVintage') {
-                                          newGrids.associateVintage.push({ target_collection: '', m0: '', m1: '', m2: '', m3: '' });
-                                      } else if (activeMasterGridTab === 'leadership') {
-                                          newGrids.leadership.push({ role: 'TL', target_collection: '', incentive_percentage: '' });
-                                      } else if (activeMasterGridTab === 'specialExceptions') {
-                                          newGrids.specialExceptions.push({ target_collection: '', incentive_percentage: '' });
-                                      }
-                                      setMasterGrids(newGrids);
-                                  }}
-                                  className="text-purple-600 hover:text-purple-800 text-sm font-bold w-full text-left"
-                              >
-                                  + Add New Rule
-                              </button>
-                          </td>
-                      </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
       case 'special':
         return (
           <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">

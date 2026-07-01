@@ -176,7 +176,7 @@ const Topbar: React.FC<TopbarProps> = ({ user, activePage, logout, toggleMobileM
                     {user?.name || 'System Admin'}
                   </span>
                   <span className="text-[10px] text-muted-foreground truncate">
-                    {user?.email || 'admin@dr.com'}
+                    {user?.email || user?.username || 'No Email'}
                   </span>
                   {(user?.empId || user?.employee_code || user?.employeeId) && (
                     <span className="text-[10px] text-muted-foreground truncate font-mono">

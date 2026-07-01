@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         queryParams.push(`%${search}%`);
       } else {
         const p = `$${queryParams.length + 1}`;
-        conditions.push(`(account_no ILIKE ${p} OR employee_name ILIKE ${p} OR phone_no ILIKE ${p} OR employee_code ILIKE ${p})`);
+        conditions.push(`(account_no ILIKE ${p} OR employee_name ILIKE ${p} OR mobile_no ILIKE ${p} OR employee_code ILIKE ${p})`);
         queryParams.push(`%${search}%`);
       }
     }
@@ -48,7 +48,8 @@ export async function GET(req: Request) {
 
     const multiMatchFilters = [
       'employee_code', 'product', 'bucket', 'location', 
-      'aph', 'ph', 'client', 'tl_name', 'employee_name'
+      'aph', 'ph', 'client', 'tl_name', 'employee_name',
+      'am', 'payment_mode'
     ];
 
     multiMatchFilters.forEach(key => {
@@ -82,6 +83,12 @@ export async function GET(req: Request) {
     if (uploadDate) {
       conditions.push(`DATE(upload_at) = $${queryParams.length + 1}`);
       queryParams.push(uploadDate);
+    }
+
+    const clientId = searchParams.get('client_id') || '';
+    if (clientId) {
+      conditions.push(`client_id = $${queryParams.length + 1}`);
+      queryParams.push(parseInt(clientId));
     }
 
     const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -125,10 +132,12 @@ export async function GET(req: Request) {
         money_collected as outstanding, 
         payment_mode,
         tl_name,
+        am,
+        cm,
         am as agent, 
         aph,
         ph,
-        phone_no,
+        mobile_no,
         TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at,
         COALESCE(is_duplicate, FALSE) as is_duplicate,
         fraud_flag
@@ -164,20 +173,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { 
       account_no, employee_code, name, client, product, bucket, location, 
-      outstanding, payment_mode, tl_name, agent, aph, ph, phone_no 
+      outstanding, payment_mode, tl_name, agent, aph, ph, mobile_no 
     } = body;
 
     const query = `
       INSERT INTO dpf_records (
         account_no, employee_code, employee_name, client, product, bucket, location,
-        money_collected, payment_mode, tl_name, am, aph, ph, phone_no, upload_at
+        money_collected, payment_mode, tl_name, am, cm, aph, ph, mobile_no, upload_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_DATE
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_DATE
       ) RETURNING id
     `;
     const values = [
       account_no, employee_code, name, client, product, bucket, location,
-      outstanding ? Number(outstanding) : 0, payment_mode, tl_name, agent, aph, ph, phone_no
+      outstanding ? Number(outstanding) : 0, payment_mode, tl_name, agent, null, aph, ph, mobile_no
     ];
 
     const res = await pool.query(query, values);

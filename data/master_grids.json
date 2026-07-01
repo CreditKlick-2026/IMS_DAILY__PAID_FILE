@@ -1,0 +1,254 @@
+{
+  "associateTenured": [
+    {
+      "target_collection": "225000",
+      "under_16k": "2.50",
+      "between_16_18k": "0.00",
+      "between_18_24k": "0.00",
+      "over_24k": "0.00"
+    },
+    {
+      "target_collection": "260000",
+      "under_16k": "2.50",
+      "between_16_18k": "2.50",
+      "between_18_24k": "0.00",
+      "over_24k": "0.00"
+    },
+    {
+      "target_collection": "280000",
+      "under_16k": "2.50",
+      "between_16_18k": "2.50",
+      "between_18_24k": "2.50",
+      "over_24k": "0.00"
+    },
+    {
+      "target_collection": "300000",
+      "under_16k": "3.00",
+      "between_16_18k": "3.00",
+      "between_18_24k": "3.00",
+      "over_24k": "0.00"
+    },
+    {
+      "target_collection": "350000",
+      "under_16k": "3.25",
+      "between_16_18k": "3.25",
+      "between_18_24k": "3.25",
+      "over_24k": "3.25"
+    },
+    {
+      "target_collection": "400000",
+      "under_16k": "4.00",
+      "between_16_18k": "4.00",
+      "between_18_24k": "4.00",
+      "over_24k": "4.00"
+    }
+  ],
+  "associateVintage": [
+    {
+      "target_collection": "25000",
+      "m0": "500",
+      "m1": "0",
+      "m2": "0",
+      "m3": "0"
+    },
+    {
+      "target_collection": "50000",
+      "m0": "1000",
+      "m1": "0",
+      "m2": "0",
+      "m3": "0"
+    },
+    {
+      "target_collection": "75000",
+      "m0": "2000",
+      "m1": "500",
+      "m2": "0",
+      "m3": "0"
+    },
+    {
+      "target_collection": "100000",
+      "m0": "3000",
+      "m1": "1500",
+      "m2": "500",
+      "m3": "0"
+    },
+    {
+      "target_collection": "150000",
+      "m0": "4000",
+      "m1": "2750",
+      "m2": "2500",
+      "m3": "1000"
+    },
+    {
+      "target_collection": "175000",
+      "m0": "5000",
+      "m1": "3500",
+      "m2": "3375",
+      "m3": "2000"
+    },
+    {
+      "target_collection": "200000",
+      "m0": "6000",
+      "m1": "5000",
+      "m2": "4000",
+      "m3": "4000"
+    },
+    {
+      "target_collection": "250000",
+      "m0": "7500",
+      "m1": "7500",
+      "m2": "7500",
+      "m3": "7500"
+    }
+  ],
+  "leadership": [
+    {
+      "role": "TL",
+      "target_collection": "200000",
+      "incentive_percentage": "0.45"
+    },
+    {
+      "role": "AM",
+      "target_collection": "215000",
+      "incentive_percentage": "0.0012"
+    },
+    {
+      "role": "TL",
+      "target_collection": "215000",
+      "incentive_percentage": "0.60"
+    },
+    {
+      "role": "AM",
+      "target_collection": "225000",
+      "incentive_percentage": "0.0020"
+    },
+    {
+      "role": "TL",
+      "target_collection": "230000",
+      "incentive_percentage": "0.70"
+    },
+    {
+      "role": "AM",
+      "target_collection": "235000",
+      "incentive_percentage": "0.0025"
+    },
+    {
+      "role": "AM",
+      "target_collection": "240000",
+      "incentive_percentage": "0.0030"
+    },
+    {
+      "role": "TL",
+      "target_collection": "250000",
+      "incentive_percentage": "0.80"
+    },
+    {
+      "role": "AM",
+      "target_collection": "250000",
+      "incentive_percentage": "0.0035"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "270000",
+      "incentive_percentage": "0.60"
+    },
+    {
+      "role": "TL",
+      "target_collection": "270000",
+      "incentive_percentage": "1.00"
+    },
+    {
+      "role": "AM",
+      "target_collection": "275000",
+      "incentive_percentage": "0.0040"
+    },
+    {
+      "role": "TL",
+      "target_collection": "300000",
+      "incentive_percentage": "1.15"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "300000",
+      "incentive_percentage": "0.80"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "325000",
+      "incentive_percentage": "1.05"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "350000",
+      "incentive_percentage": "1.20"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "375000",
+      "incentive_percentage": "1.27"
+    },
+    {
+      "role": "ATL",
+      "target_collection": "400000",
+      "incentive_percentage": "1.39"
+    }
+  ],
+  "specialExceptions": [
+    {
+      "target_collection": "350000",
+      "incentive_percentage": "3.25"
+    },
+    {
+      "target_collection": "400000",
+      "incentive_percentage": "4"
+    }
+  ],
+  "grid1_mapping": {
+    "locations": [
+      "uttam nagar"
+    ],
+    "clients": [
+      "sbi recovery"
+    ],
+    "products": [
+      "card"
+    ]
+  },
+  "tenured_salary_ranges": [
+    {
+      "key": "under_16k",
+      "min": 0,
+      "max": 15999,
+      "label": "<16k (%)"
+    },
+    {
+      "key": "between_16_18k",
+      "min": 16000,
+      "max": 17999,
+      "label": "16k-18k (%)"
+    },
+    {
+      "key": "between_18_24k",
+      "min": 18000,
+      "max": 23999,
+      "label": "18k-24k (%)"
+    },
+    {
+      "key": "over_24k",
+      "min": 24000,
+      "max": 9999999,
+      "label": ">24k (%)"
+    }
+  ],
+  "column_mappings": {
+    "collection": "total_money_collected",
+    "salary": "ctc",
+    "doj": "date_of_joining",
+    "designation": "job_title",
+    "tl_name": "tl_name",
+    "am_name": "am_name",
+    "employee_id": "employee_no",
+    "employee_code": "employee_code",
+    "employee_name": "employee_name"
+  }
+}

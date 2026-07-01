@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "next-dev": "next dev",
-    "worker": "tsx worker.ts",
+    "worker": "tsx --watch worker.ts",
     "dev": "concurrently \"npm run next-dev\" \"npm run worker\"",
     "build": "next build",
     "start": "next start",

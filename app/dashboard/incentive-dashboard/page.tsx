@@ -12,9 +12,43 @@ export default function IncentiveDashboard() {
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
 
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterClient, setFilterClient] = useState("");
+  const [locationOptions, setLocationOptions] = useState<any[]>([]);
+  const [clientOptions, setClientOptions] = useState<any[]>([]);
+
   useEffect(() => {
-    fetchData();
-  }, [filterMonth, filterYear]);
+    fetch('/api/public/locations').then(r => r.json()).then(d => { if (d.success) setLocationOptions(d.data); });
+  }, []);
+
+  useEffect(() => {
+    let url = '/api/universal/clients';
+    if (filterLocation && locationOptions.length > 0) {
+      const loc = locationOptions.find(l => l.name === filterLocation);
+      if (loc) {
+        url += `?location_id=${loc.id}`;
+      }
+    }
+    fetch(url).then(r => r.json()).then(d => {
+      if (d.success) {
+        setClientOptions(d.data);
+        if (!d.data.find((p: any) => String(p.id) === String(filterClient))) {
+          setFilterClient('');
+        }
+      }
+    });
+  }, [filterLocation, locationOptions]);
+
+  useEffect(() => {
+    if (user) {
+      if (!filterClient) {
+        setData([]);
+        setLoading(false);
+        return;
+      }
+      fetchData();
+    }
+  }, [user, filterMonth, filterYear, filterClient, clientOptions]);
 
   const fetchData = async () => {
     try {
@@ -22,6 +56,12 @@ export default function IncentiveDashboard() {
       const queryParams = new URLSearchParams();
       if (filterMonth) queryParams.append('month', filterMonth);
       if (filterYear) queryParams.append('year', filterYear);
+      if (filterClient) {
+         const clientName = clientOptions.find(c => String(c.id) === String(filterClient))?.name;
+         if (clientName) {
+            queryParams.append('client', clientName);
+         }
+      }
 
       const res = await fetch(`/api/universal/dashboard?${queryParams.toString()}`);
       const result = await res.json();
@@ -91,6 +131,24 @@ export default function IncentiveDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {user?.role === 'admin' && (
+            <select
+              className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors cursor-pointer"
+              value={filterLocation}
+              onChange={e => { setFilterLocation(e.target.value); setFilterClient(''); }}
+            >
+              <option value="">All Locations</option>
+              {locationOptions.map(loc => <option key={loc.id} value={loc.name}>{loc.name}</option>)}
+            </select>
+          )}
+          <select
+            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors cursor-pointer"
+            value={filterClient}
+            onChange={e => setFilterClient(e.target.value)}
+          >
+            <option value="">All Processes</option>
+            {clientOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
           <select
             className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors cursor-pointer"
             value={filterMonth}
@@ -127,7 +185,13 @@ export default function IncentiveDashboard() {
         </div>
       </div>
 
-      {loading ? (
+      {!filterClient ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[400px] bg-white rounded-2xl border border-slate-200 border-dashed">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 mb-4"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <p className="font-bold text-lg text-slate-500">Select a Process</p>
+          <p className="text-sm">Please select a Process to view dashboard data.</p>
+        </div>
+      ) : loading ? (
         <div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[400px]">
           <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
           <p className="font-bold tracking-wide">Analyzing Data Matrix...</p>

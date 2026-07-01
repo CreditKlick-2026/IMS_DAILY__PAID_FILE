@@ -21,12 +21,21 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
+    const locationName = searchParams.get('location');
+    const processId = searchParams.get('client_id'); // This is actually process_id from frontend
+    const productName = searchParams.get('product_type');
 
     let queryText = `
-      SELECT id, file_path, status, total_rows, processed_rows, 
-      TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
-      TO_CHAR(upload_at, 'YYYY-MM-DD') as upload_at, uploaded_by_employee_id, uploaded_by_name, target_employee_id, is_edited_by_admin, job_type
-      FROM upload_jobs
+      SELECT u.id, u.file_path, u.status, u.total_rows, u.processed_rows, 
+      TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
+      TO_CHAR(u.upload_at, 'YYYY-MM-DD') as upload_at, u.uploaded_by_employee_id, u.uploaded_by_name, u.target_employee_id, u.is_edited_by_admin, u.job_type, u.product_type,
+      l.name as location_name, c.name as client_name,
+      (SELECT string_agg(DISTINCT bucket, ', ') FROM dpf_records d WHERE d.job_id = u.id) as buckets
+        FROM upload_jobs u
+        LEFT JOIN master_client c ON COALESCE(u.client_id, u.process_id) = c.id
+        LEFT JOIN client_location_mapping clm ON c.id = clm.client_id
+        LEFT JOIN master_location l ON COALESCE(u.location_id, clm.location_id) = l.id
+        WHERE 1=1
     `;
     let queryParams: any[] = [];
 
@@ -34,18 +43,33 @@ export async function GET(req: Request) {
       const month = parseInt(monthStr);
       const year = parseInt(yearStr);
       if (month !== 0 && year !== 0) {
-        queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 AND EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $2 `;
         queryParams.push(month, year);
+        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length - 1} AND EXTRACT(YEAR FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
       } else if (month !== 0) {
-        queryText += ` WHERE EXTRACT(MONTH FROM COALESCE(upload_at, created_at)) = $1 `;
         queryParams.push(month);
+        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
       } else if (year !== 0) {
-        queryText += ` WHERE EXTRACT(YEAR FROM COALESCE(upload_at, created_at)) = $1 `;
         queryParams.push(year);
+        queryText += ` AND EXTRACT(YEAR FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
       }
     }
     
-    queryText += ` ORDER BY created_at DESC`;
+    if (locationName) {
+      queryParams.push(locationName);
+      queryText += ` AND l.name = $${queryParams.length} `;
+    }
+    
+    if (processId) {
+      queryParams.push(parseInt(processId));
+      queryText += ` AND COALESCE(u.client_id, u.process_id) = $${queryParams.length} `;
+    }
+
+    if (productName) {
+      queryParams.push(productName);
+      queryText += ` AND u.product_type = $${queryParams.length} `;
+    }
+    
+    queryText += ` ORDER BY u.created_at DESC`;
 
     const res = await query(queryText, queryParams);
     return NextResponse.json({ success: true, jobs: res.rows });

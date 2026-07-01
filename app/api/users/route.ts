@@ -19,9 +19,10 @@ export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const query = `
-      SELECT id, employee_id, name, username, role, email, location 
-      FROM users 
-      ORDER BY id ASC;
+      SELECT u.id, u.employee_id, u.name, u.username, u.role, u.email, COALESCE(l.name, u.location) as location, u.location_id
+      FROM users u
+      LEFT JOIN master_location l ON u.location_id = l.id
+      ORDER BY u.id ASC;
     `;
     const res = await pool.query(query);
     return NextResponse.json({ users: res.rows });
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
   const admin = await checkAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
-    const { employee_id, name, username, password, role, email, location } = await req.json();
+    const { employee_id, name, username, password, role, email, location, location_id } = await req.json();
 
     if (!username || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -80,8 +81,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
-    const query = 'INSERT INTO users (employee_id, name, username, password, role, email, location) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, employee_id, name, username, role, email, location';
-    const res = await pool.query(query, [employee_id || username, name || username, username, password, role, email || null, location || null]);
+    // Support both location and location_id from req for backward compatibility
+    const query = 'INSERT INTO users (employee_id, name, username, password, role, email, location, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, employee_id, name, username, role, email, location, location_id';
+    const res = await pool.query(query, [employee_id || username, name || username, username, password, role, email || null, location || null, location_id || null]);
     const newUserId = res.rows[0].id;
 
     // Track Audit Log

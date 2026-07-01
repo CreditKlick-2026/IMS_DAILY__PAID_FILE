@@ -13,10 +13,12 @@ export async function POST(req: Request) {
     const file = formData.get('file') as File;
     const password = formData.get('password') as string || null;
     const uploadAt = formData.get('upload_at') as string || null;
-    const processId = formData.get('process_id') as string || null;
+    const clientId = formData.get('client_id') as string || null;
+    const locationId = formData.get('location_id') as string || null;
     const employeeId = formData.get('employee_id') as string || null;
     const employeeName = formData.get('name') as string || null;
     const targetEmployeeId = formData.get('target_employee_id') as string || employeeId;
+    const productType = formData.get('product_type') as string || null;
     
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -49,15 +51,17 @@ export async function POST(req: Request) {
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_employee_id VARCHAR(100);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS uploaded_by_name VARCHAR(255);
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS target_employee_id VARCHAR(100);
-      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS process_id INTEGER;
+      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS client_id INTEGER;
+      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS location_id INTEGER;
       ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS is_edited_by_admin BOOLEAN DEFAULT FALSE;
+      ALTER TABLE upload_jobs ADD COLUMN IF NOT EXISTS product_type VARCHAR(100);
     `);
 
     // 3. Create the Job Entry as 'PENDING'
     await query(`
-      INSERT INTO upload_jobs (id, file_path, file_data, password, upload_at, process_id, uploaded_by_employee_id, uploaded_by_name, status, target_employee_id) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PENDING', $9)
-    `, [jobId, fileName, base64Data, password, uploadAt, processId ? parseInt(processId) : null, employeeId, employeeName, targetEmployeeId]);
+      INSERT INTO upload_jobs (id, file_path, file_data, password, upload_at, client_id, location_id, uploaded_by_employee_id, uploaded_by_name, status, target_employee_id, product_type) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', $10, $11)
+    `, [jobId, fileName, base64Data, password, uploadAt, clientId ? parseInt(clientId) : null, locationId ? parseInt(locationId) : null, employeeId, employeeName, targetEmployeeId, productType]);
 
     // Track Audit Log
     await logAudit(

@@ -22,20 +22,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json();
     const { 
       account_no, employee_code, name, client, product, bucket, location, 
-      outstanding, payment_mode, tl_name, agent, aph, ph, phone_no 
+      outstanding, payment_mode, tl_name, agent, aph, ph, mobile_no 
     } = body;
 
     const query = `
       UPDATE dpf_records SET
         account_no = $1, employee_code = $2, employee_name = $3, client = $4, product = $5, 
         bucket = $6, location = $7, money_collected = $8, payment_mode = $9, tl_name = $10, 
-        am = $11, aph = $12, ph = $13, phone_no = $14
+        am = $11, aph = $12, ph = $13, mobile_no = $14
       WHERE id = $15
       RETURNING id
     `;
     const values = [
       account_no, employee_code, name, client, product, bucket, location,
-      outstanding ? Number(outstanding) : 0, payment_mode, tl_name, agent, aph, ph, phone_no, id
+      outstanding ? Number(outstanding) : 0, payment_mode, tl_name, agent, aph, ph, mobile_no, id
     ];
 
     const res = await pool.query(query, values);

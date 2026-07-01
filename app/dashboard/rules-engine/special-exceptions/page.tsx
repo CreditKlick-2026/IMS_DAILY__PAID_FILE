@@ -17,17 +17,10 @@ export default function SpecialExceptionsPage() {
   const specialLimit = 10;
   const [specialTotal, setSpecialTotal] = useState(0);
 
-  // Master Grids States
-  const [activeMasterGridTab, setActiveMasterGridTab] = useState('associateTenured');
-  const [masterGrids, setMasterGrids] = useState<any>({
-    associateTenured: [], associateVintage: [], leadership: [], specialExceptions: []
-  });
-  const [masterGridsLoading, setMasterGridsLoading] = useState(false);
-  const [isSavingMasterGrid, setIsSavingMasterGrid] = useState(false);
+
 
   useEffect(() => {
     fetchSpecialGrid();
-    fetchMasterGrids();
     fetchSpecialEmployees();
   }, []);
 
@@ -90,37 +83,7 @@ export default function SpecialExceptionsPage() {
     }
   };
 
-  const fetchMasterGrids = () => {
-    setMasterGridsLoading(true);
-    fetch('/api/admin/master-grids')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) setMasterGrids(d.data);
-        setMasterGridsLoading(false);
-      })
-      .catch(() => setMasterGridsLoading(false));
-  };
 
-  const handleSaveMasterGrid = async (gridName: string) => {
-    setIsSavingMasterGrid(true);
-    try {
-        const res = await fetch('/api/admin/master-grids', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gridName, data: masterGrids[gridName as keyof typeof masterGrids] })
-        });
-        const data = await res.json();
-        if (!data.success) {
-            alert('Failed to save grid');
-        } else {
-            alert('Grid updated successfully!');
-        }
-    } catch (e) {
-        alert('Error saving grid');
-    } finally {
-        setIsSavingMasterGrid(false);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
@@ -318,195 +281,7 @@ export default function SpecialExceptionsPage() {
         )}
       </div>
 
-      {/* MASTER GRIDS SECTION */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col mt-4">
-        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/50">
-          {['associateTenured', 'associateVintage', 'leadership', 'specialExceptions'].map((tab) => (
-            <button
-              key={tab}
-              className={`px-6 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors relative ${
-                activeMasterGridTab === tab 
-                  ? 'text-purple-600' 
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
-              }`}
-              onClick={() => setActiveMasterGridTab(tab)}
-            >
-              {tab === 'associateTenured' ? 'Tenured Logic' : 
-               tab === 'associateVintage' ? 'Vintage Fixed' : 
-               tab === 'leadership' ? 'Leadership Matrix' : 'Special Overrides'}
-              {activeMasterGridTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600" />
-              )}
-            </button>
-          ))}
-        </div>
-        <div className="px-4 py-3 border-b bg-white flex justify-between items-center">
-          <h3 className="font-bold text-slate-800">
-            {activeMasterGridTab === 'associateTenured' ? 'Tenured Logic Matrix' : 
-             activeMasterGridTab === 'associateVintage' ? 'Vintage Fixed Matrix' : 
-             activeMasterGridTab === 'leadership' ? 'Leadership Matrix' : 'Special Exceptions Override'}
-          </h3>
-          <button 
-              disabled={isSavingMasterGrid}
-              onClick={() => handleSaveMasterGrid(activeMasterGridTab)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
-          >
-              {isSavingMasterGrid ? 'Saving...' : 'Save Matrix'}
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50/50 text-slate-500 border-b">
-              <tr>
-                <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
-                {activeMasterGridTab === 'associateTenured' && (
-                  <>
-                    <th className="px-4 py-3 font-medium">&lt;16k (%)</th>
-                    <th className="px-4 py-3 font-medium">16k-18k (%)</th>
-                    <th className="px-4 py-3 font-medium">18k-24k (%)</th>
-                    <th className="px-4 py-3 font-medium">&gt;24k (%)</th>
-                  </>
-                )}
-                {activeMasterGridTab === 'associateVintage' && (
-                  <>
-                    <th className="px-4 py-3 font-medium">Month 0 (₹)</th>
-                    <th className="px-4 py-3 font-medium">Month 1 (₹)</th>
-                    <th className="px-4 py-3 font-medium">Month 2 (₹)</th>
-                    <th className="px-4 py-3 font-medium">Month 3 (₹)</th>
-                  </>
-                )}
-                {activeMasterGridTab === 'leadership' && (
-                  <>
-                    <th className="px-4 py-3 font-medium">Role</th>
-                    <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                  </>
-                )}
-                {activeMasterGridTab === 'specialExceptions' && (
-                  <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                )}
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-                {masterGridsLoading ? (
-                    <tr><td colSpan={10} className="px-4 py-6 text-center text-slate-400">Loading Grid...</td></tr>
-                ) : (
-                    masterGrids[activeMasterGridTab as keyof typeof masterGrids]?.map((row: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                            {activeMasterGridTab === 'leadership' && (
-                              <td className="px-4 py-2">
-                                  <select
-                                      value={row.role || ''}
-                                      onChange={(e) => {
-                                          const newGrids = { ...masterGrids };
-                                          newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].role = e.target.value;
-                                          setMasterGrids(newGrids);
-                                      }}
-                                      className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full"
-                                  >
-                                      <option value="TL">TL</option>
-                                      <option value="ATL">ATL</option>
-                                      <option value="AM">AM</option>
-                                  </select>
-                              </td>
-                            )}
-                            <td className="px-4 py-2">
-                                <input 
-                                    type="number" 
-                                    value={row.target_collection} 
-                                    onChange={(e) => {
-                                        const newGrids = { ...masterGrids };
-                                        newGrids[activeMasterGridTab as keyof typeof masterGrids][idx].target_collection = e.target.value;
-                                        setMasterGrids(newGrids);
-                                    }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full"
-                                />
-                            </td>
-                            {activeMasterGridTab === 'associateTenured' && (
-                              <>
-                                {['under_16k', 'between_16_18k', 'between_18_24k', 'over_24k'].map((field) => (
-                                    <td key={field} className="px-4 py-2">
-                                        <input type="number" step="0.01" value={row[field]} onChange={(e) => {
-                                            const newGrids = { ...masterGrids };
-                                            newGrids.associateTenured[idx][field] = e.target.value;
-                                            setMasterGrids(newGrids);
-                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
-                                    </td>
-                                ))}
-                              </>
-                            )}
-                            {activeMasterGridTab === 'associateVintage' && (
-                              <>
-                                {['m0', 'm1', 'm2', 'm3'].map((field) => (
-                                    <td key={field} className="px-4 py-2">
-                                        <input type="number" value={row[field]} onChange={(e) => {
-                                            const newGrids = { ...masterGrids };
-                                            newGrids.associateVintage[idx][field] = e.target.value;
-                                            setMasterGrids(newGrids);
-                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
-                                    </td>
-                                ))}
-                              </>
-                            )}
-                            {activeMasterGridTab === 'leadership' && (
-                              <td className="px-4 py-2">
-                                  <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
-                                      const newGrids = { ...masterGrids };
-                                      newGrids.leadership[idx].incentive_percentage = e.target.value;
-                                      setMasterGrids(newGrids);
-                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
-                              </td>
-                            )}
-                            {activeMasterGridTab === 'specialExceptions' && (
-                              <td className="px-4 py-2">
-                                  <input type="number" step="0.01" value={row.incentive_percentage} onChange={(e) => {
-                                      const newGrids = { ...masterGrids };
-                                      newGrids.specialExceptions[idx].incentive_percentage = e.target.value;
-                                      setMasterGrids(newGrids);
-                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
-                              </td>
-                            )}
-                            <td className="px-4 py-2 text-right">
-                                <button 
-                                    onClick={() => {
-                                        const newGrids = { ...masterGrids };
-                                        newGrids[activeMasterGridTab as keyof typeof masterGrids] = newGrids[activeMasterGridTab as keyof typeof masterGrids].filter((_, i) => i !== idx);
-                                        setMasterGrids(newGrids);
-                                    }}
-                                    className="text-red-500 hover:bg-red-50 font-medium px-3 py-1.5 rounded-md text-sm transition-colors"
-                                >
-                                    Remove
-                                </button>
-                            </td>
-                        </tr>
-                    ))
-                )}
-                <tr>
-                    <td colSpan={10} className="px-4 py-3 bg-slate-50/30">
-                        <button 
-                            onClick={() => {
-                                const newGrids = { ...masterGrids };
-                                if (activeMasterGridTab === 'associateTenured') {
-                                    newGrids.associateTenured.push({ target_collection: '', under_16k: '', between_16_18k: '', between_18_24k: '', over_24k: '' });
-                                } else if (activeMasterGridTab === 'associateVintage') {
-                                    newGrids.associateVintage.push({ target_collection: '', m0: '', m1: '', m2: '', m3: '' });
-                                } else if (activeMasterGridTab === 'leadership') {
-                                    newGrids.leadership.push({ role: 'TL', target_collection: '', incentive_percentage: '' });
-                                } else if (activeMasterGridTab === 'specialExceptions') {
-                                    newGrids.specialExceptions.push({ target_collection: '', incentive_percentage: '' });
-                                }
-                                setMasterGrids(newGrids);
-                            }}
-                            className="text-purple-600 hover:text-purple-800 text-sm font-semibold w-full text-left"
-                        >
-                            + Add New Rule
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+
     </div>
   );
 }

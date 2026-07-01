@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ButtonGroup, Button } from '@shopify/polaris';
 import { LayoutGrid, Users, Phone, UploadCloud, BarChart2, Settings, LineChart, Database, LogOut, Network } from 'lucide-react';
 
@@ -15,6 +16,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMobileOpen, isCollapsed, toggleCollapse, logout }) => {
   const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Use a small timeout to ensure the state is applied before enabling transitions
   useEffect(() => {
@@ -53,8 +56,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     },
 
     {
-      id: 'incentive', label: 'Incentive', section: 'MANAGEMENT', link: '/dashboard/incentive',
-      Icon: Database, color: 'text-blue-500'
+      id: 'incentive-gurugram', label: 'Inc - Gurugram', section: 'MANAGEMENT', link: '/dashboard/incentive/gurugram',
+      Icon: Database, color: 'text-indigo-500'
+    },
+    {
+      id: 'incentive-uttam-nagar', label: 'Inc - Uttam N', section: 'MANAGEMENT', link: '/dashboard/incentive/uttam-nagar',
+      Icon: Database, color: 'text-indigo-500'
+    },
+    {
+      id: 'incentive-pune', label: 'Inc - Pune', section: 'MANAGEMENT', link: '/dashboard/incentive/pune',
+      Icon: Database, color: 'text-indigo-500'
+    },
+    {
+      id: 'incentive-delhi', label: 'Inc - Delhi', section: 'MANAGEMENT', link: '/dashboard/incentive/delhi',
+      Icon: Database, color: 'text-indigo-500'
     },
     {
       id: 'incentive-dashboard', label: 'Incentive Dashboard', section: 'MANAGEMENT', link: '/dashboard/incentive-dashboard',
@@ -84,7 +99,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     >
       <div className="flex flex-col items-stretch gap-2 py-4 overflow-y-auto flex-1 px-2 w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {navItems.filter(i => (!i.roles || i.roles.includes(user?.role))).map((item, index) => {
-          const isActive = activePage === item.id;
+                    let isActive = activePage === item.id;
+          if (item.id.startsWith('incentive-')) {
+            const locParam = searchParams ? searchParams.get('location') : null;
+            if (locParam) {
+              // handled by activePage now
+            }
+          }
           const Icon = item.Icon;
           return (
             <Button
@@ -95,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
               icon={<span className={item.color}><Icon size={16} strokeWidth={2.5} style={{ fill: 'none' }} /></span>}
               onClick={() => {
                 if (item.link) {
-                  window.location.href = item.link;
+                  router.push(item.link);
                 } else {
                   setActivePage(item.id);
                 }

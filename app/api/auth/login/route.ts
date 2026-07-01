@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       );
       ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id VARCHAR(100);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES master_location(id);
       ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key;
       ALTER TABLE users ADD CONSTRAINT users_username_key UNIQUE (username);
 
@@ -33,26 +34,53 @@ export async function POST(request: Request) {
         ('ims9643', 'pawan', 'hr_user', 'hr_user', 'hr'), 
         ('ims7191', 'ankit', 'admin_user', 'admin123', 'admin'),
         ('GGN001', 'Gurugram User', 'ggn_user', 'password123', 'user'),
-        ('DEL001', 'Delhi User', 'del_user', 'password123', 'user'),
+
         ('UN001', 'Uttam Nagar User', 'un_user', 'password123', 'user')
       ON CONFLICT (username) DO NOTHING;
     `);
 
-    const { employee_id, password, role } = await request.json();
+    const { employee_id, password, role, location_id } = await request.json();
 
-    // Query the database for a matching user strictly based on provided role
-    const result = await query(
-      'SELECT id, employee_id, name, username, role FROM users WHERE employee_id = $1 AND password = $2 AND role = $3',
-      [employee_id, password, role]
-    );
+    let result;
+
+    if (role === 'user' && location_id) {
+      // For users: verify employee_id + password + role + location_id must all match
+      result = await query(
+        `SELECT u.id, u.employee_id, u.name, u.username, u.email, u.role, u.location_id, l.name as location_name
+         FROM users u
+         LEFT JOIN master_location l ON u.location_id = l.id
+         WHERE u.employee_id = $1 AND u.password = $2 AND u.role = $3 AND u.location_id = $4`,
+        [employee_id, password, role, location_id]
+      );
+    } else {
+      // For admin/hr: just employee_id + password + role
+      result = await query(
+        `SELECT u.id, u.employee_id, u.name, u.username, u.email, u.role, u.location_id, l.name as location_name
+         FROM users u
+         LEFT JOIN master_location l ON u.location_id = l.id
+         WHERE u.employee_id = $1 AND u.password = $2 AND u.role = $3`,
+        [employee_id, password, role]
+      );
+    }
 
     if (result.rows.length > 0) {
       const user = result.rows[0];
       
-      const response = NextResponse.json({ success: true, message: 'Login successful', user });
+      const sessionData = {
+        id: user.id,
+        employee_id: user.employee_id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        location_id: user.location_id,
+        location_name: user.location_name,
+      };
+
+      const response = NextResponse.json({ success: true, message: 'Login successful', user: sessionData });
       
       // Create a secure HttpOnly session cookie
-      response.cookies.set('auth_session', JSON.stringify({ id: user.id, employee_id: user.employee_id, name: user.name, username: user.username, role: user.role }), {
+      response.cookies.set('auth_session', JSON.stringify(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24, // 1 day
@@ -61,8 +89,10 @@ export async function POST(request: Request) {
       
       return response;
     } else {
-      // No match
-      return NextResponse.json({ success: false, message: 'Invalid credentials or role mismatch' }, { status: 401 });
+      const msg = (role === 'user' && location_id)
+        ? 'Invalid credentials or incorrect location selected'
+        : 'Invalid credentials';
+      return NextResponse.json({ success: false, message: msg }, { status: 401 });
     }
   } catch (error: any) {
     console.error("Login Error:", error);

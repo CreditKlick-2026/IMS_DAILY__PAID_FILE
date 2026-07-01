@@ -30,7 +30,7 @@ export async function GET(req: Request) {
         baseParams.push(`%${search}%`);
       } else {
         const p = `$${baseParams.length + 1}`;
-        baseConditions.push(`(account_no ILIKE ${p} OR employee_name ILIKE ${p} OR phone_no ILIKE ${p} OR employee_code ILIKE ${p})`);
+        baseConditions.push(`(account_no ILIKE ${p} OR employee_name ILIKE ${p} OR mobile_no ILIKE ${p} OR employee_code ILIKE ${p})`);
         baseParams.push(`%${search}%`);
       }
     }
@@ -69,7 +69,9 @@ export async function GET(req: Request) {
       { name: 'ph', column: 'ph' },
       { name: 'client', column: 'client' },
       { name: 'tlName', column: 'tl_name' },
-      { name: 'agentName', column: 'employee_name' }
+      { name: 'agentName', column: 'employee_name' },
+      { name: 'am', column: 'am' },
+      { name: 'paymentMode', column: 'payment_mode' }
     ];
 
     const results = await Promise.all(

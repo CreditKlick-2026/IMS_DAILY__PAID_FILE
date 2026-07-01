@@ -12,8 +12,8 @@ export default function RulesEngineLayout({ children }: { children: React.ReactN
     { label: 'Overview', path: '/dashboard/rules-engine', icon: Activity },
     { label: 'Locations', path: '/dashboard/rules-engine/locations', icon: MapPin },
     { label: 'Clients', path: '/dashboard/rules-engine/clients', icon: Briefcase },
-    { label: 'Processes', path: '/dashboard/rules-engine/processes', icon: Settings },
-    { label: 'Master Grid Builder', path: '/dashboard/rules-engine/plans', icon: Grid3X3 },
+    { label: 'Master Grid 1', path: '/dashboard/rules-engine/master-grids', icon: Grid3X3 },
+    { label: 'Master Grid 2', path: '/dashboard/rules-engine/master-grids-2', icon: Grid3X3 },
     { label: 'Special Exceptions', path: '/dashboard/rules-engine/special-exceptions', icon: AlertTriangle },
   ];
 
