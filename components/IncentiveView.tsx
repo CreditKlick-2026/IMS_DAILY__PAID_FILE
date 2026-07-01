@@ -12,17 +12,15 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedAM, setSelectedAM] = useState("");
-  const [selectedTL, setSelectedTL] = useState("");
-  const [selectedAPH, setSelectedAPH] = useState("");
-  const [selectedPH, setSelectedPH] = useState("");
-  const [selectedDesig, setSelectedDesig] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [uiConfig, setUiConfig] = useState<{ columns: string[], filters: string[] }>({ columns: [], filters: [] });
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [specialGridRules, setSpecialGridRules] = useState<any[]>([]);
   const [associateTenuredGrid, setAssociateTenuredGrid] = useState<any[]>([]);
   const [associateVintageGrid, setAssociateVintageGrid] = useState<any[]>([]);
   const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);
+  const [assignedGrid, setAssignedGrid] = useState<string>("");
+  const [grid2Slabs, setGrid2Slabs] = useState<any[]>([]);
   
   // Pagination State
   const [page, setPage] = useState(1);
@@ -59,7 +57,7 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
 
   useEffect(() => {
     setPage(1);
-  }, [search, selectedLocation, selectedAM, selectedTL, selectedAPH, selectedPH, selectedDesig, filterMonth, filterYear]);
+  }, [search, activeFilters, filterMonth, filterYear]);
 
   useEffect(() => {
     // Only admins allowed to see this raw master list
@@ -104,6 +102,8 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
         if (incResult.associateTenuredGrid) setAssociateTenuredGrid(incResult.associateTenuredGrid);
         if (incResult.associateVintageGrid) setAssociateVintageGrid(incResult.associateVintageGrid);
         if (incResult.leadershipGrid) setLeadershipGrid(incResult.leadershipGrid);
+        if (incResult.assigned_grid) setAssignedGrid(incResult.assigned_grid);
+        if (incResult.grid2Slabs) setGrid2Slabs(incResult.grid2Slabs);
         
         let mergedData = [];
         if (filterLocation || filterClient || filterProduct) {
@@ -149,34 +149,33 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
     }
   };
 
-  const locationStats = data.reduce((acc, row) => {
-    const loc = row.location || 'Unknown';
-    acc[loc] = (acc[loc] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const uniqueLocations = Object.keys(locationStats).sort();
-  const uniqueAMs = Array.from(new Set(data.map(d => d.am_name).filter(x => x && x !== '—'))).sort();
-  const uniqueTLs = Array.from(new Set(data.map(d => d.tl_name).filter(x => x && x !== '—'))).sort();
-  const uniqueAPHs = Array.from(new Set(data.map(d => d.aph).filter(x => x && x !== '—'))).sort();
-  const uniquePHs = Array.from(new Set(data.map(d => d.ph).filter(x => x && x !== '—'))).sort();
-  const uniqueDesigs = Array.from(new Set(data.map(d => d.designation).filter(x => x && x !== '—'))).sort();
+  const uniqueFilterValues = React.useMemo(() => {
+    const filtersObj: Record<string, string[]> = {};
+    if (!uiConfig.filters) return filtersObj;
+    uiConfig.filters.forEach(key => {
+        filtersObj[key] = Array.from(new Set(data.map(d => {
+            const val = d[key] || d[key.toLowerCase()];
+            return typeof val === 'string' ? val : '';
+        }).filter(x => x && x !== '—'))).sort();
+    });
+    return filtersObj;
+  }, [data, uiConfig.filters]);
 
   const filteredData = data.filter(r => {
-    const locMatch = !selectedLocation || selectedLocation === "All" || r.location === selectedLocation || (!r.location && selectedLocation === "Unknown");
-    const amMatch = !selectedAM || r.am_name === selectedAM;
-    const tlMatch = !selectedTL || r.tl_name === selectedTL;
-    const aphMatch = !selectedAPH || r.aph === selectedAPH;
-    const phMatch = !selectedPH || r.ph === selectedPH;
-    const desigMatch = !selectedDesig || r.designation === selectedDesig;
+    for (const [key, selectedVal] of Object.entries(activeFilters)) {
+      if (selectedVal && selectedVal !== "All") {
+        const rowVal = r[key] || r[key.toLowerCase()];
+        if (rowVal !== selectedVal) return false;
+      }
+    }
     
-    const searchMatch = (
+    const searchMatch = !search || (
       (r.name?.toLowerCase().includes(search.toLowerCase())) ||
       (r.employee_id?.toLowerCase().includes(search.toLowerCase())) ||
       (r.location?.toLowerCase().includes(search.toLowerCase())) ||
       (r.designation?.toLowerCase().includes(search.toLowerCase()))
     );
-    return locMatch && amMatch && tlMatch && aphMatch && phMatch && desigMatch && searchMatch;
+    return searchMatch;
   });
 
   const totalCount = filteredData.length;
@@ -206,6 +205,8 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
         <div style={{ marginBottom: 20, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--bdr)' }}>
             <TraceEngine 
                 record={selectedRecord} 
+                assignedGrid={assignedGrid}
+                grid2Slabs={grid2Slabs} 
                 specialGridRules={specialGridRules} 
                 associateTenuredGrid={associateTenuredGrid}
                 associateVintageGrid={associateVintageGrid}
@@ -336,79 +337,20 @@ export default function IncentiveView({ defaultLocation }: { defaultLocation?: s
           />
         </div>
         
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedDesig}
-          onChange={e => {
-            setSelectedDesig(e.target.value);
-            setSelectedPH(""); setSelectedAPH(""); setSelectedAM(""); setSelectedTL("");
-            setPage(1);
-          }}
-        >
-          <option value="">Designation</option>
-          {uniqueDesigs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedPH}
-          onChange={e => {
-            setSelectedPH(e.target.value);
-            setSelectedDesig(""); setSelectedAPH(""); setSelectedAM(""); setSelectedTL("");
-            setPage(1);
-          }}
-        >
-          <option value="">PH Name</option>
-          {uniquePHs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedAPH}
-          onChange={e => {
-            setSelectedAPH(e.target.value);
-            setSelectedDesig(""); setSelectedPH(""); setSelectedAM(""); setSelectedTL("");
-            setPage(1);
-          }}
-        >
-          <option value="">APH Name</option>
-          {uniqueAPHs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedAM}
-          onChange={e => {
-            setSelectedAM(e.target.value);
-            setSelectedDesig(""); setSelectedPH(""); setSelectedAPH(""); setSelectedTL("");
-            setPage(1);
-          }}
-        >
-          <option value="">AM Name</option>
-          {uniqueAMs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedTL}
-          onChange={e => {
-            setSelectedTL(e.target.value);
-            setSelectedDesig(""); setSelectedPH(""); setSelectedAPH(""); setSelectedAM("");
-            setPage(1);
-          }}
-        >
-          <option value="">TL Name</option>
-          {uniqueTLs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120 }}
-          value={selectedLocation}
-          onChange={e => { setSelectedLocation(e.target.value); setPage(1); }}
-        >
-          <option value="">Location</option>
-          {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-        </select>
+        {uiConfig.filters && uiConfig.filters.map(filterKey => (
+          <select
+            key={filterKey}
+            style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 120, textTransform: 'capitalize' }}
+            value={activeFilters[filterKey] || ""}
+            onChange={e => {
+              setActiveFilters(prev => ({ ...prev, [filterKey]: e.target.value }));
+              setPage(1);
+            }}
+          >
+            <option value="">{filterKey.replace(/_/g, ' ')}</option>
+            {uniqueFilterValues[filterKey]?.map((x: string) => <option key={x} value={x}>{x}</option>)}
+          </select>
+        ))}
 
         <select
           style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 100 }}

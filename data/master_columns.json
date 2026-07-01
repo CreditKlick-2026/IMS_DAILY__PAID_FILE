@@ -106,5 +106,14 @@
       "payment_mode",
       "PAYMENT_MODE"
     ]
+  },
+  {
+    "key": "lan",
+    "display": "LAN",
+    "labels": [
+      "LAN",
+      "lan",
+      "LAN"
+    ]
   }
 ]

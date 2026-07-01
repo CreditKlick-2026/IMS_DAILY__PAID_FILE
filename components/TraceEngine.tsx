@@ -82,6 +82,8 @@ export default function TraceEngine({
   associateTenuredGrid,
   associateVintageGrid,
   leadershipGrid,
+  assignedGrid,
+  grid2Slabs,
   onClose
 }: {
   record: any,
@@ -89,6 +91,8 @@ export default function TraceEngine({
   associateTenuredGrid?: any[],
   associateVintageGrid?: any[],
   leadershipGrid?: any[],
+  assignedGrid?: string,
+  grid2Slabs?: any[],
   onClose: () => void
 }) {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -204,7 +208,11 @@ export default function TraceEngine({
       
       mathStr = `Team Collection: ${formatCurrency(record.team_collection)}\nHeadcount: ${headCountStr}\nPCP: ${pcpStr}\nApplied Rate: ${appliedRateStr}`;
     } else {
-      if (record.vintage <= 120) {
+      // Associate — check which grid is assigned
+      if (assignedGrid === 'grid_2') {
+        ruleName = "Master Grid 2 — Slab Percentage";
+        mathStr = `Rule: Grid 2 Assigned\nCollection: ${formatCurrency(record.total_collection)}\nVintage: ${record.vintage} Days\nApplied Rate: ${record.incentive_percent}`;
+      } else if (record.vintage <= 120) {
         ruleName = "Associate Fixed Slab";
         mathStr = `Rule: Vintage <= 120 Days\nLogic: Fixed Tier Table lookup\nTarget: ${formatCurrency(record.total_collection)}`;
       } else {
@@ -462,7 +470,55 @@ export default function TraceEngine({
       };
     } else {
       // Associate Logic
-      if (isSpecial) {
+      if (assignedGrid === 'grid_2' && grid2Slabs && grid2Slabs.length > 0) {
+        formulaNodeText = `Master Grid 2 — Axis Bank Slab Lookup. Percentage based on collection amount and vintage.`;
+
+        const normalizedClient = (record.client || '').toLowerCase().replace('bank', '').trim();
+        const normalizedProduct = (record.product || '').toLowerCase();
+        const vintageDays = parseInt(record.vintage) || 0;
+
+        const matchingSlabs = grid2Slabs.filter((slab: any) => {
+          const sc = String(slab.client || '').toLowerCase().replace('bank', '').trim();
+          const sp = String(slab.product || '').toLowerCase();
+          return sc.includes(normalizedClient) && sp.includes(normalizedProduct);
+        });
+
+        // Pick vintage group: <90 or >91
+        const vintageGroup = vintageDays < 90 ? '<90 Days' : '>91 Days';
+        const vintageSlabs = matchingSlabs.filter((s: any) => String(s.vintage || '').includes(vintageDays < 90 ? '<90' : '>91'));
+        const slabsToShow = vintageSlabs.length > 0 ? vintageSlabs : matchingSlabs.slice(0, 10);
+
+        // Find highlighted row
+        let highlightIdx = -1;
+        const col = record.total_collection || 0;
+        for (let i = slabsToShow.length - 1; i >= 0; i--) {
+          const slab = slabsToShow[i];
+          let minVal: number | null = null;
+          const minStr = String(slab.min || '');
+          if (typeof slab.min === 'number') minVal = slab.min;
+          else {
+            const cleaned = minStr.replace(/,/g, '').replace(/[<>]/g, '').trim();
+            minVal = parseFloat(cleaned) || null;
+          }
+          if (minVal !== null && col >= minVal) {
+            highlightIdx = i; break;
+          }
+        }
+
+        formulaTableData = {
+          headers: ['Vintage', 'Level', 'Min', 'Max', 'Payout %'],
+          rows: slabsToShow.map((slab: any, i: number) => ({
+            highlighted: i === highlightIdx,
+            cells: [
+              { val: slab.vintage, highlighted: false },
+              { val: slab.level, highlighted: i === highlightIdx },
+              { val: typeof slab.min === 'number' ? formatCurrency(slab.min) : String(slab.min), highlighted: i === highlightIdx },
+              { val: typeof slab.max === 'number' ? formatCurrency(slab.max) : String(slab.max), highlighted: false },
+              { val: slab.payout_pct + '%', highlighted: i === highlightIdx }
+            ]
+          }))
+        };
+      } else if (isSpecial) {
         formulaNodeText = "Special Exception Logic. Flat percentage payout based on special targets.";
         
         const grid = specialGridRules || [];

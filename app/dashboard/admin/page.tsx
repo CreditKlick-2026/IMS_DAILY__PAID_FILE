@@ -50,7 +50,7 @@ export default function AdminPage() {
   const [trackerYear, setTrackerYear] = useState(new Date().getFullYear());
   const [trackerData, setTrackerData] = useState<any[]>([]);
   const [trackerLoading, setTrackerLoading] = useState(false);
-  const [deleteMonth, setDeleteMonth] = useState(new Date().getMonth() + 1);
+  const [deleteMonth, setDeleteMonth] = useState(0); // 0 means All Months
   const [deleteYear, setDeleteYear] = useState(new Date().getFullYear());
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [kekaFile, setKekaFile] = useState<File | null>(null);
