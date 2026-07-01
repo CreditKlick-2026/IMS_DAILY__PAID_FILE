@@ -199,10 +199,6 @@ export default function RecordListPage() {
         <div style={{ marginBottom: 20, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--bdr)' }}>
             <TraceEngine 
                 record={selectedRecord} 
-                specialGridRules={specialGridRules} 
-                associateTenuredGrid={associateTenuredGrid}
-                associateVintageGrid={associateVintageGrid}
-                leadershipGrid={leadershipGrid}
                 onClose={() => setSelectedRecord(null)} 
             />
         </div>

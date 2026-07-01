@@ -1,0 +1,106 @@
+{
+  "associateSlabs": [
+    {
+      "vintage": "<90",
+      "min": 0,
+      "max": 99999,
+      "payout_pct": 0.00
+    },
+    {
+      "vintage": "<90",
+      "min": 100000,
+      "max": 149999,
+      "payout_pct": 1.50
+    },
+    {
+      "vintage": "<90",
+      "min": 150000,
+      "max": 199999,
+      "payout_pct": 1.75
+    },
+    {
+      "vintage": "<90",
+      "min": 200000,
+      "max": 249999,
+      "payout_pct": 2.00
+    },
+    {
+      "vintage": "<90",
+      "min": 250000,
+      "max": 349999,
+      "payout_pct": 2.25
+    },
+    {
+      "vintage": "<90",
+      "min": 350000,
+      "max": 449999,
+      "payout_pct": 2.50
+    },
+    {
+      "vintage": "<90",
+      "min": 450000,
+      "max": "-",
+      "payout_pct": 3.00
+    },
+    {
+      "vintage": ">91",
+      "min": 0,
+      "max": 199999,
+      "payout_pct": 0.00
+    },
+    {
+      "vintage": ">91",
+      "min": 200000,
+      "max": 249999,
+      "payout_pct": 1.50
+    },
+    {
+      "vintage": ">91",
+      "min": 250000,
+      "max": 299999,
+      "payout_pct": 1.75
+    },
+    {
+      "vintage": ">91",
+      "min": 300000,
+      "max": 399999,
+      "payout_pct": 2.00
+    },
+    {
+      "vintage": ">91",
+      "min": 400000,
+      "max": 499999,
+      "payout_pct": 2.25
+    },
+    {
+      "vintage": ">91",
+      "min": 500000,
+      "max": 599999,
+      "payout_pct": 2.50
+    },
+    {
+      "vintage": ">91",
+      "min": 600000,
+      "max": "-",
+      "payout_pct": 3.00
+    }
+  ],
+  "tlSlabs": [
+    { "pcp_min": 0, "pcp_max": 174999, "payout_pct": 0.00 },
+    { "pcp_min": 175000, "pcp_max": 199999, "payout_pct": 0.25 },
+    { "pcp_min": 200000, "pcp_max": 224999, "payout_pct": 0.35 },
+    { "pcp_min": 225000, "pcp_max": 249999, "payout_pct": 0.45 },
+    { "pcp_min": 250000, "pcp_max": 274999, "payout_pct": 0.50 },
+    { "pcp_min": 275000, "pcp_max": 299999, "payout_pct": 0.55 },
+    { "pcp_min": 300000, "pcp_max": "-", "payout_pct": 0.60 }
+  ],
+  "amSlabs": [
+    { "pcp_min": 0, "pcp_max": 174999, "payout_pct": 0.00 },
+    { "pcp_min": 175000, "pcp_max": 199999, "payout_pct": 0.20 },
+    { "pcp_min": 200000, "pcp_max": 224999, "payout_pct": 0.30 },
+    { "pcp_min": 225000, "pcp_max": 249999, "payout_pct": 0.35 },
+    { "pcp_min": 250000, "pcp_max": 274999, "payout_pct": 0.40 },
+    { "pcp_min": 275000, "pcp_max": 299999, "payout_pct": 0.45 },
+    { "pcp_min": 300000, "pcp_max": "-", "payout_pct": 0.50 }
+  ]
+}

@@ -1,34 +1,31 @@
 const fs = require('fs');
+const path = require('path');
 
-const filesToPatch = [
-    'app/dashboard/incentive/uttam-nagar/page.tsx',
-    'app/dashboard/incentive/gurugram/page.tsx',
-    'app/dashboard/incentive/delhi/page.tsx',
-    'app/dashboard/incentive/pune/page.tsx'
-];
+const dirs = ['uttam-nagar', 'delhi', 'pune', 'gurugram'];
+const basePath = path.join(__dirname, 'app', 'dashboard', 'incentive');
 
-for (const file of filesToPatch) {
+for (const dir of dirs) {
+    const file = path.join(basePath, dir, 'page.tsx');
     if (!fs.existsSync(file)) continue;
-    let code = fs.readFileSync(file, 'utf8');
-
-    // Add states
-    if (!code.includes('const [assignedGrid')) {
-        code = code.replace('const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);',
-            'const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);\n  const [assignedGrid, setAssignedGrid] = useState<string>("");\n  const [grid2Slabs, setGrid2Slabs] = useState<any[]>([]);');
+    
+    let content = fs.readFileSync(file, 'utf8');
+    
+    // Replace the simple onClick with the guarded one
+    const searchStr = `onClick={() => setSelectedRecord(row)}`;
+    const replaceStr = `onClick={() => {
+                    const grid = row.assigned_grid;
+                    if (!grid || grid === 'unassigned' || grid === 'null') {
+                      alert('⚠️ No calculation trace available because no grid is assigned to this client.');
+                      return;
+                    }
+                    setSelectedRecord(row);
+                  }}`;
+                  
+    if (content.includes(searchStr)) {
+        content = content.replace(searchStr, replaceStr);
+        fs.writeFileSync(file, content);
+        console.log(`Updated ${dir}/page.tsx`);
+    } else {
+        console.log(`Skipped ${dir}/page.tsx (already updated or not found)`);
     }
-
-    // Map from API
-    if (!code.includes('setAssignedGrid(incResult.assigned_grid);')) {
-        code = code.replace('setLeadershipGrid(incResult.leadershipGrid);',
-            'setLeadershipGrid(incResult.leadershipGrid);\n        if (incResult.assigned_grid) setAssignedGrid(incResult.assigned_grid);\n        if (incResult.grid2Slabs) setGrid2Slabs(incResult.grid2Slabs);');
-    }
-
-    // Pass to TraceEngine
-    if (!code.includes('assignedGrid={assignedGrid}')) {
-        code = code.replace('<TraceEngine \n                record={selectedRecord}',
-            '<TraceEngine \n                record={selectedRecord} \n                assignedGrid={assignedGrid}\n                grid2Slabs={grid2Slabs}');
-    }
-
-    fs.writeFileSync(file, code);
-    console.log('Patched', file);
 }

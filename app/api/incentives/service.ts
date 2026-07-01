@@ -102,6 +102,49 @@ function parseGrid2Value(val: any): number | null {
     return null;
 }
 
+function getGrid3IncentivePercent(value: number, slabs: any[], isPcp = false): number {
+    if (!slabs || slabs.length === 0) return 0;
+    
+    let bestPayout = 0;
+    for (const slab of slabs) {
+        const min = isPcp ? (slab.pcp_min || 0) : (slab.min || 0);
+        const max = isPcp ? (slab.pcp_max === '-' ? Infinity : slab.pcp_max) : (slab.max === '-' ? Infinity : slab.max);
+        
+        if (value >= min && value <= max) {
+            const pct = parseFloat(slab.payout_pct) / 100;
+            if (pct > bestPayout) bestPayout = pct;
+        }
+    }
+    return bestPayout;
+}
+
+function getGrid4IncentivePercent(value: number, slabs: any[], vintageMonths: number, isAssociate = false): number {
+  if (!slabs || !slabs.length) return 0;
+  let best = 0;
+  for (const s of slabs) {
+    if (isAssociate) {
+      const v = String(s.vintage || '').trim();
+      if (v.includes('<90') && vintageMonths >= 3) continue; // Note: using 3 months (~90 days) since vintage is in months
+      if (v.includes('>91') && vintageMonths < 3) continue;
+      const min = s.min || 0;
+      const max = s.max === '-' ? Infinity : s.max;
+      if (value >= min && value <= max) {
+          const p = parseFloat(s.payout_pct) / 100;
+          if (p > best) best = p;
+      }
+    } else {
+      // PCP logic for TL/AM
+      const min = s.pcp_min || 0;
+      const max = s.pcp_max === '-' ? Infinity : s.pcp_max;
+      if (value >= min && value <= max) {
+          const p = parseFloat(s.payout_pct) / 100;
+          if (p > best) best = p;
+      }
+    }
+  }
+  return best;
+}
+
 function getGrid2IncentivePercent(collection: number, client: string, product: string, vintageDays: number, associateSlabs: any[]) {
     const normalizedClient = client.toLowerCase().replace('bank', '').trim();
     const normalizedProduct = product.toLowerCase();
@@ -242,6 +285,18 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
             const fileData = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_2.json'), 'utf-8');
             grid2Data = JSON.parse(fileData);
         } catch (e) { /* grid2 not available */ }
+        
+        let grid3Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+        try {
+            const fileData3 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_3.json'), 'utf-8');
+            grid3Data = JSON.parse(fileData3);
+        } catch (e) { /* grid3 not available */ }
+
+        let grid4Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+        try {
+            const fileData4 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_4.json'), 'utf-8');
+            grid4Data = JSON.parse(fileData4);
+        } catch (e) { /* grid4 not available */ }
 
         if (clientParam && productParam) {
             const clientConfigRes = await pool.query(
@@ -417,8 +472,12 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 teamHeadcount = amData.headcount.size || 1;
                 pcp = teamCollection / teamHeadcount;
             }
-
-            if (kekaData?.is_special) {
+            if (!assignedGrid || assignedGrid === 'unassigned' || assignedGrid === 'null') {
+                incentivePercent = 0;
+                individualIncentiveAmount = 0;
+                teamIncentiveAmount = 0;
+                incentive = 0;
+            } else if (kekaData?.is_special) {
                 incentivePercent = 0;
                 const totalEmployeeCollection = associateTotalData[record.employee_code] || collection;
                 for (const rule of specialGridRules) {
@@ -447,9 +506,19 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
 
             } else if (designation.includes('leader') || designation === 'tl') {
                 // Team Leader Logic
-                incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'TL', leadershipGrid);
-                teamIncentiveAmount = teamCollection * incentivePercent;
-                incentive = teamIncentiveAmount;
+                if (assignedGrid === 'grid_3') {
+                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.tlSlabs, true);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_4') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.tlSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else {
+                    incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'TL', leadershipGrid);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                }
 
             } else if (designation.includes('manager') || designation === 'am') {
                 // Assistant Manager Logic
@@ -465,22 +534,42 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 }
                 
                 let additionalAmount = 0;
-                if (matchedTarget == 235000) additionalAmount = teamIncentiveAmount * 0.10;
-                else if (matchedTarget == 240000) additionalAmount = teamIncentiveAmount * 0.15;
-                else if (matchedTarget == 250000) additionalAmount = teamIncentiveAmount * 0.20;
-                else if (matchedTarget >= 275000) additionalAmount = teamIncentiveAmount * 0.25;
-
-                incentive = teamIncentiveAmount + additionalAmount;
+                if (assignedGrid === 'grid_3') {
+                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.amSlabs, true);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    if (teamIncentiveAmount < 18000 && teamIncentiveAmount > 0) {
+                        additionalAmount = 5000;
+                    }
+                    incentive = teamIncentiveAmount + additionalAmount;
+                } else if (assignedGrid === 'grid_4') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.amSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else {
+                    if (matchedTarget == 235000) additionalAmount = teamIncentiveAmount * 0.10;
+                    else if (matchedTarget == 240000) additionalAmount = teamIncentiveAmount * 0.15;
+                    else if (matchedTarget == 250000) additionalAmount = teamIncentiveAmount * 0.20;
+                    else if (matchedTarget >= 275000) additionalAmount = teamIncentiveAmount * 0.25;
+                    incentive = teamIncentiveAmount + additionalAmount;
+                }
 
             } else {
                 // Associate Logic
                 const totalEmployeeCollection = associateTotalData[record.employee_code] || collection;
-                if (!assignedGrid || assignedGrid === 'unassigned') {
+                if (!assignedGrid || assignedGrid === 'unassigned' || assignedGrid === 'null') {
                     incentivePercent = 0;
                     individualIncentiveAmount = 0;
                     incentive = 0;
                 } else if (assignedGrid === 'grid_2') {
                     incentivePercent = getGrid2IncentivePercent(totalEmployeeCollection, record.client, record.product, vintageMonths, grid2Data.associateSlabs || []);
+                    individualIncentiveAmount = collection * incentivePercent;
+                    incentive = individualIncentiveAmount;
+                } else if (assignedGrid === 'grid_3') {
+                    incentivePercent = getGrid3IncentivePercent(totalEmployeeCollection, grid3Data.associateSlabs, false);
+                    individualIncentiveAmount = collection * incentivePercent;
+                    incentive = individualIncentiveAmount;
+                } else if (assignedGrid === 'grid_4') {
+                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid4Data.associateSlabs, vintageMonths, true);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else {
@@ -520,7 +609,8 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 is_special: kekaData?.is_special || false,
                 cm: record.cm,
                 mobile_no: record.mobile_no,
-                lan: record.lan
+                lan: record.lan,
+                assigned_grid: assignedGrid
             });
         }
 
@@ -556,7 +646,8 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     aph: res.aph,
                     ph: res.ph,
                     bucket: res.bucket,
-                    payment_mode: res.payment_mode
+                    payment_mode: res.payment_mode,
+                    assigned_grid: res.assigned_grid
                 };
             }
 
@@ -601,6 +692,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
             },
             assigned_grid: assignedGrid,
             grid2Slabs: assignedGrid === 'grid_2' ? (grid2Data.associateSlabs || []) : [],
+            grid3Data: assignedGrid === 'grid_3' ? grid3Data : null,
             special_grid_rules: specialGridRules.map(r => ({ ...r, incentive_percentage: r.incentive_percentage * 100 })),
             associateTenuredGrid,
             associateVintageGrid,

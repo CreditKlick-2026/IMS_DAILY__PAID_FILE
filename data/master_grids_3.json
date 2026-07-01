@@ -1,0 +1,120 @@
+{
+  "associateSlabs": [
+    {
+      "min": 200001,
+      "max": 250000,
+      "payout_pct": "1.75"
+    },
+    {
+      "min": 250001,
+      "max": 300000,
+      "payout_pct": "2.00"
+    },
+    {
+      "min": 300001,
+      "max": 350000,
+      "payout_pct": "2.50"
+    },
+    {
+      "min": 351000,
+      "max": 400000,
+      "payout_pct": "2.75"
+    },
+    {
+      "min": 400001,
+      "max": 500000,
+      "payout_pct": "3.00"
+    },
+    {
+      "min": 500001,
+      "max": 600000,
+      "payout_pct": "3.25"
+    },
+    {
+      "min": 600001,
+      "max": "-",
+      "payout_pct": "3.50"
+    }
+  ],
+  "tlSlabs": [
+    {
+      "pcp_min": 225000,
+      "pcp_max": 250000,
+      "payout_pct": "0.40"
+    },
+    {
+      "pcp_min": 250001,
+      "pcp_max": 274999,
+      "payout_pct": "0.60"
+    },
+    {
+      "pcp_min": 275000,
+      "pcp_max": 299999,
+      "payout_pct": "0.80"
+    },
+    {
+      "pcp_min": 300000,
+      "pcp_max": "-",
+      "payout_pct": "1.00"
+    }
+  ],
+  "amSlabs": [
+    {
+      "pcp_min": 205000,
+      "pcp_max": 224999,
+      "payout_pct": "0.25"
+    },
+    {
+      "pcp_min": 225000,
+      "pcp_max": 249999,
+      "payout_pct": "0.30"
+    },
+    {
+      "pcp_min": 250000,
+      "pcp_max": 274999,
+      "payout_pct": "0.35"
+    },
+    {
+      "pcp_min": 275000,
+      "pcp_max": "-",
+      "payout_pct": "0.40"
+    }
+  ],
+  "column_mappings": {
+    "collection": "total_money_collected",
+    "salary": "ctc",
+    "doj": "date_of_joining",
+    "designation": "job_title",
+    "tl_name": "tl_name",
+    "am_name": "am_name",
+    "employee_id": "employee_no",
+    "employee_code": "employee_code",
+    "employee_name": "employee_name"
+  },
+  "tenured_salary_ranges": [
+    {
+      "key": "under_16k",
+      "min": 0,
+      "max": 15999,
+      "label": "<16k (%)"
+    },
+    {
+      "key": "between_16_18k",
+      "min": 16000,
+      "max": 17999,
+      "label": "16k-18k (%)"
+    },
+    {
+      "key": "between_18_24k",
+      "min": 18000,
+      "max": 23999,
+      "label": "18k-24k (%)"
+    },
+    {
+      "key": "over_24k",
+      "min": 24000,
+      "max": 9999999,
+      "label": ">24k (%)"
+    }
+  ]
+}

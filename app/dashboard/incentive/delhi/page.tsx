@@ -208,12 +208,6 @@ export default function IncentivePage() {
         <div style={{ marginBottom: 20, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--bdr)' }}>
             <TraceEngine 
                 record={selectedRecord} 
-                assignedGrid={assignedGrid}
-                grid2Slabs={grid2Slabs} 
-                specialGridRules={specialGridRules} 
-                associateTenuredGrid={associateTenuredGrid}
-                associateVintageGrid={associateVintageGrid}
-                leadershipGrid={leadershipGrid}
                 onClose={() => setSelectedRecord(null)} 
             />
         </div>
@@ -445,7 +439,14 @@ export default function IncentivePage() {
 
               return (
                 <div key={row.employee_id}
-                  onClick={() => setSelectedRecord(row)}
+                  onClick={() => {
+                    const grid = row.assigned_grid;
+                    if (!grid || grid === 'unassigned' || grid === 'null') {
+                      alert('⚠️ No calculation trace available because no grid is assigned to this client.');
+                      return;
+                    }
+                    setSelectedRecord(row);
+                  }}
                   style={{
                     display: 'grid', 
                     gridTemplateColumns: uiConfig.columns?.length > 0 
@@ -455,9 +456,10 @@ export default function IncentivePage() {
                     borderBottom: '1px solid #e5e7eb',
                     background: isSelected ? 'rgba(79,125,255,0.08)' : 'transparent',
                     transition: 'all 0.2s',
-                    cursor: 'pointer'
+                    cursor: (!row.assigned_grid || row.assigned_grid === 'unassigned' || row.assigned_grid === 'null') ? 'not-allowed' : 'pointer',
+                    opacity: (!row.assigned_grid || row.assigned_grid === 'unassigned' || row.assigned_grid === 'null') ? 0.6 : 1
                   }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-top)'; }}
+                  onMouseEnter={e => { if (!isSelected && row.assigned_grid && row.assigned_grid !== 'unassigned' && row.assigned_grid !== 'null') e.currentTarget.style.background = 'var(--bg-top)'; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 600 }}>{rowNum}</div>

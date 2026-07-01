@@ -905,6 +905,8 @@ export default function ClientsPage() {
                 <option value="">-- No Grid Assigned --</option>
                 <option value="grid_1">Master Grid 1</option>
                 <option value="grid_2">Master Grid 2</option>
+                <option value="grid_3">Master Grid 3</option>
+                <option value="grid_4">Master Grid 4</option>
               </select>
             </div>
             

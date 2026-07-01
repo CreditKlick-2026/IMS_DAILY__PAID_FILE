@@ -1,23 +1,27 @@
 const fs = require('fs');
-let code = fs.readFileSync('components/IncentiveView.tsx', 'utf8');
+const path = require('path');
 
-// Add states
-if (!code.includes('const [assignedGrid')) {
-    code = code.replace('const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);',
-        'const [leadershipGrid, setLeadershipGrid] = useState<any[]>([]);\n  const [assignedGrid, setAssignedGrid] = useState<string>("");\n  const [grid2Slabs, setGrid2Slabs] = useState<any[]>([]);');
+const dirs = ['uttam-nagar', 'delhi', 'pune', 'gurugram'];
+const basePath = path.join(__dirname, 'app', 'dashboard', 'incentive');
+
+for (const dir of dirs) {
+    const file = path.join(basePath, dir, 'page.tsx');
+    if (!fs.existsSync(file)) continue;
+    
+    let content = fs.readFileSync(file, 'utf8');
+    
+    const regex = /<TraceEngine[\s\S]*?\/>/;
+    
+    const replaceBlock = `<TraceEngine 
+                record={selectedRecord} 
+                onClose={() => setSelectedRecord(null)} 
+            />`;
+                
+    if (regex.test(content)) {
+        content = content.replace(regex, replaceBlock);
+        fs.writeFileSync(file, content);
+        console.log(`Successfully patched TraceEngine props in ${dir}/page.tsx`);
+    } else {
+        console.log(`Failed to patch TraceEngine props in ${dir}/page.tsx`);
+    }
 }
-
-// Map from API
-if (!code.includes('setAssignedGrid(incResult.assigned_grid);')) {
-    code = code.replace('setLeadershipGrid(incResult.leadershipGrid);',
-        'setLeadershipGrid(incResult.leadershipGrid);\n        if (incResult.assigned_grid) setAssignedGrid(incResult.assigned_grid);\n        if (incResult.grid2Slabs) setGrid2Slabs(incResult.grid2Slabs);');
-}
-
-// Pass to TraceEngine
-if (!code.includes('assignedGrid={assignedGrid}')) {
-    code = code.replace('<TraceEngine \n                record={selectedRecord}',
-        '<TraceEngine \n                record={selectedRecord} \n                assignedGrid={assignedGrid}\n                grid2Slabs={grid2Slabs}');
-}
-
-fs.writeFileSync('components/IncentiveView.tsx', code);
-console.log('Patched IncentiveView.tsx');
