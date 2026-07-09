@@ -2,10 +2,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, AreaChart, Area, CartesianGrid
+  PieChart, Pie, AreaChart, Area, CartesianGrid, Legend as RechartsLegend
 } from 'recharts';
+import { 
+  IndianRupee, FileText, Users, BarChart3, UserCheck, Building2, 
+  AlertTriangle, ShieldAlert, PieChart as PieChartIcon, MapPin, 
+  CreditCard, Headphones, Clock, TrendingUp
+} from 'lucide-react';
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f97316', '#ef4444', '#84cc16'];
+const COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff'];
 
 // ─── MultiSelect ─────────────────────────────────────────────────────────────
 const MultiSelect = ({ label, options, selected, onChange }: {
@@ -67,9 +72,12 @@ const ChartTooltip = ({ active, payload, label, formatter }: any) => {
   );
 };
 
-const ChartCard = ({ title, children, span }: { title: string; children: React.ReactNode; span?: number }) => (
+const ChartCard = ({ title, icon: Icon, children, span }: { title: string; icon?: any; children: React.ReactNode; span?: number }) => (
   <div className={`p-5 rounded-xl border border-border bg-card shadow-sm ${span === 2 ? 'lg:col-span-2' : ''} ${span === 3 ? 'lg:col-span-3' : ''}`}>
-    <div className="text-xs font-bold text-foreground uppercase tracking-wider mb-4 border-b border-border pb-2">{title}</div>
+    <div className="text-xs font-bold text-foreground uppercase tracking-wider mb-4 border-b border-border pb-2 flex items-center gap-2">
+      {Icon && <Icon size={16} className="text-primary" />}
+      {title}
+    </div>
     {children}
   </div>
 );
@@ -206,18 +214,23 @@ const Dashboard: React.FC = () => {
             {/* ── KPI Row (8 cards) ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
               {[
-                { label: `Collection (${getMonthLabel()})`, value: fmt(data.summary.totalCollected), icon: '💰', color: 'text-green-500' },
-                { label: 'Total Paid Files', value: data.summary.totalFiles, icon: '📄', color: 'text-foreground' },
-                { label: 'Unique Accounts', value: data.summary.uniqueAccounts, icon: '👤', color: 'text-blue-500' },
-                { label: 'Avg / File', value: fmt(data.summary.avgPerFile), icon: '📊', color: 'text-amber-500' },
-                { label: 'Active Agents', value: data.summary.activeAgents, icon: '🧑‍💼', color: 'text-purple-500' },
-                { label: 'Top Client', value: data.summary.topClient, icon: '🏢', color: 'text-amber-500' },
-                { label: 'Duplicates', value: data.summary.duplicateCount || 0, icon: '⚠️', color: data.summary.duplicateCount > 0 ? 'text-red-500' : 'text-green-500' },
-                { label: 'Frauds', value: data.summary.fraudCount || 0, icon: '🚨', color: data.summary.fraudCount > 0 ? 'text-red-500' : 'text-green-500' },
+                { label: `Collection (${getMonthLabel()})`, value: fmt(data.summary.totalCollected), icon: IndianRupee, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Total Paid Files', value: data.summary.totalFiles, icon: FileText, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Unique Accounts', value: data.summary.uniqueAccounts, icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Avg / File', value: fmt(data.summary.avgPerFile), icon: BarChart3, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Active Agents', value: data.summary.activeAgents, icon: UserCheck, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Top Client', value: data.summary.topClient, icon: Building2, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Duplicates', value: data.summary.duplicateCount || 0, icon: AlertTriangle, color: data.summary.duplicateCount > 0 ? 'text-amber-500' : 'text-slate-400', bg: data.summary.duplicateCount > 0 ? 'bg-amber-500/10' : 'bg-slate-100' },
+                { label: 'Frauds', value: data.summary.fraudCount || 0, icon: ShieldAlert, color: data.summary.fraudCount > 0 ? 'text-destructive' : 'text-slate-400', bg: data.summary.fraudCount > 0 ? 'bg-destructive/10' : 'bg-slate-100' },
               ].map((k, i) => (
-                <div key={i} className="p-4 rounded-xl border border-border bg-card flex flex-col gap-1 shadow-sm">
-                  <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                    <span>{k.icon}</span> {k.label}
+                <div key={i} className="p-4 rounded-xl border border-border bg-card flex flex-col gap-2 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-md ${k.bg} ${k.color}`}>
+                      <k.icon size={14} strokeWidth={2.5} />
+                    </div>
+                    <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider truncate">
+                      {k.label}
+                    </div>
                   </div>
                   <div className={`text-lg font-bold tracking-tight truncate ${k.color}`}>{k.value}</div>
                 </div>
@@ -225,21 +238,21 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── Daily Collection Trend (full width) ── */}
-            <ChartCard title={`📈 Daily Collection Trend — ${getMonthLabel()} ${year}`} span={3}>
+            <ChartCard title={`Daily Collection Trend — ${getMonthLabel()} ${year}`} icon={TrendingUp} span={3}>
               {(data.dailyTrend || []).length === 0 ? <NoData /> : (
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={data.dailyTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => fmt(v)} width={60} />
                     <Tooltip content={<ChartTooltip formatter={fmt} />} />
-                    <Area type="monotone" dataKey="collected" stroke="#10b981" strokeWidth={2} fill="url(#gradGreen)" name="Collection" />
+                    <Area type="monotone" dataKey="collected" stroke="#3b82f6" strokeWidth={2} fill="url(#gradBlue)" name="Collection" />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -247,7 +260,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── Row 2: Client + Bucket + TL ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <ChartCard title="🏢 Client Portfolio Wise">
+              <ChartCard title="Client Portfolio Wise" icon={Building2}>
                 {data.clients.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={180}>
@@ -265,7 +278,7 @@ const Dashboard: React.FC = () => {
                 )}
               </ChartCard>
 
-              <ChartCard title="🪣 Bucket Wise Recovery">
+              <ChartCard title="Bucket Wise Recovery" icon={PieChartIcon}>
                 {data.buckets.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={180}>
@@ -274,16 +287,16 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18} name="Collection">
-                          {toChartData(data.buckets).map((_: any, i: number) => <Cell key={i} fill={['#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6'][i % 5]} />)}
+                          {toChartData(data.buckets).map((_: any, i: number) => <Cell key={i} fill={COLORS[(i+2) % COLORS.length]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.buckets} fmt={fmt} colors={['#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4', '#14b8a6']} />
+                    <Legend items={data.buckets} fmt={fmt} colors={COLORS.slice(2)} />
                   </>
                 )}
               </ChartCard>
 
-              <ChartCard title="👥 Top Team Leaders">
+              <ChartCard title="Top Team Leaders" icon={Users}>
                 {data.teamLeaders.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={180}>
@@ -292,7 +305,7 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18} name="Collection">
-                          {toChartData(data.teamLeaders).map((_: any, i: number) => <Cell key={i} fill={i === 0 ? '#f59e0b' : COLORS[(i + 2) % COLORS.length]} />)}
+                          {toChartData(data.teamLeaders).map((_: any, i: number) => <Cell key={i} fill={COLORS[(i + 4) % COLORS.length]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -300,10 +313,10 @@ const Dashboard: React.FC = () => {
                       {data.teamLeaders.map((item: any, i: number) => (
                         <div key={i} className="flex justify-between text-[10px]">
                           <span className="flex items-center gap-1 text-muted-foreground">
-                            <span style={{ width: 14, height: 14, borderRadius: 3, background: i === 0 ? '#f59e0b' : COLORS[(i + 2) % COLORS.length], display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 700 }}>#{i + 1}</span>
+                            <span style={{ width: 14, height: 14, borderRadius: 3, background: COLORS[(i + 4) % COLORS.length], display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 700 }}>#{i + 1}</span>
                             {item.name}
                           </span>
-                          <span className="font-semibold text-green-500">{fmt(item.collected)} <span className="text-muted-foreground font-normal">({(item.percentage ?? 0).toFixed(1)}%)</span></span>
+                          <span className="font-semibold text-primary">{fmt(item.collected)} <span className="text-muted-foreground font-normal">({(item.percentage ?? 0).toFixed(1)}%)</span></span>
                         </div>
                       ))}
                     </div>
@@ -314,7 +327,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── Row 3: Product Pie + Location Bar + Payment Pie ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <ChartCard title="📦 Product Wise">
+              <ChartCard title="Product Wise" icon={PieChartIcon}>
                 {data.products.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={170}>
@@ -330,7 +343,7 @@ const Dashboard: React.FC = () => {
                 )}
               </ChartCard>
 
-              <ChartCard title="📍 Top Locations">
+              <ChartCard title="Top Locations" icon={MapPin}>
                 {data.locations.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={170}>
@@ -338,21 +351,21 @@ const Dashboard: React.FC = () => {
                         <XAxis type="number" hide />
                         <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
-                        <Bar dataKey="value" fill="#10b981" radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection" />
+                        <Bar dataKey="value" fill={COLORS[3]} radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection" />
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.locations.slice(0, 5)} fmt={fmt} colors={['#10b981']} />
+                    <Legend items={data.locations.slice(0, 5)} fmt={fmt} colors={[COLORS[3]]} />
                   </>
                 )}
               </ChartCard>
 
-              <ChartCard title="💳 Payment Modes">
+              <ChartCard title="Payment Modes" icon={CreditCard}>
                 {data.paymentModes.length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={170}>
                       <PieChart>
                         <Pie data={toChartData(data.paymentModes)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={30} paddingAngle={3}>
-                          {toChartData(data.paymentModes).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][i % 5]} />)}
+                          {toChartData(data.paymentModes).map((_: any, i: number) => <Cell key={i} fill={COLORS[(i+5) % COLORS.length]} />)}
                         </Pie>
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                       </PieChart>
@@ -361,7 +374,7 @@ const Dashboard: React.FC = () => {
                       {data.paymentModes.map((item: any, i: number) => (
                         <div key={i} className="bg-muted/30 p-2 rounded-lg border border-border">
                           <div className="flex items-center gap-1 mb-1">
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][i % 5], display: 'inline-block' }} />
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: COLORS[(i+5) % COLORS.length], display: 'inline-block' }} />
                             <span className="text-[9px] text-muted-foreground uppercase font-semibold truncate">{item.name}</span>
                           </div>
                           <div className="text-xs font-bold text-foreground">{fmt(item.collected)}</div>
@@ -375,7 +388,8 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* ── Row 4: Agent Performance (full width table) ── */}
-            <ChartCard title="🧑‍💼 Agent-wise Performance (Top 10)" span={3}>
+            {/* ── Row 4: Agent Performance (full width table) ── */}
+            <ChartCard title="Agent-wise Performance (Top 10)" icon={Users} span={3}>
               {(data.agents || []).length === 0 ? <NoData /> : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
@@ -390,13 +404,13 @@ const Dashboard: React.FC = () => {
                       {data.agents.map((a: any, i: number) => (
                         <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '8px 10px' }}>
-                            <span style={{ width: 20, height: 20, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : 'var(--color-muted-foreground)' }}>{i + 1}</span>
+                            <span style={{ width: 20, height: 20, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', background: i === 0 ? '#1e40af' : i === 1 ? '#2563eb' : i === 2 ? '#60a5fa' : 'var(--color-muted-foreground)' }}>{i + 1}</span>
                           </td>
                           <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--color-foreground)' }}>{a.name}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--color-muted-foreground)', fontFamily: 'monospace', fontSize: 10 }}>{a.code || '—'}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--color-foreground)' }}>{a.files}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--color-blue-500, #3b82f6)', fontWeight: 600 }}>{a.uniqueAccounts}</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#10b981' }}>{fmt(a.collected)}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#3b82f6' }}>{fmt(a.collected)}</td>
                           <td style={{ padding: '8px 10px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--color-muted)', overflow: 'hidden' }}>
@@ -415,7 +429,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── Row 5: APH + PH breakdown ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ChartCard title="📞 APH Wise Breakdown">
+              <ChartCard title="APH Wise Breakdown" icon={Headphones}>
                 {(data.aphBreakdown || []).length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -424,16 +438,16 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection">
-                          {toChartData(data.aphBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#14b8a6', '#10b981', '#84cc16'][i % 10]} />)}
+                          {toChartData(data.aphBreakdown).map((_: any, i: number) => <Cell key={i} fill={COLORS[(i+6) % COLORS.length]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.aphBreakdown} fmt={fmt} colors={['#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#14b8a6', '#10b981', '#84cc16']} />
+                    <Legend items={data.aphBreakdown} fmt={fmt} colors={COLORS.slice(6).concat(COLORS)} />
                   </>
                 )}
               </ChartCard>
 
-              <ChartCard title="🕐 PH Wise Breakdown">
+              <ChartCard title="PH Wise Breakdown" icon={Clock}>
                 {(data.phBreakdown || []).length === 0 ? <NoData /> : (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
@@ -442,11 +456,11 @@ const Dashboard: React.FC = () => {
                         <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltip formatter={fmt} />} />
                         <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={16} name="Collection">
-                          {toChartData(data.phBreakdown).map((_: any, i: number) => <Cell key={i} fill={['#3b82f6', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f97316', '#ef4444', '#ec4899', '#8b5cf6'][i % 10]} />)}
+                          {toChartData(data.phBreakdown).map((_: any, i: number) => <Cell key={i} fill={COLORS[(i+2) % COLORS.length]} />)}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <Legend items={data.phBreakdown} fmt={fmt} colors={['#3b82f6', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f97316', '#ef4444', '#ec4899', '#8b5cf6']} />
+                    <Legend items={data.phBreakdown} fmt={fmt} colors={COLORS.slice(2).concat(COLORS)} />
                   </>
                 )}
               </ChartCard>

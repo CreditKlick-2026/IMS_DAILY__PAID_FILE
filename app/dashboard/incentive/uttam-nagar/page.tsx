@@ -234,16 +234,16 @@ export default function IncentivePage() {
               onChange={e => {
                   const val = e.target.value;
                   setFilterClient(val);
-                  const client = clientOptions.find(c => c.name === val);
-                  if (client && client.product_type) {
-                      setFilterProduct(client.product_type);
+                  const matchingClients = clientOptions.filter(c => c.name === val);
+                  if (matchingClients.length === 1 && matchingClients[0].product_type) {
+                      setFilterProduct(matchingClients[0].product_type);
                   } else {
                       setFilterProduct('');
                   }
               }}
           >
               <option value="">All Clients</option>
-              {clientOptions.filter(c => filterLocation ? c.location_names?.includes(filterLocation) : true).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              {Array.from(new Set(clientOptions.filter(c => filterLocation ? c.location_names?.includes(filterLocation) : true).map(c => c.name))).sort().map(name => <option key={name as string} value={name as string}>{name as string}</option>)}
           </select>
 
           <select
@@ -255,34 +255,36 @@ export default function IncentivePage() {
               {productOptions
                 .filter(p => {
                     if (filterClient) {
-                        const client = clientOptions.find(c => c.name === filterClient);
-                        return client ? client.product_type === p.name : true;
+                        return clientOptions.some(c => c.name === filterClient && c.product_type === p.name);
                     }
                     if (!filterLocation) return true;
                     return clientOptions.some(c => c.location_names?.includes(filterLocation) && c.product_type === p.name);
                 })
                 .map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
           </select>
-          
+
           <select
-            style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--txt)', outline: 'none' }}
+            style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--txt)', outline: 'none', minWidth: 100 }}
             value={filterMonth}
             onChange={e => setFilterMonth(e.target.value)}
           >
-            <option value="">All Months</option>
-            {Array.from({length: 12}).map((_, i) => (
-                <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
+            <option value="">Month</option>
+            {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+              <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
             ))}
           </select>
-          
+
           <select
-            style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--txt)', outline: 'none' }}
+            style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--txt)', outline: 'none', minWidth: 80 }}
             value={filterYear}
             onChange={e => setFilterYear(e.target.value)}
           >
-            <option value="">All Years</option>
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            <option value="">Year</option>
+            {[2024, 2025, 2026, 2027, 2028].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
           </select>
+          
         </div>
         <button
           onClick={downloadExcel}
@@ -356,28 +358,6 @@ export default function IncentivePage() {
             {uniqueFilterValues[filterKey]?.map((x: string) => <option key={x} value={x}>{x}</option>)}
           </select>
         ))}
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 100 }}
-          value={filterMonth}
-          onChange={e => setFilterMonth(e.target.value)}
-        >
-          <option value="">All Months</option>
-          {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-            <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'short' })}</option>
-          ))}
-        </select>
-
-        <select
-          style={{ background: 'var(--bg2)', border: '1px solid var(--bdr)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--txt)', outline: 'none', minWidth: 80 }}
-          value={filterYear}
-          onChange={e => setFilterYear(e.target.value)}
-        >
-          <option value="">All Years</option>
-          {[2024, 2025, 2026, 2027, 2028].map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
         
         <div style={{ fontSize: 10, color: 'var(--txt3)', whiteSpace: 'nowrap', marginLeft: 'auto' }}>
           {totalCount} records

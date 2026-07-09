@@ -110,7 +110,7 @@ export default function ProcessesPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-            <Settings className="text-indigo-600" /> Process Management
+            <Settings className="text-blue-600" /> Process Management
           </h1>
           <p className="text-slate-500 mt-1 max-w-xl">
             Configure processes by mapping them to specific clients and operating locations.
@@ -121,7 +121,7 @@ export default function ProcessesPage() {
             <input
               type="text"
               placeholder="Search processes..."
-              className="pl-9 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-indigo-500/50 w-64 shadow-sm"
+              className="pl-9 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-blue-500/50 w-64 shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -129,7 +129,7 @@ export default function ProcessesPage() {
           </div>
           <button
             onClick={() => setAddMode(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
           >
             <Plus size={18} /> Add Process
           </button>
@@ -138,15 +138,15 @@ export default function ProcessesPage() {
 
       {/* ADD PROCESS FORM */}
       {addMode && (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
-          <h3 className="font-semibold text-indigo-900 mb-4 flex items-center gap-2">
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
+          <h3 className="font-semibold text-blue-900 mb-4 flex items-center gap-2">
             <Plus size={18} /> Add New Process
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-bold text-indigo-900 mb-1 uppercase tracking-wider">Client</label>
+              <label className="block text-xs font-bold text-blue-900 mb-1 uppercase tracking-wider">Client</label>
               <select 
-                className="w-full px-3 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
               >
@@ -158,9 +158,9 @@ export default function ProcessesPage() {
             </div>
             
             <div>
-              <label className="block text-xs font-bold text-indigo-900 mb-1 uppercase tracking-wider">Location</label>
+              <label className="block text-xs font-bold text-blue-900 mb-1 uppercase tracking-wider">Location</label>
               <select 
-                className="w-full px-3 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
               >
@@ -172,29 +172,29 @@ export default function ProcessesPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-indigo-900 mb-1 uppercase tracking-wider">Process Name</label>
+              <label className="block text-xs font-bold text-blue-900 mb-1 uppercase tracking-wider">Process Name</label>
               <input
                 type="text"
                 placeholder="e.g. Inbound Telesales"
-                className="w-full px-3 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-indigo-900 mb-1 uppercase tracking-wider">Process Head Name</label>
+              <label className="block text-xs font-bold text-blue-900 mb-1 uppercase tracking-wider">Process Head Name</label>
               <input
                 type="text"
                 placeholder="e.g. John Doe"
-                className="w-full px-3 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full px-3 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 value={processHeadName}
                 onChange={(e) => setProcessHeadName(e.target.value)}
               />
             </div>
           </div>
           
-          <div className="flex justify-end gap-3 pt-2 border-t border-indigo-100">
+          <div className="flex justify-end gap-3 pt-2 border-t border-blue-100">
             <button
               onClick={() => {
                 setAddMode(false);
@@ -210,7 +210,7 @@ export default function ProcessesPage() {
             <button
               disabled={saving || !name.trim() || !clientId || !locationId}
               onClick={handleAdd}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Saving...' : 'Save Process'}
             </button>
@@ -222,7 +222,7 @@ export default function ProcessesPage() {
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="px-5 py-4 border-b bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-800">Available Processes</h3>
-          <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full">
+          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
             {filteredItems.length} {filteredItems.length === 1 ? 'Process' : 'Processes'}
           </span>
         </div>
@@ -243,7 +243,7 @@ export default function ProcessesPage() {
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                       Loading processes...
                     </div>
                   </td>

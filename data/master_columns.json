@@ -115,5 +115,15 @@
       "lan",
       "LAN"
     ]
+  },
+  {
+    "key": "recovery_or_upgrade",
+    "display": "RECOVERY/UPGRADE",
+    "labels": [
+      "RECOVERY/UPGRADE",
+      "recovery_or_upgrade",
+      "Recovery",
+      "Upgrade"
+    ]
   }
 ]

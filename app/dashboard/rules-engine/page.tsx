@@ -3,10 +3,10 @@ import { MapPin, Briefcase, Settings, Grid3X3, AlertTriangle, Database, FileSpre
 
 export default function RulesEnginePage() {
   const cards = [
-    { title: 'Locations', desc: 'Geographical sites', path: '/dashboard/rules-engine/locations', icon: MapPin, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { title: 'Locations', desc: 'Geographical sites', path: '/dashboard/rules-engine/locations', icon: MapPin, color: 'text-blue-500', bg: 'bg-blue-50' },
     { title: 'Clients', desc: 'Client portfolios', path: '/dashboard/rules-engine/clients', icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50' },
     { title: 'Users & Access', desc: 'Manage access control', path: '/dashboard/rules-engine/users', icon: Users, color: 'text-orange-500', bg: 'bg-orange-50' },
-    { title: 'Master Grid 1', desc: 'Manage dynamic matrices', path: '/dashboard/rules-engine/master-grids', icon: Grid3X3, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { title: 'Master Grid 1', desc: 'Manage dynamic matrices', path: '/dashboard/rules-engine/master-grids', icon: Grid3X3, color: 'text-blue-500', bg: 'bg-blue-50' },
     { title: 'Special Exceptions', desc: 'Exception toggles', path: '/dashboard/rules-engine/special-exceptions', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50' },
   ];
 

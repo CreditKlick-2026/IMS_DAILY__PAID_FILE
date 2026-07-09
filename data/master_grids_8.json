@@ -1,0 +1,219 @@
+{
+  "associateSlabs": [
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 1",
+      "min": "<75,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 2",
+      "min": "75,000",
+      "max": "1,24,999",
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 3",
+      "min": "1,25,000",
+      "max": "1,74,999",
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 4",
+      "min": "1,75,000",
+      "max": "2,24,999",
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 5",
+      "min": "2,25,000",
+      "max": "2,74,999",
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 6",
+      "min": "2,75,000",
+      "max": "3,24,999",
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": "<90",
+      "level": "Slab 7",
+      "min": ">3,25,000",
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 1",
+      "min": "<1,00,000",
+      "max": "-",
+      "payout_pct": "0.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 2",
+      "min": "1,00,000",
+      "max": "1,49,999",
+      "payout_pct": "2.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 3",
+      "min": "1,50,000",
+      "max": "1,99,999",
+      "payout_pct": "2.25"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 4",
+      "min": "2,00,000",
+      "max": "2,99,999",
+      "payout_pct": "2.50"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 5",
+      "min": "3,00,000",
+      "max": "3,99,999",
+      "payout_pct": "2.75"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 6",
+      "min": "4,00,000",
+      "max": "4,99,999",
+      "payout_pct": "3.00"
+    },
+    {
+      "client": "Axis Bank",
+      "product": "Credit Card - Woff - SmartTeam",
+      "vintage": ">91",
+      "level": "Slab 7",
+      "min": ">5,00,000",
+      "max": "-",
+      "payout_pct": "3.50"
+    }
+  ],
+  "tlSlabs": [
+    {
+      "level": "Slab 1",
+      "pcp_min": 0,
+      "pcp_max": 99999,
+      "payout_pct": "0.00"
+    },
+    {
+      "level": "Slab 2",
+      "pcp_min": 100000,
+      "pcp_max": 124999,
+      "payout_pct": "0.40"
+    },
+    {
+      "level": "Slab 3",
+      "pcp_min": 125000,
+      "pcp_max": 149999,
+      "payout_pct": "0.60"
+    },
+    {
+      "level": "Slab 4",
+      "pcp_min": 150000,
+      "pcp_max": 174999,
+      "payout_pct": "0.80"
+    },
+    {
+      "level": "Slab 5",
+      "pcp_min": 175000,
+      "pcp_max": 199999,
+      "payout_pct": "1.00"
+    },
+    {
+      "level": "Slab 6",
+      "pcp_min": 200000,
+      "pcp_max": 224999,
+      "payout_pct": "1.10"
+    },
+    {
+      "level": "Slab 7",
+      "pcp_min": 225000,
+      "pcp_max": 9999999,
+      "payout_pct": "1.20"
+    }
+  ],
+  "amSlabs": [
+    {
+      "level": "Slab 1",
+      "pcp_min": 0,
+      "pcp_max": 99999,
+      "payout_pct": "0.00"
+    },
+    {
+      "level": "Slab 2",
+      "pcp_min": 100000,
+      "pcp_max": 124999,
+      "payout_pct": "0.15"
+    },
+    {
+      "level": "Slab 3",
+      "pcp_min": 125000,
+      "pcp_max": 149999,
+      "payout_pct": "0.25"
+    },
+    {
+      "level": "Slab 4",
+      "pcp_min": 150000,
+      "pcp_max": 174999,
+      "payout_pct": "0.35"
+    },
+    {
+      "level": "Slab 5",
+      "pcp_min": 175000,
+      "pcp_max": 199999,
+      "payout_pct": "0.40"
+    },
+    {
+      "level": "Slab 6",
+      "pcp_min": 200000,
+      "pcp_max": 224999,
+      "payout_pct": "0.45"
+    },
+    {
+      "level": "Slab 7",
+      "pcp_min": 225000,
+      "pcp_max": 9999999,
+      "payout_pct": "0.50"
+    }
+  ],
+  "riders": []
+}

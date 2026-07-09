@@ -95,8 +95,8 @@ function buildInputNode(record: any, gridLabel?: string) {
     id: 'input', type: 'custom', position: { x: 50, y: 150 },
     data: {
       title: 'Input Parameters',
-      stripeColor: 'bg-indigo-500',
-      color: 'bg-indigo-50 text-indigo-600 border border-indigo-100',
+      stripeColor: 'bg-blue-500',
+      color: 'bg-blue-50 text-blue-600 border border-blue-100',
       icon: 'user',
       content: contentStr,
     },
@@ -104,6 +104,40 @@ function buildInputNode(record: any, gridLabel?: string) {
 }
 
 // ─── POST handler ─────────────────────────────────────────────────────────────
+
+function getGrid5IncentiveAmount(upgradeCollection: number, recoveryCollection: number, slabs: any[], vintageMonths: number, isAssociate = false, teamHeadcount = 0): { amount: number, percent: number } {
+    if (!slabs || !slabs.length) return { amount: 0, percent: 0 };
+    let upgPct = 0;
+    let recPct = 0;
+
+    for (const s of slabs) {
+        if (isAssociate) {
+            const v = String(s.vintage || '').trim();
+            if (v.includes('<90') && vintageMonths >= 3) continue;
+            if (v.includes('>91') && vintageMonths < 3) continue;
+
+            // Associate just gets the flat percentage
+            upgPct = parseFloat(s.upgrade_pct) / 100 || 0;
+            recPct = parseFloat(s.recovery_pct) / 100 || 0;
+            break;
+        } else {
+            const avg = teamHeadcount > 0 ? ((upgradeCollection + recoveryCollection) / teamHeadcount) : 0;
+            const min = s.avg_min || 0;
+            const max = s.avg_max === '-' ? Infinity : s.avg_max;
+            if (avg >= min && avg <= max) {
+                upgPct = parseFloat(s.upgrade_pct) / 100 || 0;
+                recPct = parseFloat(s.recovery_pct) / 100 || 0;
+                break;
+            }
+        }
+    }
+    
+    const amount = (upgradeCollection * upgPct) + (recoveryCollection * recPct);
+    const totalCollection = upgradeCollection + recoveryCollection;
+    const percent = totalCollection > 0 ? (amount / totalCollection) : 0;
+    
+    return { amount, percent };
+}
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -131,7 +165,7 @@ export async function POST(req: Request) {
     const leadershipGrid = leadershipRes.rows;
 
     // 2. Load file-based grids
-    let grid2Data: any = { associateSlabs: [], riders: [] };
+    let grid2Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
     try {
       const raw = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_2.json'), 'utf-8');
       grid2Data = JSON.parse(raw);
@@ -145,6 +179,7 @@ export async function POST(req: Request) {
 
     
     let grid4Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+    let grid5Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
     try {
       const raw4 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_4.json'), 'utf-8');
       grid4Data = JSON.parse(raw4);
@@ -569,13 +604,24 @@ export async function POST(req: Request) {
           const sp = String(s.product || '').toLowerCase();
           return sc.includes(nc) && sp.includes(np);
         });
-        const vintageSlabs = matching.filter((s: any) => String(s.vintage || '').includes(vintageDays < 90 ? '<90' : '>91'));
+        const vintageSlabs = matching.filter((s: any) => {
+          const v = String(s.vintage || '').trim();
+          if (vintageDays <= 90) return v.includes('<90');
+          return v.includes('>91');
+        });
         const slabsToShow = vintageSlabs.length > 0 ? vintageSlabs : matching.slice(0, 10);
         const col = record.total_collection || 0;
         let hi = -1;
         for (let i = slabsToShow.length - 1; i >= 0; i--) {
-          const minVal = parseGrid2Value(slabsToShow[i].min);
-          if (minVal !== null && col >= minVal) { hi = i; break; }
+          const minStr = String(slabsToShow[i].min || '').trim();
+          const minVal = parseGrid2Value(minStr);
+          if (minStr.includes('<')) {
+            if (minVal !== null && col < minVal) { hi = i; break; }
+          } else if (minStr.includes('>')) {
+            if (minVal !== null && col > minVal) { hi = i; break; }
+          } else {
+            if (minVal !== null && col >= minVal) { hi = i; break; }
+          }
         }
         formulaTableData = {
           headers: ['Vintage', 'Level', 'Min', 'Max', 'Payout %'],
@@ -644,8 +690,8 @@ export async function POST(req: Request) {
       id: 'formula', type: 'custom', position: { x: 950, y: 150 },
       data: {
         title: `Applied Matrix Lookup — ${gridLabel}`,
-        stripeColor: 'bg-rose-500',
-        color: 'bg-rose-50 text-rose-600 border border-rose-100',
+        stripeColor: 'bg-blue-500',
+        color: 'bg-blue-50 text-blue-600 border border-blue-100',
         icon: 'percent',
         content: formulaNodeText,
         tableData: formulaTableData,

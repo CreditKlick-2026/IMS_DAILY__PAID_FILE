@@ -25,67 +25,67 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     return () => clearTimeout(timer);
   }, []);
 
-  const navItems = [
+    const navItems = [
     {
       id: 'dashboard', label: 'Dashboard', section: 'OPERATIONS', link: '/dashboard',
-      Icon: LayoutGrid, color: 'text-blue-500'
+      Icon: LayoutGrid, color: 'text-primary'
     },
     {
       id: 'live-records', label: 'Live Records', section: 'OPERATIONS', hasDot: true, link: '/dashboard/live-records',
-      Icon: Users, color: 'text-green-500'
+      Icon: Users, color: 'text-primary'
     },
 
     {
       id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'user'],
-      Icon: UploadCloud, color: 'text-purple-500'
+      Icon: UploadCloud, color: 'text-primary'
     },
     {
       id: 'duplicate', label: 'Duplicate Records', section: 'MANAGEMENT', link: '/dashboard/duplicate',
-      Icon: Users, color: 'text-amber-500'
+      Icon: Users, color: 'text-primary'
     },
 
 
 
     {
       id: 'admin', label: 'Admin Panel', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/admin',
-      Icon: Settings, color: 'text-indigo-500'
+      Icon: Settings, color: 'text-primary'
     },
     {
       id: 'rules-engine', label: 'Rules Engine', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/rules-engine',
-      Icon: Database, color: 'text-rose-500'
+      Icon: Database, color: 'text-primary'
     },
 
     {
       id: 'incentive-gurugram', label: 'Inc - Gurugram', section: 'MANAGEMENT', link: '/dashboard/incentive/gurugram',
-      Icon: Database, color: 'text-indigo-500'
+      Icon: Database, color: 'text-primary'
     },
     {
       id: 'incentive-uttam-nagar', label: 'Inc - Uttam N', section: 'MANAGEMENT', link: '/dashboard/incentive/uttam-nagar',
-      Icon: Database, color: 'text-indigo-500'
+      Icon: Database, color: 'text-primary'
     },
     {
       id: 'incentive-pune', label: 'Inc - Pune', section: 'MANAGEMENT', link: '/dashboard/incentive/pune',
-      Icon: Database, color: 'text-indigo-500'
+      Icon: Database, color: 'text-primary'
     },
     {
       id: 'incentive-delhi', label: 'Inc - Delhi', section: 'MANAGEMENT', link: '/dashboard/incentive/delhi',
-      Icon: Database, color: 'text-indigo-500'
+      Icon: Database, color: 'text-primary'
     },
     {
       id: 'incentive-dashboard', label: 'Incentive Dashboard', section: 'MANAGEMENT', link: '/dashboard/incentive-dashboard',
-      Icon: BarChart2, color: 'text-green-500'
+      Icon: BarChart2, color: 'text-primary'
     },
     {
       id: 'audit', label: 'Audit Logs', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/audit',
-      Icon: LineChart, color: 'text-rose-500'
+      Icon: LineChart, color: 'text-primary'
     },
     {
       id: 'keka-master', label: 'Employee Master', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/keka-master',
-      Icon: Database, color: 'text-orange-500'
+      Icon: Database, color: 'text-primary'
     },
     {
       id: 'mapping-list', label: 'Mapping List', section: 'MANAGEMENT', roles: ['admin'], link: '/dashboard/mapping-list',
-      Icon: Network, color: 'text-indigo-500'
+      Icon: Network, color: 'text-primary'
     }
   ];
 

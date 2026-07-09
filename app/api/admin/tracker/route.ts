@@ -21,14 +21,37 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
+    const locationName = searchParams.get('location');
+    const clientName = searchParams.get('client_name');
+    const productName = searchParams.get('product_type');
     
     const now = new Date();
     // Default to current month/year
     const month = monthStr ? parseInt(monthStr) : now.getMonth() + 1;
     const year = yearStr ? parseInt(yearStr) : now.getFullYear();
 
-    // Fetch users and their uploads in one go using LEFT JOIN
-    // COALESCE ensures we fallback to created_at if upload_at is missing
+    let paramIndex = 3;
+    const queryParams: any[] = [month, year];
+
+    let subqueryConditions = '';
+    if (clientName) {
+      subqueryConditions += ` AND c.name = $${paramIndex}`;
+      queryParams.push(clientName);
+      paramIndex++;
+    }
+    if (productName) {
+      subqueryConditions += ` AND j.product_type = $${paramIndex}`;
+      queryParams.push(productName);
+      paramIndex++;
+    }
+
+    let userConditions = '';
+    if (locationName) {
+      userConditions += ` AND u.location = $${paramIndex}`;
+      queryParams.push(locationName);
+      paramIndex++;
+    }
+
     const query = `
       SELECT 
         u.employee_id, 
@@ -39,15 +62,19 @@ export async function GET(req: Request) {
         uj.is_edited_by_admin,
         uj.uploaded_by_employee_id
       FROM users u
-      LEFT JOIN upload_jobs uj 
+      LEFT JOIN (
+        SELECT j.* FROM upload_jobs j
+        LEFT JOIN master_client c ON COALESCE(j.client_id, j.process_id) = c.id
+        WHERE 1=1 ${subqueryConditions}
+      ) uj 
         ON u.employee_id = uj.target_employee_id
         AND EXTRACT(MONTH FROM COALESCE(uj.upload_at, uj.created_at)) = $1
         AND EXTRACT(YEAR FROM COALESCE(uj.upload_at, uj.created_at)) = $2
-      WHERE u.role = 'user'
+      WHERE u.role = 'user' ${userConditions}
       ORDER BY u.name, u.username, uj.created_at DESC
     `;
 
-    const res = await pool.query(query, [month, year]);
+    const res = await pool.query(query, queryParams);
 
     // Group by user
     const usersMap: Record<string, any> = {};

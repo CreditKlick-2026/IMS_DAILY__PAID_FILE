@@ -65,8 +65,8 @@ function calculateVintageDays(doc: Date, currentCalcDate: Date) {
 
 function calculateAssociateIncentive(collection: number, salary: number, doc: Date | null, vintageMonths: number, associateVintageGrid: any[], associateTenuredGrid: any[]) {
     let traceData: any = null;
-            let incentive = 0;
-            let incentivePercent = 0;
+    let incentive = 0;
+    let incentivePercent = 0;
 
     if (doc) {
         let slabMonth = -1;
@@ -86,7 +86,7 @@ function calculateAssociateIncentive(collection: number, salary: number, doc: Da
         incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid);
         incentive = collection * incentivePercent;
     }
-    
+
     return { incentive, incentivePercent };
 }
 
@@ -102,52 +102,62 @@ function parseGrid2Value(val: any): number | null {
     return null;
 }
 
-function getGrid3IncentivePercent(value: number, slabs: any[], isPcp = false): number {
-    if (!slabs || slabs.length === 0) return 0;
-    
-    let bestPayout = 0;
-    for (const slab of slabs) {
-        const min = isPcp ? (slab.pcp_min || 0) : (slab.min || 0);
-        const max = isPcp ? (slab.pcp_max === '-' ? Infinity : slab.pcp_max) : (slab.max === '-' ? Infinity : slab.max);
-        
-        if (value >= min && value <= max) {
-            const pct = parseFloat(slab.payout_pct) / 100;
-            if (pct > bestPayout) bestPayout = pct;
+function getGrid3IncentivePercent(value: number, slabs: any[], vintageMonths: number, isAssociate = false): number {
+    if (!slabs || !slabs.length) return 0;
+    let best = 0;
+    for (const s of slabs) {
+        if (isAssociate) {
+            const v = String(s.vintage || '').trim();
+            if (v.includes('<90') && vintageMonths >= 3) continue;
+            if (v.includes('>91') && vintageMonths < 3) continue;
+            const min = s.min || 0;
+            const max = s.max === '-' ? Infinity : s.max;
+            if (value >= min && value <= max) {
+                const p = parseFloat(s.payout_pct) / 100;
+                if (p > best) best = p;
+            }
+        } else {
+            const min = s.pcp_min || 0;
+            const max = s.pcp_max === '-' ? Infinity : s.pcp_max;
+            if (value >= min && value <= max) {
+                const p = parseFloat(s.payout_pct) / 100;
+                if (p > best) best = p;
+            }
         }
     }
-    return bestPayout;
+    return best;
 }
 
 function getGrid4IncentivePercent(value: number, slabs: any[], vintageMonths: number, isAssociate = false): number {
-  if (!slabs || !slabs.length) return 0;
-  let best = 0;
-  for (const s of slabs) {
-    if (isAssociate) {
-      const v = String(s.vintage || '').trim();
-      if (v.includes('<90') && vintageMonths >= 3) continue; // Note: using 3 months (~90 days) since vintage is in months
-      if (v.includes('>91') && vintageMonths < 3) continue;
-      const min = s.min || 0;
-      const max = s.max === '-' ? Infinity : s.max;
-      if (value >= min && value <= max) {
-          const p = parseFloat(s.payout_pct) / 100;
-          if (p > best) best = p;
-      }
-    } else {
-      // PCP logic for TL/AM
-      const min = s.pcp_min || 0;
-      const max = s.pcp_max === '-' ? Infinity : s.pcp_max;
-      if (value >= min && value <= max) {
-          const p = parseFloat(s.payout_pct) / 100;
-          if (p > best) best = p;
-      }
+    if (!slabs || !slabs.length) return 0;
+    let best = 0;
+    for (const s of slabs) {
+        if (isAssociate) {
+            const v = String(s.vintage || '').trim();
+            if (v.includes('<90') && vintageMonths >= 3) continue; // Note: using 3 months (~90 days) since vintage is in months
+            if (v.includes('>91') && vintageMonths < 3) continue;
+            const min = s.min || 0;
+            const max = s.max === '-' ? Infinity : s.max;
+            if (value >= min && value <= max) {
+                const p = parseFloat(s.payout_pct) / 100;
+                if (p > best) best = p;
+            }
+        } else {
+            // PCP logic for TL/AM
+            const min = s.pcp_min || 0;
+            const max = s.pcp_max === '-' ? Infinity : s.pcp_max;
+            if (value >= min && value <= max) {
+                const p = parseFloat(s.payout_pct) / 100;
+                if (p > best) best = p;
+            }
+        }
     }
-  }
-  return best;
+    return best;
 }
 
 function getGrid2IncentivePercent(collection: number, client: string, product: string, vintageDays: number, associateSlabs: any[]) {
-    const normalizedClient = client.toLowerCase().replace('bank', '').trim();
-    const normalizedProduct = product.toLowerCase();
+    const normalizedClient = (client || '').toLowerCase().replace('bank', '').trim();
+    const normalizedProduct = (product || '').toLowerCase();
 
     const matchingSlabs = associateSlabs.filter(slab => {
         const sc = String(slab.client || '').toLowerCase().replace('bank', '').trim();
@@ -161,7 +171,7 @@ function getGrid2IncentivePercent(collection: number, client: string, product: s
 
     for (const slab of matchingSlabs) {
         const v = String(slab.vintage || '').trim();
-        if (v.includes('<90') && vintageDays >= 90) continue;
+        if (v.includes('<90') && vintageDays > 90) continue;
         if (v.includes('>91') && vintageDays <= 90) continue;
 
         let minStr = String(slab.min || '').trim();
@@ -196,6 +206,41 @@ function getGrid2IncentivePercent(collection: number, client: string, product: s
     return bestPayout;
 }
 
+function getGrid5IncentiveAmount(upgradeCollection: number, recoveryCollection: number, slabs: any[], vintageMonths: number, isAssociate = false, teamHeadcount = 0): { amount: number, percent: number } {
+    if (!slabs || !slabs.length) return { amount: 0, percent: 0 };
+    let upgPct = 0;
+    let recPct = 0;
+
+    for (const s of slabs) {
+        if (isAssociate) {
+            const v = String(s.vintage || '').trim();
+            if (v.includes('<90') && vintageMonths >= 3) continue;
+            if (v.includes('>91') && vintageMonths < 3) continue;
+
+            // Associate just gets the flat percentage
+            upgPct = parseFloat(s.upgrade_pct) / 100 || 0;
+            recPct = parseFloat(s.recovery_pct) / 100 || 0;
+            break; // take first matched vintage
+        } else {
+            // TL/AM based on Per Seat Productivity (Average)
+            const avg = teamHeadcount > 0 ? ((upgradeCollection + recoveryCollection) / teamHeadcount) : 0;
+            const min = s.avg_min || 0;
+            const max = s.avg_max === '-' ? Infinity : s.avg_max;
+            if (avg >= min && avg <= max) {
+                upgPct = parseFloat(s.upgrade_pct) / 100 || 0;
+                recPct = parseFloat(s.recovery_pct) / 100 || 0;
+                break;
+            }
+        }
+    }
+
+    const amount = (upgradeCollection * upgPct) + (recoveryCollection * recPct);
+    const totalCollection = upgradeCollection + recoveryCollection;
+    const percent = totalCollection > 0 ? (amount / totalCollection) : 0;
+
+    return { amount, percent };
+}
+
 export async function getIncentiveData(req: Request, forcedLocation?: string) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -214,16 +259,23 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         // Determine the calculation boundary date
         const now = new Date();
         let currentCalcDate = new Date();
-        if (month && year) {
-            conditions.push(`EXTRACT(MONTH FROM upload_at) = $${queryParams.length + 1}`);
-            queryParams.push(month);
-            conditions.push(`EXTRACT(YEAR FROM upload_at) = $${queryParams.length + 1}`);
-            queryParams.push(year);
+        if (month || year) {
+            if (month) {
+                conditions.push(`EXTRACT(MONTH FROM upload_at) = $${queryParams.length + 1}`);
+                queryParams.push(month);
+            }
+            if (year) {
+                conditions.push(`EXTRACT(YEAR FROM upload_at) = $${queryParams.length + 1}`);
+                queryParams.push(year);
+            }
 
-            const isCurrentMonth = (now.getMonth() + 1).toString() === month && now.getFullYear().toString() === year;
+            const m = month ? parseInt(month) : now.getMonth() + 1;
+            const y = year ? parseInt(year) : now.getFullYear();
+            
+            const isCurrentMonth = (now.getMonth() + 1) === m && now.getFullYear() === y;
             if (!isCurrentMonth) {
                 // End of the selected month
-                currentCalcDate = new Date(parseInt(year), parseInt(month), 0);
+                currentCalcDate = new Date(y, m, 0);
             }
         } else {
             // Default to the end of the PREVIOUS month (since data is typically from previous month)
@@ -280,12 +332,12 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         let requiredColumns = [];
         let assignedGrid = null;
 
-        let grid2Data: any = { associateSlabs: [], riders: [] };
+        let grid2Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
         try {
             const fileData = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_2.json'), 'utf-8');
             grid2Data = JSON.parse(fileData);
         } catch (e) { /* grid2 not available */ }
-        
+
         let grid3Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
         try {
             const fileData3 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_3.json'), 'utf-8');
@@ -297,6 +349,24 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
             const fileData4 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_4.json'), 'utf-8');
             grid4Data = JSON.parse(fileData4);
         } catch (e) { /* grid4 not available */ }
+
+        let grid5Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+        try {
+            const fileData5 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_5.json'), 'utf-8');
+            grid5Data = JSON.parse(fileData5);
+        } catch (e) { }
+
+        let grid6Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+        try {
+            const fileData6 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_6.json'), 'utf-8');
+            grid6Data = JSON.parse(fileData6);
+        } catch (e) { /* grid6 not available */ }
+
+        let grid7Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
+        try {
+            const fileData7 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_7.json'), 'utf-8');
+            grid7Data = JSON.parse(fileData7);
+        } catch (e) { /* grid7 not available */ }
 
         if (clientParam && productParam) {
             const clientConfigRes = await pool.query(
@@ -330,7 +400,9 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
           STRING_AGG(DISTINCT r.mobile_no, ', ') as mobile_no,
           STRING_AGG(DISTINCT r.account_no, ', ') as lan,
           COUNT(r.id) as total_records, 
-          COALESCE(SUM(CAST(NULLIF(regexp_replace(r.money_collected::text, '[^0-9.]', '', 'g'), '') AS NUMERIC)), 0) as total_money_collected
+          COALESCE(SUM(CAST(NULLIF(regexp_replace(r.money_collected::text, '[^0-9.]', '', 'g'), '') AS NUMERIC)), 0) as total_money_collected,
+          COALESCE(SUM(CASE WHEN LOWER(r.recovery_or_upgrade) LIKE '%upgrade%' THEN CAST(NULLIF(regexp_replace(r.money_collected::text, '[^0-9.]', '', 'g'), '') AS NUMERIC) ELSE 0 END), 0) as total_upgrade_collected,
+          COALESCE(SUM(CASE WHEN LOWER(r.recovery_or_upgrade) LIKE '%recovery%' THEN CAST(NULLIF(regexp_replace(r.money_collected::text, '[^0-9.]', '', 'g'), '') AS NUMERIC) ELSE 0 END), 0) as total_recovery_collected
       FROM dpf_records r
       ${whereClause}
       GROUP BY r.employee_code, r.employee_name, r.tl_name, r.am, r.aph, r.ph, r.client, r.location, r.product, r.bucket, r.payment_mode
@@ -340,30 +412,35 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         const individualCollections = res.rows;
 
         // 3. Pre-calculate Team Collections and Headcounts
-        const tlTeamData: Record<string, { collection: number, headcount: Set<string> }> = {};
-        const amTeamData: Record<string, { collection: number, headcount: Set<string> }> = {};
-        const associateTotalData: Record<string, number> = {};
+        const tlTeamData: Record<string, { collection: number, upgrade: number, recovery: number, headcount: Set<string> }> = {};
+        const amTeamData: Record<string, { collection: number, upgrade: number, recovery: number, headcount: Set<string> }> = {};
+        const associateTotalData: Record<string, { collection: number, upgrade: number, recovery: number }> = {};
 
         individualCollections.forEach(row => {
             const coll = parseFloat(row.total_money_collected);
+            const upgColl = parseFloat(row.total_upgrade_collected);
+            const recColl = parseFloat(row.total_recovery_collected);
 
             // Match TL exactly as per Keka/DPF mapping
             if (row.tl_name) {
                 const tl = row.tl_name.toLowerCase().trim();
-                if (!tlTeamData[tl]) tlTeamData[tl] = { collection: 0, headcount: new Set() };
-                tlTeamData[tl].collection += coll;
+                if (!tlTeamData[tl]) tlTeamData[tl] = { collection: 0, upgrade: 0, recovery: 0, headcount: new Set() };
+                tlTeamData[tl].collection += coll; tlTeamData[tl].upgrade += upgColl; tlTeamData[tl].recovery += recColl;
                 if (row.employee_code) tlTeamData[tl].headcount.add(row.employee_code);
             }
 
             // Match AM
             if (row.am_name) {
                 const am = row.am_name.toLowerCase().trim();
-                if (!amTeamData[am]) amTeamData[am] = { collection: 0, headcount: new Set() };
-                amTeamData[am].collection += coll;
+                if (!amTeamData[am]) amTeamData[am] = { collection: 0, upgrade: 0, recovery: 0, headcount: new Set() };
+                amTeamData[am].collection += coll; amTeamData[am].upgrade += upgColl; amTeamData[am].recovery += recColl;
                 if (row.employee_code) amTeamData[am].headcount.add(row.employee_code);
             }
             if (row.employee_code) {
-                associateTotalData[row.employee_code] = (associateTotalData[row.employee_code] || 0) + coll;
+                if (!associateTotalData[row.employee_code]) associateTotalData[row.employee_code] = { collection: 0, upgrade: 0, recovery: 0 };
+                associateTotalData[row.employee_code].collection += coll;
+                associateTotalData[row.employee_code].upgrade += upgColl;
+                associateTotalData[row.employee_code].recovery += recColl;
             }
         });
 
@@ -376,10 +453,10 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 const nameKey = emp.name?.toLowerCase().trim() || '';
                 const firstName = nameKey.split(' ')[0];
                 const rawDesig = (emp.designation || '').toLowerCase();
-                
+
                 const isAM = rawDesig.includes('manager') || rawDesig === 'am' || Object.keys(amTeamData).some(am => nameKey.includes(am) || am.includes(firstName));
                 const isTL = rawDesig.includes('leader') || rawDesig === 'tl' || rawDesig === 'atl' || Object.keys(tlTeamData).some(tl => nameKey.includes(tl) || tl.includes(firstName));
-                
+
                 if (isAM || isTL) {
                     individualCollections.push({
                         employee_code: emp.employee_id,
@@ -442,6 +519,8 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
             let vintageMonths = 0;
             let pcp = 0;
             let teamCollection = 0;
+            let teamUpgradeCollection = 0;
+            let teamRecoveryCollection = 0;
             let teamHeadcount = 0;
 
             if (doc) {
@@ -479,21 +558,21 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 incentive = 0;
             } else if (kekaData?.is_special) {
                 incentivePercent = 0;
-                const totalEmployeeCollection = associateTotalData[record.employee_code] || collection;
+                const totalEmployeeCollection = (associateTotalData[record.employee_code]?.collection) || collection;
                 for (const rule of specialGridRules) {
                     if (totalEmployeeCollection >= rule.target_collection) {
                         incentivePercent = rule.incentive_percentage;
                         break; // Because it's ordered DESC, first match is the highest applicable
                     }
                 }
-                
+
                 individualIncentiveAmount = collection * incentivePercent;
                 incentive = individualIncentiveAmount;
             } else if (designation === 'atl') {
                 const teamIncentivePercent = getLeadershipIncentivePercentage(teamCollection, 'ATL', leadershipGrid);
                 teamIncentiveAmount = teamCollection * teamIncentivePercent;
 
-                const totalEmployeeCollection = associateTotalData[record.employee_code] || collection;
+                const totalEmployeeCollection = (associateTotalData[record.employee_code]?.collection) || collection;
                 const { incentive: indInc, incentivePercent: indIncPct } = calculateAssociateIncentive(
                     totalEmployeeCollection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid
                 );
@@ -502,16 +581,52 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 incentive = teamIncentiveAmount + individualIncentiveAmount;
                 // For reporting, we can either blend the percent or just show team percent. 
                 // Showing team percent is standard for ATL display, but the amount will be higher.
-                incentivePercent = teamIncentivePercent; 
+                incentivePercent = teamIncentivePercent;
 
             } else if (designation.includes('leader') || designation === 'tl') {
                 // Team Leader Logic
-                if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.tlSlabs, true);
+                if (assignedGrid === 'grid_2') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid2Data.tlSlabs, vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_2') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid2Data.amSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_3') {
+                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.tlSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_5') {
+                    if (designation === 'ASSOCIATE') {
+                        const empAssoc = associateTotalData[record.employee_code] || { collection: 0, upgrade: 0, recovery: 0 };
+                        const resData = getGrid5IncentiveAmount(empAssoc.upgrade, empAssoc.recovery, grid5Data.associateSlabs || [], vintageMonths, true, 0);
+                        incentivePercent = resData.percent;
+                        individualIncentiveAmount = resData.amount;
+                    } else if (designation === 'TL') {
+                        const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, grid5Data.tlSlabs || [], vintageMonths, false, teamHeadcount);
+                        incentivePercent = resData.percent;
+                        teamIncentiveAmount = resData.amount;
+                    } else if (designation === 'AM') {
+                        const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, grid5Data.amSlabs || [], vintageMonths, false, teamHeadcount);
+                        incentivePercent = resData.percent;
+                        teamIncentiveAmount = resData.amount;
+                    }
+                    incentive = individualIncentiveAmount + teamIncentiveAmount;
                 } else if (assignedGrid === 'grid_4') {
                     incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.tlSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_5') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid5Data.tlSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_6') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid6Data.tlSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_7') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid7Data.tlSlabs, vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 } else {
@@ -524,7 +639,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 // Assistant Manager Logic
                 incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'AM', leadershipGrid);
                 teamIncentiveAmount = teamCollection * incentivePercent;
-                
+
                 let matchedTarget = 0;
                 for (const rule of leadershipGrid) {
                     if (rule.role === 'AM' && teamCollection >= rule.target_collection * 30) {
@@ -532,17 +647,26 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                         break;
                     }
                 }
-                
+
                 let additionalAmount = 0;
                 if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.amSlabs, true);
+                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.amSlabs, vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
-                    if (teamIncentiveAmount < 18000 && teamIncentiveAmount > 0) {
-                        additionalAmount = 5000;
-                    }
-                    incentive = teamIncentiveAmount + additionalAmount;
+                    incentive = teamIncentiveAmount;
                 } else if (assignedGrid === 'grid_4') {
                     incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.amSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_5') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid5Data.amSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_6') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid6Data.amSlabs, vintageMonths, false);
+                    teamIncentiveAmount = teamCollection * incentivePercent;
+                    incentive = teamIncentiveAmount;
+                } else if (assignedGrid === 'grid_7') {
+                    incentivePercent = getGrid4IncentivePercent(pcp, grid7Data.amSlabs, vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 } else {
@@ -555,7 +679,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
 
             } else {
                 // Associate Logic
-                const totalEmployeeCollection = associateTotalData[record.employee_code] || collection;
+                const totalEmployeeCollection = (associateTotalData[record.employee_code]?.collection) || collection;
                 if (!assignedGrid || assignedGrid === 'unassigned' || assignedGrid === 'null') {
                     incentivePercent = 0;
                     individualIncentiveAmount = 0;
@@ -565,11 +689,19 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(totalEmployeeCollection, grid3Data.associateSlabs, false);
+                    incentivePercent = getGrid3IncentivePercent(totalEmployeeCollection, grid3Data.associateSlabs, vintageMonths, true);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else if (assignedGrid === 'grid_4') {
                     incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid4Data.associateSlabs, vintageMonths, true);
+                    individualIncentiveAmount = collection * incentivePercent;
+                    incentive = individualIncentiveAmount;
+                } else if (assignedGrid === 'grid_6') {
+                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid6Data.associateSlabs, vintageMonths, true);
+                    individualIncentiveAmount = collection * incentivePercent;
+                    incentive = individualIncentiveAmount;
+                } else if (assignedGrid === 'grid_7') {
+                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid7Data.associateSlabs, vintageMonths, true);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else {
@@ -682,8 +814,8 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         const filterableKeys = ['designation', 'location', 'client', 'product', 'bucket', 'payment_mode', 'ph', 'aph', 'am', 'tl_name', 'cm'];
         const activeFilters = filterableKeys.filter(k => requiredColumns.includes(k) || (k === 'am' && requiredColumns.includes('am_name')));
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             data: finalData,
             column_config: requiredColumns, // keeping for backward compatibility if needed
             ui_config: {

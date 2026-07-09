@@ -223,7 +223,7 @@ export default function MasterGridsPage() {
             onClick={() => setActiveMasterGridTab(tab)}
             className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
               activeMasterGridTab === tab
-                ? 'border-purple-600 text-purple-600'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -245,7 +245,7 @@ export default function MasterGridsPage() {
               {activeMasterGridTab === 'associateTenured' && (
                   <button 
                       onClick={() => setShowRangeEditor(!showRangeEditor)}
-                      className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
                   >
                       {showRangeEditor ? 'Close Config' : 'Configure Ranges'}
                   </button>
@@ -253,7 +253,7 @@ export default function MasterGridsPage() {
               <button 
                   disabled={isSavingMasterGrid}
                   onClick={() => handleSaveMasterGrid(activeMasterGridTab)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
               >
                   {isSavingMasterGrid ? 'Saving...' : 'Save Grid'}
               </button>
@@ -261,8 +261,8 @@ export default function MasterGridsPage() {
         </div>
         
         {activeMasterGridTab === 'associateTenured' && showRangeEditor && (
-            <div className="bg-indigo-50 border-b p-4">
-                <h4 className="font-bold text-indigo-900 mb-3 text-sm">Configure Salary Ranges</h4>
+            <div className="bg-blue-50 border-b p-4">
+                <h4 className="font-bold text-blue-900 mb-3 text-sm">Configure Salary Ranges</h4>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     {(masterGrids.tenured_salary_ranges || []).map((range, idx) => (
                         <div key={range.key} className="bg-white p-3 rounded border text-sm">
@@ -271,7 +271,7 @@ export default function MasterGridsPage() {
                                 type="text" 
                                 value={range.label} 
                                 onChange={e => updateSalaryRange(idx, 'label', e.target.value)}
-                                className="w-full border rounded px-2 py-1 mb-2 outline-none focus:border-indigo-500" 
+                                className="w-full border rounded px-2 py-1 mb-2 outline-none focus:border-blue-500" 
                             />
                             
                             <label className="block text-xs font-semibold text-slate-500 mb-1">Min Salary (₹)</label>
@@ -279,7 +279,7 @@ export default function MasterGridsPage() {
                                 type="number" 
                                 value={range.min} 
                                 onChange={e => updateSalaryRange(idx, 'min', e.target.value)}
-                                className="w-full border rounded px-2 py-1 mb-2 outline-none focus:border-indigo-500" 
+                                className="w-full border rounded px-2 py-1 mb-2 outline-none focus:border-blue-500" 
                             />
                             
                             <label className="block text-xs font-semibold text-slate-500 mb-1">Max Salary (₹)</label>
@@ -287,12 +287,12 @@ export default function MasterGridsPage() {
                                 type="number" 
                                 value={range.max} 
                                 onChange={e => updateSalaryRange(idx, 'max', e.target.value)}
-                                className="w-full border rounded px-2 py-1 outline-none focus:border-indigo-500" 
+                                className="w-full border rounded px-2 py-1 outline-none focus:border-blue-500" 
                             />
                         </div>
                     ))}
                 </div>
-                <button onClick={saveSalaryRanges} disabled={isSavingMasterGrid} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-sm font-bold">
+                <button onClick={saveSalaryRanges} disabled={isSavingMasterGrid} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-bold">
                     Save Ranges
                 </button>
             </div>
@@ -343,7 +343,7 @@ export default function MasterGridsPage() {
                                           (newGrids[activeMasterGridTab as keyof typeof masterGrids] as any[])[idx].role = e.target.value;
                                           setMasterGrids(newGrids);
                                       }}
-                                      className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full"
+                                      className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                   >
                                       <option value="TL">TL</option>
                                       <option value="ATL">ATL</option>
@@ -360,7 +360,7 @@ export default function MasterGridsPage() {
                                         (newGrids[activeMasterGridTab as keyof typeof masterGrids] as any[])[idx].target_collection = e.target.value;
                                         setMasterGrids(newGrids);
                                     }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full"
+                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                 />
                             </td>
                             {activeMasterGridTab === 'associateTenured' && (
@@ -376,7 +376,7 @@ export default function MasterGridsPage() {
                                             const newGrids = { ...masterGrids };
                                             newGrids.associateTenured[idx][r.key] = e.target.value;
                                             setMasterGrids(newGrids);
-                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
+                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full" />
                                     </td>
                                 ))}
                               </>
@@ -389,7 +389,7 @@ export default function MasterGridsPage() {
                                             const newGrids = { ...masterGrids };
                                             newGrids.associateVintage[idx][field] = e.target.value;
                                             setMasterGrids(newGrids);
-                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
+                                        }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full" />
                                     </td>
                                 ))}
                               </>
@@ -400,7 +400,7 @@ export default function MasterGridsPage() {
                                       const newGrids = { ...masterGrids };
                                       newGrids.leadership[idx].incentive_percentage = e.target.value;
                                       setMasterGrids(newGrids);
-                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
+                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full" />
                               </td>
                             )}
                             {activeMasterGridTab === 'specialExceptions' && (
@@ -409,7 +409,7 @@ export default function MasterGridsPage() {
                                       const newGrids = { ...masterGrids };
                                       newGrids.specialExceptions[idx].incentive_percentage = e.target.value;
                                       setMasterGrids(newGrids);
-                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 w-full" />
+                                  }} className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full" />
                               </td>
                             )}
                             <td className="px-4 py-2 text-right">
@@ -443,7 +443,7 @@ export default function MasterGridsPage() {
                                 }
                                 setMasterGrids(newGrids);
                             }}
-                            className="text-purple-600 hover:text-purple-800 text-sm font-bold w-full text-left"
+                            className="text-blue-600 hover:text-blue-800 text-sm font-bold w-full text-left"
                         >
                             + Add New Rule
                         </button>

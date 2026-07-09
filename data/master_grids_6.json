@@ -1,0 +1,234 @@
+{
+  "associateSlabs": [
+    {
+      "vintage": "<90",
+      "min": 0,
+      "max": 149999,
+      "payout_pct": "0.00"
+    },
+    {
+      "vintage": "<90",
+      "min": 150000,
+      "max": 199999,
+      "payout_pct": "2.00"
+    },
+    {
+      "vintage": "<90",
+      "min": 200000,
+      "max": 249999,
+      "payout_pct": "2.25"
+    },
+    {
+      "vintage": "<90",
+      "min": 250000,
+      "max": 299999,
+      "payout_pct": "2.50"
+    },
+    {
+      "vintage": "<90",
+      "min": 300000,
+      "max": 399999,
+      "payout_pct": "2.75"
+    },
+    {
+      "vintage": "<90",
+      "min": 400000,
+      "max": 499999,
+      "payout_pct": "3.00"
+    },
+    {
+      "vintage": "<90",
+      "min": 500000,
+      "max": "-",
+      "payout_pct": "3.50"
+    },
+    {
+      "vintage": ">91",
+      "min": 0,
+      "max": 249999,
+      "payout_pct": "0.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 250000,
+      "max": 299999,
+      "payout_pct": "2.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 300000,
+      "max": 349999,
+      "payout_pct": "2.25"
+    },
+    {
+      "vintage": ">91",
+      "min": 350000,
+      "max": 399999,
+      "payout_pct": "2.50"
+    },
+    {
+      "vintage": ">91",
+      "min": 400000,
+      "max": 499999,
+      "payout_pct": "2.75"
+    },
+    {
+      "vintage": ">91",
+      "min": 500000,
+      "max": 599999,
+      "payout_pct": "3.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 600000,
+      "max": "-",
+      "payout_pct": "3.50"
+    }
+  ],
+  "tlSlabs": [
+    {
+      "pcp_min": 0,
+      "pcp_max": 199999,
+      "payout_pct": "0.00"
+    },
+    {
+      "pcp_min": 225000,
+      "pcp_max": 249999,
+      "payout_pct": "0.40"
+    },
+    {
+      "pcp_min": 250000,
+      "pcp_max": 274999,
+      "payout_pct": "0.60"
+    },
+    {
+      "pcp_min": 275000,
+      "pcp_max": 299999,
+      "payout_pct": "0.80"
+    },
+    {
+      "pcp_min": 300000,
+      "pcp_max": 324999,
+      "payout_pct": "1.00"
+    },
+    {
+      "pcp_min": 325000,
+      "pcp_max": 349999,
+      "payout_pct": "1.10"
+    },
+    {
+      "pcp_min": 350000,
+      "pcp_max": "-",
+      "payout_pct": "1.20"
+    }
+  ],
+  "amSlabs": [
+    {
+      "pcp_min": 0,
+      "pcp_max": 199999,
+      "payout_pct": "0.00"
+    },
+    {
+      "pcp_min": 225000,
+      "pcp_max": 249999,
+      "payout_pct": "0.15"
+    },
+    {
+      "pcp_min": 250000,
+      "pcp_max": 274999,
+      "payout_pct": "0.25"
+    },
+    {
+      "pcp_min": 275000,
+      "pcp_max": 299999,
+      "payout_pct": "0.35"
+    },
+    {
+      "pcp_min": 300000,
+      "pcp_max": 324999,
+      "payout_pct": "0.40"
+    },
+    {
+      "pcp_min": 325000,
+      "pcp_max": 349999,
+      "payout_pct": "0.45"
+    },
+    {
+      "pcp_min": 350000,
+      "pcp_max": "-",
+      "payout_pct": "0.50"
+    }
+  ],
+  "riders": [
+    {
+      "role": "Caller - Rider 1 - Quality Score",
+      "docking": ">=85%",
+      "payout": 1
+    },
+    {
+      "role": "Caller - Rider 1 - Quality Score",
+      "docking": "<85%",
+      "payout": 0.7
+    },
+    {
+      "role": "Caller - Rider 2 - UPL",
+      "docking": "<=1 Leaves",
+      "payout": 1
+    },
+    {
+      "role": "Caller - Rider 2 - UPL",
+      "docking": ">=2 Leaves",
+      "payout": 0.7
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": 1,
+      "payout": 1
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": "<=2",
+      "payout": 0.7
+    },
+    {
+      "role": "Team leader - Rider 1 - Attrition",
+      "docking": ">=3",
+      "payout": 0
+    },
+    {
+      "role": "Team leader - Rider 2 - Attrition Control Kicker",
+      "docking": "Zero",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Team leader - Rider 3 - Incentive Eligible Team",
+      "docking": ">70%",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": "<10%",
+      "payout": 1
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": "10% - 20%",
+      "payout": 0.7
+    },
+    {
+      "role": "Assistant Manager - Rider 1 - Attrition",
+      "docking": ">21%",
+      "payout": 0
+    },
+    {
+      "role": "Assistant Manager - Rider 2 - Attrition Control Kicker",
+      "docking": "Zero",
+      "payout": "10% Extra on the Incentive Amt"
+    },
+    {
+      "role": "Assistant Manager - Rider 3 - Incentive Eligible Team",
+      "docking": ">70%",
+      "payout": "10% Extra on the Incentive Amt"
+    }
+  ]
+}

@@ -10,6 +10,10 @@ export async function POST(req: Request) {
     const employeeId = formData.get('employee_id') as string || null;
     const employeeName = formData.get('name') as string || null;
     
+    const locationId = formData.get('location_id') ? parseInt(formData.get('location_id') as string) : null;
+    const clientId = formData.get('client_id') ? parseInt(formData.get('client_id') as string) : null;
+    const productType = formData.get('product_type') as string || null;
+
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
@@ -23,9 +27,9 @@ export async function POST(req: Request) {
 
     // Create the Job Entry as 'PENDING' for KEKA
     await query(`
-      INSERT INTO upload_jobs (id, file_path, file_data, uploaded_by_employee_id, uploaded_by_name, status, job_type) 
-      VALUES ($1, $2, $3, $4, $5, 'PENDING', 'KEKA')
-    `, [jobId, fileName, base64Data, employeeId, employeeName]);
+      INSERT INTO upload_jobs (id, file_path, file_data, uploaded_by_employee_id, uploaded_by_name, status, job_type, location_id, process_id, product_type) 
+      VALUES ($1, $2, $3, $4, $5, 'PENDING', 'KEKA', $6, $7, $8)
+    `, [jobId, fileName, base64Data, employeeId, employeeName, locationId, clientId, productType]);
 
     // Track Audit Log
     if (employeeId) {

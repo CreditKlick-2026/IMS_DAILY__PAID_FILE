@@ -4,6 +4,10 @@ import { useApp } from '@/context/AppContext';
 import SButton from './SButton';
 import { ButtonGroup, Button } from '@shopify/polaris';
 import * as XLSX from 'xlsx';
+import { 
+  CheckCircle2, Clock, XCircle, BarChart2, Scale, 
+  Inbox, User, Calendar, Phone, PhoneOff, Star, Search, Trash2, Edit
+} from 'lucide-react';
 
 const DISPOSITION_LOGIC: Record<string, Record<string, any[]>> = {
   "Right Party Connect": {
@@ -200,7 +204,7 @@ const PaymentHistoryModal = ({ lead }: { lead: any }) => {
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--txt3)' }}>⏳ Loading...</div>
           ) : !payments.length ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--txt3)' }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Inbox size={28} className="text-muted-foreground" /></div>
               No payment records found.
             </div>
           ) : (
@@ -286,14 +290,13 @@ const PaymentSummaryModal = ({ lead }: { lead: any }) => {
           {/* Top KPI Row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total Collected', val: `₹${Number(s.cleared || 0).toLocaleString('en-IN')}`, color: '#22c55e', bg: 'rgba(34,197,94,0.06)', icon: '✅', note: `${s.clearedCount || 0} cleared payments` },
-              { label: 'Pending Approval', val: `₹${Number(s.pending || 0).toLocaleString('en-IN')}`, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', icon: '⏳', note: `${s.pendingCount || 0} pending payments` },
-              { label: 'Rejected Amount', val: `₹${Number(s.rejected || 0).toLocaleString('en-IN')}`, color: '#ef4444', bg: 'rgba(239,68,68,0.06)', icon: '❌', note: `${s.rejectedCount || 0} rejected payments` },
+              { label: 'Total Collected', val: `₹${Number(s.cleared || 0).toLocaleString('en-IN')}`, color: '#22c55e', bg: 'rgba(34,197,94,0.06)', icon: <CheckCircle2 size={20} className="text-green-500"/>, note: `${s.clearedCount || 0} cleared payments` },
+              { label: 'Pending Approval', val: `₹${Number(s.pending || 0).toLocaleString('en-IN')}`, color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', icon: <Clock size={20} className="text-amber-500"/>, note: `${s.pendingCount || 0} pending payments` },
+              { label: 'Rejected Amount', val: `₹${Number(s.rejected || 0).toLocaleString('en-IN')}`, color: '#ef4444', bg: 'rgba(239,68,68,0.06)', icon: <XCircle size={20} className="text-red-500"/>, note: `${s.rejectedCount || 0} rejected payments` },
             ].map(k => (
               <div key={k.label} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: '14px 16px' }}>
-                <div style={{ fontSize: 20, marginBottom: 4 }}>{k.icon}</div>
+                <div style={{ marginBottom: 4 }}>{k.icon}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: k.color, marginBottom: 2 }}>{k.val}</div>
-                <div style={{ fontSize: 10, fontWeight: 800, color: k.color, marginBottom: 2 }}>{k.val}</div>
                 <div style={{ fontSize: 10, color: 'var(--txt)', fontWeight: 600 }}>{k.label}</div>
                 <div style={{ fontSize: 9, color: 'var(--txt3)', marginTop: 2 }}>{k.note}</div>
               </div>
@@ -342,7 +345,7 @@ const PaymentSummaryModal = ({ lead }: { lead: any }) => {
 
           {months.length === 0 && (
             <div style={{ textAlign: 'center', padding: '30px', color: 'var(--txt3)' }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><BarChart2 size={32} className="text-muted-foreground" /></div>
               No cleared payments found yet.
             </div>
           )}
@@ -377,10 +380,10 @@ const SettlementHistoryModal = ({ lead }: { lead: any }) => {
   const totalPages = Math.ceil(total / limit);
 
   const STATUS_MAP: any = {
-    Raised: { color: 'var(--amb)', label: 'RAISED', icon: '⏳' },
-    Approve: { color: 'var(--grn)', label: 'APPROVED', icon: '✅' },
-    Rejected: { color: 'var(--red)', label: 'REJECTED', icon: '❌' },
-    Pending: { color: 'var(--pur)', label: 'PENDING', icon: '🔄' },
+    Raised: { color: 'var(--amb)', label: 'RAISED', icon: <Clock size={12}/> },
+    Approve: { color: 'var(--grn)', label: 'APPROVED', icon: <CheckCircle2 size={12}/> },
+    Rejected: { color: 'var(--red)', label: 'REJECTED', icon: <XCircle size={12}/> },
+    Pending: { color: 'var(--pur)', label: 'PENDING', icon: <Clock size={12}/> },
   };
 
   return (
@@ -426,7 +429,7 @@ const SettlementHistoryModal = ({ lead }: { lead: any }) => {
         </div>
       ) : data.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center', color: 'var(--txt3)' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⚖️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Scale size={32} className="text-muted-foreground" /></div>
           No settlement history found for this customer.
         </div>
       ) : (
@@ -483,10 +486,10 @@ const SettlementHistoryModal = ({ lead }: { lead: any }) => {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
                     <div style={{ fontSize: 10, color: 'var(--txt3)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      👤 <span style={{ fontWeight: 600 }}>{s.agent?.name || 'Unknown Agent'}</span>
+                      <User size={10} /> <span style={{ fontWeight: 600 }}>{s.agent?.name || 'Unknown Agent'}</span>
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 600 }}>
-                      📅 {new Date(s.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    <div style={{ fontSize: 10, color: 'var(--txt3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Calendar size={10} /> {new Date(s.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                   </div>
                 </div>
@@ -625,11 +628,11 @@ const CallLogsModal = ({ lead }: { lead: any }) => {
         <div style={{ maxHeight: '55vh', overflowY: 'auto', background: 'var(--bg2)' }}>
           {loading ? (
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--txt3)' }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>Loading...
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Clock size={24} className="text-muted-foreground animate-spin" /></div>Loading...
             </div>
           ) : !logs.length ? (
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--txt3)' }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>No logs match your filter.
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Inbox size={24} className="text-muted-foreground" /></div>No logs match your filter.
             </div>
           ) : (
             logs.map((log, idx) => {
@@ -683,12 +686,12 @@ const CallLogsModal = ({ lead }: { lead: any }) => {
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
-                        {d?.date && <span style={{ fontSize: 10, color: 'var(--txt3)' }}>📅 PTP Date: {d.date}</span>}
-                        {d?.altNumber && <span style={{ fontSize: 10, color: 'var(--txt2)' }}>📱 Alt: {d.altNumber}</span>}
-                        {d?.callDrop && d.callDrop !== 'No' && <span style={{ fontSize: 10, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '1px 5px', borderRadius: 3 }}>⚠ Call Drop: {d.callDrop}</span>}
+                        {d?.date && <span style={{ fontSize: 10, color: 'var(--txt3)', display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={10} /> PTP Date: {d.date}</span>}
+                        {d?.altNumber && <span style={{ fontSize: 10, color: 'var(--txt2)', display: 'flex', alignItems: 'center', gap: 4 }}><Phone size={10} /> Alt: {d.altNumber}</span>}
+                        {d?.callDrop && d.callDrop !== 'No' && <span style={{ fontSize: 10, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '1px 5px', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 4 }}><PhoneOff size={10} /> Call Drop: {d.callDrop}</span>}
                         {d?.upgradeFlag && (
-                          <span style={{ fontSize: 10, color: 'var(--pur)', background: 'var(--purbg)', border: '1px solid rgba(167,139,250,0.3)', padding: '1px 5px', borderRadius: 3 }}>
-                            ⭐ {d.upgradeFlag} {d.upgradeType ? `(${d.upgradeType})` : d.upgradeReason ? `(${d.upgradeReason})` : ''}
+                          <span style={{ fontSize: 10, color: 'var(--color-primary)', background: 'var(--color-primary)/10', border: '1px solid var(--color-primary)/30', padding: '1px 5px', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Star size={10} /> {d.upgradeFlag} {d.upgradeType ? `(${d.upgradeType})` : d.upgradeReason ? `(${d.upgradeReason})` : ''}
                           </span>
                         )}
                         {/* Dynamic render for any other fields not explicitly handled */}
@@ -1044,15 +1047,15 @@ const RecordLeadPaymentModal = ({ lead, onDone }: { lead: any, onDone: () => voi
     <div style={{ padding: '0 20px 15px' }}>
       <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '5px', marginRight: '-5px' }} className="hide-scrollbar">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 15 }}>
-          <div style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', padding: '10px 14px', borderRadius: 8, color: 'var(--grn)', fontSize: 12.5, fontWeight: 600 }}>
+          <div style={{ background: 'var(--color-muted)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: 8, color: 'var(--color-foreground)', fontSize: 12.5, fontWeight: 600 }}>
             <div style={{ fontSize: 9, opacity: 0.7, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Outstanding</div>
             ₹{Number(lead.outstanding || 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '10px 14px', borderRadius: 8, color: 'var(--red)', fontSize: 12.5, fontWeight: 600 }}>
+          <div style={{ background: 'var(--color-muted)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: 8, color: 'var(--color-foreground)', fontSize: 12.5, fontWeight: 600 }}>
             <div style={{ fontSize: 9, opacity: 0.7, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Min Amount Due</div>
             ₹{Number(lead.min_amt_due || 0).toLocaleString('en-IN')}
           </div>
-          <div style={{ background: 'rgba(79,125,255,0.06)', border: '1px solid rgba(79,125,255,0.15)', padding: '10px 14px', borderRadius: 8, color: 'var(--blu)', fontSize: 12.5, fontWeight: 600 }}>
+          <div style={{ background: 'var(--color-muted)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: 8, color: 'var(--color-primary)', fontSize: 12.5, fontWeight: 600 }}>
             <div style={{ fontSize: 9, opacity: 0.7, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Principle Outstanding</div>
             ₹{Number(lead.principle_outstanding || 0).toLocaleString('en-IN')}
           </div>
@@ -2309,21 +2312,21 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                           else alert('Error approving records');
                         }
                       }}
-                      style={{ padding: '6px 14px', background: '#10b981', border: '1px solid #059669', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}
+                      style={{ padding: '6px 14px', background: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 4px rgba(59,130,246,0.2)' }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       Approve All
                     </button>
                   )}
                   {user?.role === 'admin' && (
-                    <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterLocation} onChange={e => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}>
+                    <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', maxWidth: '180px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-card)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--color-foreground)', textOverflow: 'ellipsis' }} value={filterLocation} onChange={e => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}>
                       <option value="">All Locations</option>
                       {masterLocationsList.map((l: any) => (
                         <option key={l.id} value={l.name}>{l.name}</option>
                       ))}
                     </select>
                   )}
-                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterClient} onChange={e => { setFilterClient(e.target.value); setFilterProduct(''); }}>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', maxWidth: '180px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-card)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--color-foreground)', textOverflow: 'ellipsis' }} value={filterClient} onChange={e => { setFilterClient(e.target.value); setFilterProduct(''); }}>
                     <option value="">All Clients</option>
                     {Array.from(new Set(
                       masterClientsList
@@ -2333,7 +2336,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                       <option key={name} value={name}>{name}</option>
                     ))}
                   </select>
-                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterProduct} onChange={e => setFilterProduct(e.target.value)}>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', maxWidth: '180px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-card)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--color-foreground)', textOverflow: 'ellipsis' }} value={filterProduct} onChange={e => setFilterProduct(e.target.value)}>
                     <option value="">All Products</option>
                     {masterClientsList
                       .filter((c: any) => !filterClient || c.name === filterClient)
@@ -2345,13 +2348,13 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                         <option key={pt} value={pt}>{pt}</option>
                       ))}
                   </select>
-                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', maxWidth: '150px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-card)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--color-foreground)' }} value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
                     <option value="">All Months</option>
                     {Array.from({length: 12}, (_, i) => i + 1).map(m => (
                       <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
                     ))}
                   </select>
-                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', borderRadius: 6, border: '1px solid var(--bdr)', background: 'var(--bg2)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--txt)' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                  <select className="finp" style={{ fontSize: 13, padding: '6px 12px', width: 'auto', maxWidth: '120px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-card)', outline: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--color-foreground)' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
                     <option value="">All Years</option>
                     {[2024, 2025, 2026, 2027, 2028].map(y => (
                       <option key={y} value={y}>{y}</option>
@@ -2373,7 +2376,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                     </div>
                   ) : !selectedLead ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--txt3)', height: 48 }}>
-                      <div style={{ fontSize: '20px', opacity: 0.5 }}>◉</div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}><Search size={20} className="text-muted-foreground opacity-50" /></div>
                       <div>Search and select a customer below to view details</div>
                     </div>
                   ) : (
@@ -2405,11 +2408,11 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 <div className="cust-dash-actions">
 
                   <div className="cust-dash-filters" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <div className="sinp-wrap" style={{ display: 'flex', alignItems: 'center', background: 'var(--bg2)', borderRadius: 20, border: '1px solid var(--bdr)', overflow: 'hidden' }}>
-                      <span style={{ padding: '0 10px', color: 'var(--txt3)', fontSize: 13, height: '100%', display: 'flex', alignItems: 'center' }}>⌕</span>
+                    <div className="sinp-wrap" style={{ display: 'flex', alignItems: 'center', background: 'var(--color-card)', borderRadius: 20, border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+                      <span style={{ padding: '0 10px', color: 'var(--color-muted-foreground)', fontSize: 13, height: '100%', display: 'flex', alignItems: 'center' }}>⌕</span>
                       <input
                         className="sinp"
-                        style={{ background: 'transparent', border: 'none', padding: '6px 10px 6px 0', fontSize: 12, minWidth: 200, outline: 'none' }}
+                        style={{ background: 'transparent', border: 'none', padding: '6px 10px 6px 0', fontSize: 12, minWidth: 200, outline: 'none', color: 'var(--color-foreground)' }}
                         placeholder="Search by account, mobile, name, PAN..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -2417,9 +2420,9 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                     </div>
                     <button 
                       onClick={() => { setSearch(''); setFilterTab('all'); }}
-                      style={{ padding: '6px 14px', background: 'var(--red)', border: 'none', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{ padding: '6px 14px', background: 'var(--color-muted)', border: '1px solid var(--color-border)', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', color: 'var(--color-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      <XCircle size={14} className="text-muted-foreground" />
                       Clear
                     </button>
                   </div>
@@ -2629,14 +2632,14 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 </div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
                   {user?.role === 'admin' && (
-                    <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterLocation ? '#10b981' : 'var(--bg3)', color: filterLocation ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                    <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterLocation ? 'var(--color-primary)' : 'var(--bg3)', color: filterLocation ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
                       {filterLocation ? `✓ ${filterLocation}` : '○ Location'}
                     </span>
                   )}
-                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterClient ? '#10b981' : 'var(--bg3)', color: filterClient ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterClient ? 'var(--color-primary)' : 'var(--bg3)', color: filterClient ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
                     {filterClient ? `✓ ${filterClient}` : '○ Client'}
                   </span>
-                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterProduct ? '#10b981' : 'var(--bg3)', color: filterProduct ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
+                  <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: filterProduct ? 'var(--color-primary)' : 'var(--bg3)', color: filterProduct ? '#fff' : 'var(--txt3)', border: '1px solid var(--bdr)' }}>
                     {filterProduct ? `✓ ${filterProduct}` : '○ Product Type'}
                   </span>
                 </div>
@@ -2742,12 +2745,12 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                         </>
                       )}
                       {user?.role === 'admin' && (
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                           {duplicateOnly && (
-                            <button onClick={(e) => { e.stopPropagation(); handleTransferRecord(lead.id); }} style={{ background: 'var(--grnbg)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 6, cursor: 'pointer', color: 'var(--grn)', marginRight: 12, fontSize: 10, padding: '4px 8px', fontWeight: 600 }} title="Transfer to Leads (Approve)">Approve to Leads</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleTransferRecord(lead.id); }} style={{ background: 'var(--color-primary)/10', border: `1px solid var(--color-primary)`, borderRadius: 6, cursor: 'pointer', color: 'var(--color-primary)', marginRight: 12, fontSize: 10, padding: '4px 8px', fontWeight: 600 }} title="Transfer to Leads (Approve)">Approve to Leads</button>
                           )}
-                          <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--acc2)', marginRight: 12, fontSize: 16 }} title="Edit">✎</button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: 16 }} title="Delete">🗑</button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: 12, display: 'flex', alignItems: 'center' }} title="Edit"><Edit size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
                         </td>
                       )}
                     </tr>

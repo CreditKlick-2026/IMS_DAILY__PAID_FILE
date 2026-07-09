@@ -4,26 +4,16 @@ import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import { 
   Users, Activity, Shield, Trash2, Settings, MoreVertical, Database, 
-  CheckCircle2, AlertCircle, Edit3, XCircle, Search, Menu, LogOut, FileSpreadsheet, Loader2, UserPlus, Layers, Info, Upload 
+  CheckCircle2, AlertCircle, Edit3, XCircle, Search, Menu, LogOut, FileSpreadsheet, FileText, Loader2, UserPlus, Layers, Info, Upload, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ValidationTable } from '@/components/ValidationTable';
 
-const REQUIRED_HEADERS_KEKA = [
-  { key: 'location', labels: ['Location'], display: 'Location' },
-  { key: 'emp_code', labels: ['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE'], display: 'Employee Code' },
-  { key: 'name', labels: ['Name', 'Employee Name', 'EmpName'], display: 'Employee Name' },
-  { key: 'designation', labels: ['Designation', 'Role', 'DESIGNATION'], display: 'Designation' },
-  { key: 'agent_ohr', labels: ['Agent OHR', 'AgentOHR', 'OHR'], display: 'Agent OHR' },
-  { key: 'doj', labels: ['DOJ', 'Date of Joining'], display: 'DOJ' },
-  { key: 'doc', labels: ['DOC', 'Date of Calling'], display: 'DOC' },
-  { key: 'salary', labels: ['Salary', 'CTC', 'Target', 'salary'], display: 'Salary' },
-];
-
 export default function AdminPage() {
   const [activeItem, setActiveItem] = useState('tracker');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [clients, setClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -61,6 +51,11 @@ export default function AdminPage() {
   const [kekaValidationView, setKekaValidationView] = useState<'summary'|'valid'|'invalid'>('summary');
   const [kekaMessage, setKekaMessage] = useState("");
   const [activeKekaJob, setActiveKekaJob] = useState<any | null>(null);
+  
+  const [kekaLocation, setKekaLocation] = useState('');
+  const [kekaClientName, setKekaClientName] = useState('');
+  const [kekaProductType, setKekaProductType] = useState('');
+
 
   const [specialEmployees, setSpecialEmployees] = useState<any[]>([]);
   const [specialSearch, setSpecialSearch] = useState('');
@@ -73,10 +68,25 @@ export default function AdminPage() {
   const [specialGridLoading, setSpecialGridLoading] = useState(false);
   const [isSavingGrid, setIsSavingGrid] = useState(false);
 
-
+  const [kekaColumns, setKekaColumns] = useState<any[]>([]);
 
   const { user } = useApp();
   const router = useRouter();
+
+  useEffect(() => {
+    let url = '/api/admin/keka-columns';
+    const kekaClientObj = clientOptions.find(c => c.name === kekaClientName && c.product_type === kekaProductType);
+    if (kekaLocation && kekaClientObj && kekaProductType) {
+       url += `?location_id=${kekaLocation}&client_id=${kekaClientObj.id}&product_type=${kekaProductType}`;
+       fetch(url).then(res => res.json()).then(data => {
+         if (data.success) {
+           setKekaColumns(data.data);
+         }
+       }).catch(console.error);
+    } else {
+       setKekaColumns([]);
+    }
+  }, [kekaLocation, kekaClientName, kekaProductType, clientOptions]);
 
   useEffect(() => {
     if (!activeKekaJob?.id || activeKekaJob.status === 'COMPLETED' || activeKekaJob.status === 'FAILED') return;
@@ -124,7 +134,7 @@ export default function AdminPage() {
     fetch(url).then(r => r.json()).then(d => {
       if (d.success) {
         setClientOptions(d.data);
-        if (!d.data.find((p: any) => String(p.id) === String(filterClient))) {
+        if (filterClient && !d.data.find((p: any) => p.name === filterClient)) {
           setFilterClient('');
         }
       }
@@ -135,7 +145,7 @@ export default function AdminPage() {
     setExcelsLoading(true);
     let url = `/api/admin/excels?month=${deleteMonth}&year=${deleteYear}`;
     if (filterLocation) url += `&location=${encodeURIComponent(filterLocation)}`;
-    if (filterClient) url += `&client_id=${filterClient}`;
+    if (filterClient) url += `&client_name=${encodeURIComponent(filterClient)}`;
     if (filterProduct) url += `&product_type=${encodeURIComponent(filterProduct)}`;
     
     fetch(url)
@@ -157,7 +167,12 @@ export default function AdminPage() {
 
   const fetchTrackerData = () => {
     setTrackerLoading(true);
-    fetch(`/api/admin/tracker?month=${trackerMonth}&year=${trackerYear}`)
+    let url = `/api/admin/tracker?month=${trackerMonth}&year=${trackerYear}`;
+    if (filterLocation) url += `&location=${encodeURIComponent(filterLocation)}`;
+    if (filterClient) url += `&client_name=${encodeURIComponent(filterClient)}`;
+    if (filterProduct) url += `&product_type=${encodeURIComponent(filterProduct)}`;
+    
+    fetch(url)
       .then(r => r.json())
       .then(d => {
         if (d.success) setTrackerData(d.data);
@@ -381,8 +396,8 @@ export default function AdminPage() {
             
             const normalizedRow = row.map(k => normalize(String(k)));
             let matches = 0;
-            REQUIRED_HEADERS_KEKA.forEach(req => {
-              if (req.labels.some(label => normalizedRow.includes(normalize(label)))) {
+            kekaColumns.forEach(req => {
+              if (req.labels.some((label: string) => normalizedRow.includes(normalize(label)))) {
                 matches++;
               }
             });
@@ -399,8 +414,8 @@ export default function AdminPage() {
             const missing: string[] = [];
             const found: string[] = [];
 
-            REQUIRED_HEADERS_KEKA.forEach(req => {
-              if (req.labels.some(label => headerRow.includes(normalize(label)))) found.push(req.display);
+            kekaColumns.forEach(req => {
+              if (req.labels.some((label: string) => headerRow.includes(normalize(label)))) found.push(req.display);
               else missing.push(req.display);
             });
 
@@ -418,7 +433,7 @@ export default function AdminPage() {
         if (!bestResult || maxTotalMatches === 0) {
           setKekaValidationResult({
             isValid: false,
-            missingHeaders: REQUIRED_HEADERS_KEKA.map(r => r.display),
+            missingHeaders: kekaColumns.map(r => r.display),
             foundHeaders: [],
             rowCount: 0
           });
@@ -493,6 +508,11 @@ export default function AdminPage() {
       if (user?.employee_id) formData.append('employee_id', user.employee_id);
       if (user?.name) formData.append('name', user.name);
 
+      const kekaClientObj = clientOptions.find(c => c.name === kekaClientName && c.product_type === kekaProductType);
+      if (kekaLocation) formData.append('location_id', kekaLocation);
+      if (kekaClientObj) formData.append('client_id', String(kekaClientObj.id));
+      if (kekaProductType) formData.append('product_type', kekaProductType);
+
       const res = await fetch('/api/admin/employees/upload', {
         method: 'POST',
         body: formData,
@@ -515,11 +535,11 @@ export default function AdminPage() {
   };
 
   const adminModules = [
-    { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} className="text-emerald-500" /> },
-    { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} className="text-blue-500" /> },
-    { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-indigo-500" /> },
-    { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} className="text-orange-500" /> },
-    { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileSpreadsheet size={20} className="text-orange-600" /> },
+    { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} className="text-primary" /> },
+    { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} className="text-primary" /> },
+    { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-primary" /> },
+    { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} className="text-primary" /> },
+    { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileText size={20} className="text-primary" /> },
   ];
 
   const renderContent = () => {
@@ -533,20 +553,54 @@ export default function AdminPage() {
         const currentDay = today.getDate();
 
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-full mx-auto min-h-full relative">
-            <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-slate-800 to-slate-500 bg-clip-text text-transparent flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-emerald-600" />
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-blue-600" />
                   </div>
                   Daily Upload Tracker
                 </h2>
-                <p className="text-xs text-slate-500 font-medium ml-10 mt-0.5">Real-time compliance monitoring matrix</p>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Real-time compliance monitoring matrix</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  value={filterLocation}
+                  onChange={(e) => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}
+                >
+                  <option value="">All Locations</option>
+                  {locationOptions.map(loc => (
+                    <option key={loc.id} value={loc.name}>{loc.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  value={filterClient}
+                  onChange={(e) => { setFilterClient(e.target.value); setFilterProduct(''); }}
+                >
+                  <option value="">All Processes</option>
+                  {Array.from(new Set(clientOptions.filter(c => {
+                      if (!filterLocation) return true;
+                      const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
+                      return locName && c.location_names?.includes(locName);
+                  }).map(p => p.name))).sort().map((name: any) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  value={filterProduct}
+                  onChange={(e) => setFilterProduct(e.target.value)}
+                >
+                  <option value="">All Products</option>
+                  {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || c.name === filterClient).map((c: any) => c.product_type).filter(Boolean))).sort().map((p: any) => (
+                      <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
                 <select 
-                  className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 outline-none transition-colors cursor-pointer focus:ring-2 focus:ring-emerald-500/20"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={trackerMonth}
                   onChange={(e) => setTrackerMonth(parseInt(e.target.value))}
                 >
@@ -555,7 +609,7 @@ export default function AdminPage() {
                   ))}
                 </select>
                 <select 
-                  className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 outline-none transition-colors cursor-pointer focus:ring-2 focus:ring-emerald-500/20"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={trackerYear}
                   onChange={(e) => setTrackerYear(parseInt(e.target.value))}
                 >
@@ -563,49 +617,64 @@ export default function AdminPage() {
                     <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
+                {(filterLocation || filterClient || filterProduct || trackerMonth !== (new Date().getMonth() + 1) || trackerYear !== new Date().getFullYear()) && (
+                  <button
+                    onClick={() => {
+                      setFilterLocation('');
+                      setFilterClient('');
+                      setFilterProduct('');
+                      setTrackerMonth(new Date().getMonth() + 1);
+                      setTrackerYear(new Date().getFullYear());
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center rounded-xl hover:bg-red-50"
+                    title="Clear Filters"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Premium Legend */}
-            <div className="flex flex-wrap items-center gap-4 px-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status Legend:</span>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /><span className="text-[11px] font-bold text-emerald-700">User Upload</span></div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100"><Shield className="w-3.5 h-3.5 text-purple-600" /><span className="text-[11px] font-bold text-purple-700">Admin Proxy</span></div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-100"><Trash2 className="w-3.5 h-3.5 text-orange-600" /><span className="text-[11px] font-bold text-orange-700">Admin Deleted</span></div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-100"><XCircle className="w-3.5 h-3.5 text-red-600" /><span className="text-[11px] font-bold text-red-700">Pending</span></div>
+            {/* Clean Legend */}
+            <div className="flex flex-wrap items-center gap-6 px-2 mb-6">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status Legend:</span>
+              <div className="flex items-center gap-2 text-sm font-bold text-emerald-600"><CheckCircle2 className="w-4 h-4" /> User Upload</div>
+              <div className="flex items-center gap-2 text-sm font-bold text-blue-600"><Shield className="w-4 h-4" /> Admin Proxy</div>
+              <div className="flex items-center gap-2 text-sm font-bold text-amber-600"><Trash2 className="w-4 h-4" /> Admin Deleted</div>
+              <div className="flex items-center gap-2 text-sm font-bold text-red-500"><XCircle className="w-4 h-4" /> Pending</div>
             </div>
             
-            <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/40 overflow-hidden">
-              <div className="overflow-x-auto no-scrollbar pb-2">
+            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+              <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-sm text-center border-collapse">
-                  <thead className="whitespace-nowrap sticky top-0 z-20">
+                  <thead className="bg-slate-50/50 border-b border-slate-100 whitespace-nowrap sticky top-0 z-20">
                     <tr>
-                      <th className="px-5 py-4 font-bold text-slate-700 text-left border-r border-b border-slate-200 bg-slate-50/95 backdrop-blur shadow-[2px_0_10px_-3px_rgba(0,0,0,0.05)] sticky left-0 z-30">
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-left border-r border-slate-100 sticky left-0 z-30 bg-slate-50/50">
                         Agent / User
                       </th>
                       {daysArray.map(day => (
-                        <th key={day} className={`px-2 py-4 font-bold border-r border-b border-slate-100 min-w-[42px] transition-colors ${isCurrentMonth && day === currentDay ? 'bg-indigo-50 text-indigo-700 shadow-inner' : 'bg-white text-slate-500'}`}>
+                        <th key={day} className={`px-2 py-4 text-xs font-black uppercase tracking-widest border-b border-slate-100 min-w-[36px] transition-colors ${isCurrentMonth && day === currentDay ? 'bg-blue-50 text-blue-600' : 'text-slate-400'}`}>
                           {day}
                         </th>
                       ))}
-                      <th className="px-5 py-4 font-bold text-slate-700 border-l border-b border-slate-200 bg-slate-50/95 backdrop-blur sticky right-0 z-30 shadow-[-2px_0_10px_-3px_rgba(0,0,0,0.05)]">
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-l border-b border-slate-100 sticky right-0 z-30 bg-slate-50/50">
                         Missing
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-border">
                     {trackerLoading ? (
-                      <tr><td colSpan={daysInMonth + 2} className="px-4 py-12 text-center text-slate-400 font-medium"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-300" /> Loading matrix...</td></tr>
+                      <tr><td colSpan={daysInMonth + 2} className="px-4 py-12 text-center text-muted-foreground font-medium"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 opacity-50" /> Loading matrix...</td></tr>
                     ) : trackerData.length === 0 ? (
-                      <tr><td colSpan={daysInMonth + 2} className="px-4 py-12 text-center text-slate-400 font-medium">No agents found for this period.</td></tr>
+                      <tr><td colSpan={daysInMonth + 2} className="px-4 py-12 text-center text-muted-foreground font-medium">No agents found for this period.</td></tr>
                     ) : (
                       trackerData.map((u: any, idx: number) => {
                         let pendingCount = 0;
                         return (
-                          <tr key={u.employee_id || u.username} className={`group hover:bg-slate-50/80 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                            <td className="px-5 py-3.5 text-left border-r border-slate-200 sticky left-0 bg-white group-hover:bg-slate-50/95 transition-colors z-10 shadow-[2px_0_10px_-3px_rgba(0,0,0,0.05)]">
-                              <p className="font-bold text-slate-800">{u.name}</p>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{u.employee_id}</p>
+                          <tr key={u.employee_id || u.username} className="group hover:bg-muted/30 transition-colors bg-card">
+                            <td className="px-5 py-3 text-left border-r border-border sticky left-0 bg-card group-hover:bg-muted/30 transition-colors z-10">
+                              <p className="font-semibold text-foreground">{u.name}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{u.employee_id}</p>
                             </td>
                             {daysArray.map(day => {
                               const dateStr = `${trackerYear}-${String(trackerMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -616,26 +685,26 @@ export default function AdminPage() {
                               if (!isUploaded && !isFuture) pendingCount++;
 
                               return (
-                                <td key={day} className={`p-1.5 border-r border-slate-100 transition-colors ${isCurrentMonth && day === currentDay ? 'bg-indigo-50/30' : ''}`}>
+                                <td key={day} className={`p-1 transition-colors ${isCurrentMonth && day === currentDay ? 'bg-primary/5' : ''}`}>
                                   <div className="flex items-center justify-center w-full h-full min-h-[32px]">
                                     {!isUploaded ? (
-                                      isFuture ? <span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span> : 
-                                      <div title="Pending" className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center border border-red-100 shadow-sm"><XCircle className="w-4 h-4 text-red-500" /></div>
+                                      isFuture ? <span className="w-1.5 h-1.5 rounded-full bg-border"></span> : 
+                                      <div title="Pending" className="flex items-center justify-center"><XCircle className="w-4 h-4 text-destructive/70" /></div>
                                     ) : (
-                                      cellStatus === 'DELETED_BY_ADMIN' ? <div title="Uploaded but Deleted by Admin" className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-100 to-orange-50 border border-orange-200 flex items-center justify-center shadow-sm cursor-help hover:scale-110 transition-transform"><Trash2 className="w-3.5 h-3.5 text-orange-600" /></div> :
-                                      cellStatus === 'UPLOADED_BY_ADMIN' ? <div title="Proxy Upload by Admin" className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 border border-purple-200 flex items-center justify-center shadow-sm cursor-help hover:scale-110 transition-transform"><Shield className="w-3.5 h-3.5 text-purple-600" /></div> :
-                                      cellStatus === 'FAILED' ? <div title="Failed Upload" className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-100 to-red-50 border border-red-200 flex items-center justify-center shadow-sm cursor-help hover:scale-110 transition-transform"><AlertCircle className="w-4 h-4 text-red-600" /></div> :
-                                      <div title="Uploaded by User" className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-md shadow-emerald-500/20 flex items-center justify-center cursor-help hover:scale-110 transition-transform"><CheckCircle2 className="w-4 h-4 text-white" /></div>
+                                      cellStatus === 'DELETED_BY_ADMIN' ? <div title="Uploaded but Deleted by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Trash2 className="w-4 h-4 text-orange-500" /></div> :
+                                      cellStatus === 'UPLOADED_BY_ADMIN' ? <div title="Proxy Upload by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Shield className="w-4 h-4 text-blue-500" /></div> :
+                                      cellStatus === 'FAILED' ? <div title="Failed Upload" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><AlertCircle className="w-4 h-4 text-destructive" /></div> :
+                                      <div title="Uploaded by User" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>
                                     )}
                                   </div>
                                 </td>
                               );
                             })}
-                            <td className="px-5 py-3.5 font-black text-lg border-l border-slate-200 sticky right-0 z-10 bg-white group-hover:bg-slate-50/95 transition-colors shadow-[-2px_0_10px_-3px_rgba(0,0,0,0.05)] text-center">
+                            <td className="px-5 py-3 font-bold text-base border-l border-border sticky right-0 z-10 bg-card group-hover:bg-muted/30 transition-colors text-center">
                               {pendingCount > 0 ? (
-                                <span className="inline-flex items-center justify-center min-w-[32px] h-8 rounded-lg bg-red-100 text-red-600 border border-red-200">{pendingCount}</span>
+                                <span className="text-destructive">{pendingCount}</span>
                               ) : (
-                                <span className="inline-flex items-center justify-center min-w-[32px] h-8 rounded-lg bg-emerald-50 text-emerald-500 border border-emerald-100">0</span>
+                                <span className="text-muted-foreground opacity-30">0</span>
                               )}
                             </td>
                           </tr>
@@ -650,15 +719,20 @@ export default function AdminPage() {
         );
       case 'excels':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Uploaded Excels</h2>
-                <p className="text-muted-foreground">View who uploaded which excel and manage records.</p>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Uploaded Excels
+                </h2>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">View who uploaded which excel and manage records.</p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <select
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterLocation}
                   onChange={(e) => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}
                 >
@@ -668,31 +742,31 @@ export default function AdminPage() {
                   ))}
                 </select>
                 <select
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterClient}
                   onChange={(e) => { setFilterClient(e.target.value); setFilterProduct(''); }}
                 >
                   <option value="">All Processes</option>
-                  {clientOptions.filter(c => {
+                  {Array.from(new Set(clientOptions.filter(c => {
                       if (!filterLocation) return true;
                       const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
                       return locName && c.location_names?.includes(locName);
-                  }).map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                  }).map(p => p.name))).sort().map((name: any) => (
+                    <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
                 <select
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterProduct}
                   onChange={(e) => setFilterProduct(e.target.value)}
                 >
                   <option value="">All Products</option>
-                  {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || String(c.id) === String(filterClient)).map((c: any) => c.product_type).filter(Boolean))).map((p: any) => (
+                  {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || c.name === filterClient).map((c: any) => c.product_type).filter(Boolean))).sort().map((p: any) => (
                       <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
                 <select 
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={deleteMonth}
                   onChange={(e) => setDeleteMonth(parseInt(e.target.value))}
                 >
@@ -702,7 +776,7 @@ export default function AdminPage() {
                   ))}
                 </select>
                 <select 
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={deleteYear}
                   onChange={(e) => setDeleteYear(parseInt(e.target.value))}
                 >
@@ -711,9 +785,24 @@ export default function AdminPage() {
                     <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
+                {(filterLocation || filterClient || filterProduct || deleteMonth !== 0 || deleteYear !== 0) && (
+                  <button
+                    onClick={() => {
+                      setFilterLocation('');
+                      setFilterClient('');
+                      setFilterProduct('');
+                      setDeleteMonth(0);
+                      setDeleteYear(0);
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center rounded-xl hover:bg-red-50"
+                    title="Clear Filters"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
-            <div className="rounded-xl bg-card overflow-hidden space-y-4">
+            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden space-y-4">
               {excelsLoading ? (
                 <div className="p-8 text-center text-muted-foreground">Loading excels...</div>
               ) : excels.filter((j: any) => j.job_type !== 'KEKA' && j.status !== 'DELETED_BY_ADMIN').length === 0 ? (
@@ -824,76 +913,83 @@ export default function AdminPage() {
         );
       case 'users':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
-                <p className="text-muted-foreground">Manage system access and roles.</p>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-blue-600" />
+                  </div>
+                  User Management
+                </h2>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Manage system access and roles.</p>
               </div>
               <button 
                 onClick={() => setShowAddUserModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
                 <UserPlus size={16} />
                 Add User
               </button>
             </div>
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold text-sm">Emp ID</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Name</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Username</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Email</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Role</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Location</th>
-                    <th className="px-4 py-3 font-semibold text-sm">Status</th>
-                    <th className="px-4 py-3 font-semibold text-sm text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {loading ? (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">Loading users...</td></tr>
-                  ) : users.length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">No users found.</td></tr>
-                  ) : (
-                    users.map((u: any) => (
-                      <tr key={u.id} className="hover:bg-muted/50">
-                        <td className="px-4 py-3 text-muted-foreground">{u.employee_id || '-'}</td>
-                        <td className="px-4 py-3 font-medium">{u.name || '-'}</td>
-                        <td className="px-4 py-3 font-medium">{u.username}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{u.email || '-'}</td>
-                        <td className="px-4 py-3 capitalize">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-slate-600">{u.location || '-'}</td>
-                        <td className="px-4 py-3 text-green-600">Active</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => handleEditPassword(u.id, u.username)}
-                              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-1.5 rounded-md border border-slate-200 transition-colors"
-                            >
-                              Edit Password
-                            </button>
-                            {u.role !== 'admin' && (
+            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Emp ID</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Name</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Username</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Email</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Role</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Location</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400 font-medium">Loading users...</td></tr>
+                    ) : users.length === 0 ? (
+                      <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-400 font-medium">No users found.</td></tr>
+                    ) : (
+                      users.map((u: any) => (
+                        <tr key={u.id} className="hover:bg-slate-50/80 transition-colors group">
+                          <td className="px-6 py-4 text-slate-500 font-medium">{u.employee_id || '-'}</td>
+                          <td className="px-6 py-4 font-bold text-slate-800">{u.name || '-'}</td>
+                          <td className="px-6 py-4 font-medium text-slate-700">{u.username}</td>
+                          <td className="px-6 py-4 text-slate-500">{u.email || '-'}</td>
+                          <td className="px-6 py-4 capitalize">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-600">{u.location || '-'}</td>
+                          <td className="px-6 py-4"><span className="text-emerald-600 font-bold text-sm bg-emerald-50 px-2.5 py-1 rounded-lg">Active</span></td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
-                                onClick={() => handleDeleteUser(u.id, u.username)}
-                                className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-200 transition-colors"
+                                onClick={() => handleEditPassword(u.id, u.username)}
+                                className="text-xs bg-slate-50 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors shadow-sm"
                               >
-                                Delete
+                                Edit Pass
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                              {u.role !== 'admin' && (
+                                <button 
+                                  onClick={() => handleDeleteUser(u.id, u.username)}
+                                  className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-colors shadow-sm"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* ADD USER MODAL */}
@@ -994,13 +1090,86 @@ export default function AdminPage() {
         );
       case 'keka':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Keka Upload</h2>
-                <p className="text-muted-foreground">Upload and manage Master Employee Data.</p>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Keka Upload
+                </h2>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Upload and manage Master Employee Data.</p>
               </div>
             </div>
+
+            {/* Keka Filters */}
+            <div className="mb-6 flex items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 overflow-x-auto">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Location:</span>
+                  <select 
+                    className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[180px]"
+                    value={kekaLocation}
+                    onChange={e => {
+                      setKekaLocation(e.target.value);
+                      setKekaClientName('');
+                      setKekaProductType('');
+                    }}
+                  >
+                    <option value="">-- Select Location --</option>
+                    {locationOptions.map(l => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+              <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client:</span>
+                <select 
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[200px]"
+                  value={kekaClientName}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setKekaClientName(val);
+                    const locName = kekaLocation ? locationOptions.find(l => String(l.id) === String(kekaLocation))?.name : undefined;
+                    const matchingClients = clientOptions.filter(c => c.name === val && (locName ? c.location_names?.includes(locName) : true));
+                    if (matchingClients.length === 1 && matchingClients[0].product_type) {
+                      setKekaProductType(matchingClients[0].product_type);
+                    } else {
+                      setKekaProductType('');
+                    }
+                  }}
+                >
+                  <option value="">-- Select Client --</option>
+                  {Array.from(new Set(clientOptions.filter(c => {
+                    const locName = kekaLocation ? locationOptions.find(l => String(l.id) === String(kekaLocation))?.name : undefined;
+                    return locName ? c.location_names?.includes(locName) : true;
+                  }).map(p => p.name))).sort().map(name => (
+                    <option key={name as string} value={name as string}>{name as string}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Product:</span>
+                <select 
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[200px]"
+                  value={kekaProductType}
+                  onChange={e => setKekaProductType(e.target.value)}
+                  disabled={!kekaClientName}
+                >
+                  <option value="">-- Select Product --</option>
+                  {clientOptions.filter(c => {
+                    if (c.name !== kekaClientName) return false;
+                    const locName = kekaLocation ? locationOptions.find(l => String(l.id) === String(kekaLocation))?.name : undefined;
+                    return locName ? c.location_names?.includes(locName) : true;
+                  }).map(p => (
+                    <option key={p.id} value={p.product_type}>{p.product_type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="flex flex-col lg:flex-row gap-5">
               {/* Left Side: Validation Status */}
               <div className="w-full lg:w-[320px] flex-shrink-0">
@@ -1010,7 +1179,11 @@ export default function AdminPage() {
                       <CheckCircle2 className="w-4 h-4 text-primary" />
                       <span className="font-bold">Column Validation</span>
                     </CardTitle>
-                    <CardDescription className="text-xs">{REQUIRED_HEADERS_KEKA.length} required headers checked.</CardDescription>
+                    <CardDescription className="text-xs">
+                      {(kekaLocation && kekaClientName && kekaProductType) 
+                        ? `${kekaColumns.length} required headers checked.` 
+                        : 'Select a client to view required columns.'}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="p-4">
                     {isValidatingKeka ? (
@@ -1026,17 +1199,21 @@ export default function AdminPage() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-700">Required Columns</p>
-                            <p className="text-[10px] text-slate-500 font-bold">Must match exactly</p>
+                            <p className="text-[10px] text-slate-500 font-bold">
+                              {(kekaLocation && kekaClientName && kekaProductType) ? 'Must match exactly' : 'Select a client first'}
+                            </p>
                           </div>
                         </div>
-                        <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
-                          {REQUIRED_HEADERS_KEKA.map(req => (
-                            <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
-                              <span className="text-[11px] font-semibold text-slate-700">{req.display}</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Required</span>
-                            </div>
-                          ))}
-                        </div>
+                        {(kekaLocation && kekaClientName && kekaProductType) && (
+                          <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
+                            {kekaColumns.map(req => (
+                              <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
+                                <span className="text-[11px] font-semibold text-slate-700">{req.display}</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Required</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -1048,12 +1225,12 @@ export default function AdminPage() {
                             <p className={`text-sm font-bold ${kekaValidationResult.isValid ? 'text-emerald-700' : 'text-destructive'}`}>
                               {kekaValidationResult.isValid ? 'Ready' : 'Errors Found'}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-bold">{kekaValidationResult.foundHeaders.length}/{REQUIRED_HEADERS_KEKA.length} matched</p>
+                            <p className="text-[10px] text-slate-500 font-bold">{kekaValidationResult.foundHeaders.length}/{kekaColumns.length} matched</p>
                           </div>
                         </div>
 
                         <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
-                          {REQUIRED_HEADERS_KEKA.map(req => {
+                          {kekaColumns.map(req => {
                             const found = kekaValidationResult.foundHeaders.includes(req.display);
                             return (
                               <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
@@ -1079,7 +1256,7 @@ export default function AdminPage() {
                   <CardContent className="p-5 space-y-4">
                     <label className={`group relative flex flex-col items-center justify-center gap-5 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 min-h-[200px] ${kekaFile ? 'border-primary/50 bg-gradient-to-b from-primary/5 to-transparent' : 'border-slate-300 bg-slate-50/50 hover:border-primary/60 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(79,125,255,0.08)]'}`}>
                       <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={handleKekaFileChange} />
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${kekaFile ? 'bg-gradient-to-br from-primary to-indigo-600 text-white shadow-xl shadow-primary/30 scale-110' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-110 group-hover:bg-primary/20'}`}>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${kekaFile ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-xl shadow-primary/30 scale-110' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-110 group-hover:bg-primary/20'}`}>
                         {kekaFile ? <FileSpreadsheet className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                       </div>
                       {kekaFile ? (
@@ -1123,7 +1300,7 @@ export default function AdminPage() {
                       <button onClick={validateKekaFile} disabled={!kekaFile || isValidatingKeka || uploadingKeka} className="flex-1 py-4 rounded-xl text-sm font-bold shadow-sm transition-all bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 disabled:opacity-50">
                         {isValidatingKeka ? 'Checking...' : 'Validate Data'}
                       </button>
-                      <button onClick={handleKekaUpload} disabled={!kekaFile || uploadingKeka || !kekaValidationResult?.isValid} className={`flex-[2] py-4 rounded-xl text-sm font-bold shadow-md transition-all ${kekaValidationResult?.isValid ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-500 disabled:opacity-50'}`}>
+                      <button onClick={handleKekaUpload} disabled={!kekaFile || uploadingKeka || !kekaValidationResult?.isValid || !kekaLocation || !kekaClientName || !kekaProductType} className={`flex-[2] py-4 rounded-xl text-sm font-bold shadow-md transition-all ${(kekaValidationResult?.isValid && kekaLocation && kekaClientName && kekaProductType) ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-500 disabled:opacity-50'}`}>
                         {uploadingKeka ? 'Processing...' : 'Upload & Process'}
                       </button>
                     </div>
@@ -1166,7 +1343,7 @@ export default function AdminPage() {
 
                       <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border p-0.5">
                         <div 
-                          className={`h-full rounded-full transition-all duration-700 ease-out ${activeKekaJob.status === 'FAILED' ? 'bg-destructive' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${activeKekaJob.status === 'FAILED' ? 'bg-destructive' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}
                           style={{ width: `${kekaProgressPercent}%` }}
                         />
                       </div>
@@ -1235,24 +1412,30 @@ export default function AdminPage() {
         );
       case 'keka-excels':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Keka Excels</h2>
-                <p className="text-muted-foreground">View who uploaded which Keka Master data and manage records.</p>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Keka Excels
+                </h2>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">View who uploaded which Keka Master data and manage records.</p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <select 
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={deleteMonth}
                   onChange={(e) => setDeleteMonth(parseInt(e.target.value))}
                 >
+                  <option value={0}>All Months</option>
                   {Array.from({ length: 12 }, (_, i) => (
                     <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
                   ))}
                 </select>
                 <select 
-                  className="border rounded-md px-3 py-2 outline-none bg-white"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={deleteYear}
                   onChange={(e) => setDeleteYear(parseInt(e.target.value))}
                 >
@@ -1260,9 +1443,21 @@ export default function AdminPage() {
                     <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
+                {(deleteMonth !== 0 || deleteYear !== 0) && (
+                  <button
+                    onClick={() => {
+                      setDeleteMonth(0);
+                      setDeleteYear(0);
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center rounded-xl hover:bg-red-50"
+                    title="Clear Filters"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
-            <div className="rounded-xl bg-card overflow-hidden space-y-4">
+            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden space-y-4">
               {excelsLoading ? (
                 <div className="p-8 text-center text-muted-foreground">Loading keka excels...</div>
               ) : excels.filter((j: any) => j.job_type === 'KEKA' && j.status !== 'DELETED_BY_ADMIN').length === 0 ? (
@@ -1279,21 +1474,21 @@ export default function AdminPage() {
                   return Object.keys(groupedExcels).map(user => (
                     <div key={user} className="border rounded-xl overflow-hidden shadow-sm">
                       <div 
-                        className="px-5 py-4 bg-orange-50/50 cursor-pointer flex justify-between items-center hover:bg-orange-50 transition-colors"
+                        className="px-5 py-4 bg-card cursor-pointer flex justify-between items-center hover:bg-muted/50 transition-colors"
                         onClick={() => setExpandedUser(expandedUser === user ? null : user)}
                       >
                         <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-orange-500" />
-                          <span className="font-bold text-lg text-orange-900">{user}</span>
+                          <Users className="w-5 h-5 text-primary" />
+                          <span className="font-bold text-lg text-foreground">{user}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-orange-600 text-sm font-medium bg-white px-3 py-1 rounded-full border border-orange-100">{groupedExcels[user].length} Files Uploaded</span>
-                          <svg className={`w-5 h-5 text-orange-400 transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          <span className="text-primary text-sm font-medium bg-background px-3 py-1 rounded-full border border-border">{groupedExcels[user].length} Files Uploaded</span>
+                          <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </div>
                       </div>
                       
                       {expandedUser === user && (
-                        <div className="border-t border-orange-100">
+                        <div className="border-t border-border">
                           <table className="w-full text-sm text-left">
                             <thead className="bg-white text-muted-foreground border-b">
                               <tr>
@@ -1365,26 +1560,31 @@ export default function AdminPage() {
         );
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <Settings size={48} className="opacity-20 mb-4" />
-            <h2 className="text-xl font-medium">{adminModules.find(m => m.id === activeItem)?.title}</h2>
-            <p className="text-sm">Configuration section under development.</p>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50/50 text-slate-400">
+            <Settings size={48} className="opacity-20 mb-4 text-slate-500" />
+            <h2 className="text-xl font-bold text-slate-600">{adminModules.find(m => m.id === activeItem)?.title}</h2>
+            <p className="text-sm font-medium mt-2">Configuration section under development.</p>
           </div>
         );
 
       case 'special':
         return (
-          <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-            <div className="flex justify-between items-center">
+          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Special Exceptions</h2>
-                <p className="text-muted-foreground">Force employees into the Special Exceptions bucket (flat percentage logic) regardless of vintage/salary.</p>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Special Exceptions
+                </h2>
+                <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Force employees into the Special Exceptions bucket (flat percentage logic) regardless of vintage/salary.</p>
               </div>
-              <div className="flex gap-2 relative">
+              <div className="flex gap-2 relative w-full md:w-auto">
                 <input
                   type="text"
                   placeholder="Search Employee ID or Name"
-                  className="pl-9 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-red-500/50"
+                  className="pl-10 pr-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors w-full md:w-[300px]"
                   value={specialSearch}
                   onChange={(e) => {
                     setSpecialSearch(e.target.value);
@@ -1394,43 +1594,43 @@ export default function AdminPage() {
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && fetchSpecialEmployees(specialSearch)}
                 />
-                <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+                <Search size={18} className="absolute left-3.5 top-3 text-slate-400" />
                 <button
                   onClick={() => fetchSpecialEmployees(specialSearch)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
                 >
                   Search
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-6 items-start">
-                <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col flex-1">
-                  <div className="px-4 py-3 border-b bg-muted/50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800">Dynamic Grid Rules</h3>
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 w-full lg:max-w-md">
+                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-widest">Dynamic Grid Rules</h3>
                     <button 
                         disabled={isSavingGrid}
                         onClick={handleSaveGrid}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
                     >
                         {isSavingGrid ? 'Saving...' : 'Save Grid'}
                     </button>
                   </div>
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-muted/30 text-muted-foreground border-b">
+                    <thead className="bg-slate-50/50 border-b border-slate-100">
                       <tr>
-                        <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
-                        <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                        <th className="px-4 py-3 font-medium text-right">Actions</th>
+                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Target Collection (₹)</th>
+                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Incentive (%)</th>
+                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-slate-50">
                         {specialGridLoading ? (
                             <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
                         ) : (
                             specialGrid.map((row, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50/50">
-                                    <td className="px-4 py-2">
+                                    <td className="px-5 py-3">
                                         <input 
                                             type="number" 
                                             value={row.target_collection} 
@@ -1439,10 +1639,10 @@ export default function AdminPage() {
                                                 newGrid[idx].target_collection = e.target.value;
                                                 setSpecialGrid(newGrid);
                                             }}
-                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+                                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
                                         />
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-5 py-3">
                                         <input 
                                             type="number" 
                                             step="0.01"
@@ -1452,16 +1652,16 @@ export default function AdminPage() {
                                                 newGrid[idx].incentive_percentage = e.target.value;
                                                 setSpecialGrid(newGrid);
                                             }}
-                                            className="border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+                                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
                                         />
                                     </td>
-                                    <td className="px-4 py-2 text-right">
+                                    <td className="px-5 py-3 text-right">
                                         <button 
                                             onClick={() => {
                                                 const newGrid = specialGrid.filter((_, i) => i !== idx);
                                                 setSpecialGrid(newGrid);
                                             }}
-                                            className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded text-xs"
+                                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors"
                                         >
                                             Remove
                                         </button>
@@ -1470,12 +1670,12 @@ export default function AdminPage() {
                             ))
                         )}
                         <tr>
-                            <td colSpan={3} className="px-4 py-3 bg-muted/10">
+                            <td colSpan={3} className="px-5 py-4 bg-slate-50/30">
                                 <button 
                                     onClick={() => setSpecialGrid([...specialGrid, { target_collection: '', incentive_percentage: '' }])}
-                                    className="text-indigo-600 hover:text-indigo-800 text-sm font-bold w-full text-left"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-black w-full text-left uppercase tracking-widest flex items-center gap-2"
                                 >
-                                    + Add New Rule
+                                    <span className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">+</span> Add New Rule
                                 </button>
                             </td>
                         </tr>
@@ -1584,20 +1784,13 @@ export default function AdminPage() {
     <div className="flex h-[calc(100vh-60px)] w-full bg-background overflow-hidden">
       
       {/* Left List Pane (Constraint Space) */}
-      <div className="w-[220px] lg:w-[240px] flex-shrink-0 flex flex-col border-r border-border bg-background">
+      <div className={`${isSidebarOpen ? 'w-[220px] lg:w-[240px]' : 'w-[60px] lg:w-[70px]'} flex-shrink-0 flex flex-col border-r border-border bg-background transition-all duration-300`}>
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-          <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <Settings size={16} />
-            </div>
-            Admin Panel
-          </h1>
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <button className="hover:text-foreground transition-colors"><Search size={18} /></button>
-            <button className="hover:text-foreground transition-colors"><MoreVertical size={18} /></button>
-          </div>
+        <div className={`px-4 py-4 border-b border-border mb-2 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
+          {isSidebarOpen && <h1 className="text-lg font-bold tracking-tight text-foreground">Admin</h1>}
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-muted-foreground hover:text-foreground transition-colors">
+            {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+          </button>
         </div>
 
         {/* Modules List */}
@@ -1610,17 +1803,20 @@ export default function AdminPage() {
                   if ((mod as any).link) window.location.href = (mod as any).link;
                   else setActiveItem(mod.id);
                 }}
-                className={`flex items-start gap-3 px-4 py-2 border-b border-border cursor-pointer transition-colors ${
-                  activeItem === mod.id ? 'bg-primary/5 border-l-4 border-l-primary pl-3' : 'hover:bg-muted/30 border-l-4 border-l-transparent'
-                }`}
+                title={!isSidebarOpen ? mod.title : undefined}
+                className={`flex items-start gap-3 py-3 border-b border-border cursor-pointer transition-colors ${
+                  activeItem === mod.id ? 'bg-primary/5 border-l-4 border-l-primary' : 'hover:bg-muted/30 border-l-4 border-l-transparent'
+                } ${isSidebarOpen ? 'px-4' : 'px-0 justify-center'}`}
               >
-                <div className="flex-shrink-0 mt-0.5">
+                <div className={`flex-shrink-0 ${isSidebarOpen ? 'mt-0.5' : ''}`}>
                   {mod.icon}
                 </div>
-                <div className="flex flex-col pr-2">
-                  <span className="text-[14px] font-semibold text-foreground">{mod.title}</span>
-                  <span className="text-[12px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">{mod.subtitle}</span>
-                </div>
+                {isSidebarOpen && (
+                  <div className="flex flex-col pr-2">
+                    <span className="text-[14px] font-semibold text-foreground">{mod.title}</span>
+                    <span className="text-[12px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">{mod.subtitle}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

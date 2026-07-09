@@ -234,16 +234,16 @@ export default function IncentivePage() {
               onChange={e => {
                   const val = e.target.value;
                   setFilterClient(val);
-                  const client = clientOptions.find(c => c.name === val);
-                  if (client && client.product_type) {
-                      setFilterProduct(client.product_type);
+                  const matchingClients = clientOptions.filter(c => c.name === val);
+                  if (matchingClients.length === 1 && matchingClients[0].product_type) {
+                      setFilterProduct(matchingClients[0].product_type);
                   } else {
                       setFilterProduct('');
                   }
               }}
           >
               <option value="">All Clients</option>
-              {clientOptions.filter(c => filterLocation ? c.location_names?.includes(filterLocation) : true).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              {Array.from(new Set(clientOptions.filter(c => filterLocation ? c.location_names?.includes(filterLocation) : true).map(c => c.name))).sort().map(name => <option key={name as string} value={name as string}>{name as string}</option>)}
           </select>
 
           <select
@@ -255,8 +255,7 @@ export default function IncentivePage() {
               {productOptions
                 .filter(p => {
                     if (filterClient) {
-                        const client = clientOptions.find(c => c.name === filterClient);
-                        return client ? client.product_type === p.name : true;
+                        return clientOptions.some(c => c.name === filterClient && c.product_type === p.name);
                     }
                     if (!filterLocation) return true;
                     return clientOptions.some(c => c.location_names?.includes(filterLocation) && c.product_type === p.name);

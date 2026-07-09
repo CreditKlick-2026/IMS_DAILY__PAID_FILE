@@ -1,0 +1,60 @@
+{
+  "associateSlabs": [
+    {
+      "vintage": "<90",
+      "upgrade_pct": "0.85",
+      "recovery_pct": "1.05"
+    },
+    {
+      "vintage": ">91",
+      "upgrade_pct": "1.05",
+      "recovery_pct": "1.30"
+    }
+  ],
+  "tlSlabs": [
+    {
+      "level": "Slab 1",
+      "avg_min": "500000",
+      "avg_max": "699999",
+      "upgrade_pct": "0.15",
+      "recovery_pct": "0.20"
+    },
+    {
+      "level": "Slab 2",
+      "avg_min": "700000",
+      "avg_max": "899999",
+      "upgrade_pct": "0.25",
+      "recovery_pct": "0.30"
+    },
+    {
+      "level": "Slab 3",
+      "avg_min": "900000",
+      "avg_max": "-",
+      "upgrade_pct": "0.35",
+      "recovery_pct": "0.40"
+    }
+  ],
+  "amSlabs": [
+    {
+      "level": "Slab 1",
+      "avg_min": "500000",
+      "avg_max": "699999",
+      "upgrade_pct": "0.10",
+      "recovery_pct": "0.12"
+    },
+    {
+      "level": "Slab 2",
+      "avg_min": "700000",
+      "avg_max": "899999",
+      "upgrade_pct": "0.12",
+      "recovery_pct": "0.15"
+    },
+    {
+      "level": "Slab 3",
+      "avg_min": "900000",
+      "avg_max": "-",
+      "upgrade_pct": "0.15",
+      "recovery_pct": "0.20"
+    }
+  ]
+}

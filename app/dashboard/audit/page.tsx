@@ -124,7 +124,7 @@ export default function AuditPage() {
       case 'DELETE_USER': return <span className="text-red-500 bg-red-500/10 px-2 py-1 rounded text-xs font-bold">DELETED USER</span>;
       case 'UPDATE_PASSWORD': return <span className="text-amber-500 bg-amber-500/10 px-2 py-1 rounded text-xs font-bold">CHANGED PASSWORD</span>;
       case 'UPLOAD_EXCEL': return <span className="text-blue-500 bg-blue-500/10 px-2 py-1 rounded text-xs font-bold">UPLOADED BATCH</span>;
-      case 'DELETE_EXCEL': return <span className="text-rose-500 bg-rose-500/10 px-2 py-1 rounded text-xs font-bold">DELETED BATCH</span>;
+      case 'DELETE_EXCEL': return <span className="text-blue-500 bg-blue-500/10 px-2 py-1 rounded text-xs font-bold">DELETED BATCH</span>;
       default: return <span className="text-muted-foreground bg-muted px-2 py-1 rounded text-xs font-bold">{action}</span>;
     }
   };

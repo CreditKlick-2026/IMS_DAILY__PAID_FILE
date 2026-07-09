@@ -104,13 +104,13 @@ export default function JobsPage() {
               const isFailed = job.status === 'FAILED';
               
               return (
-                <Card key={job.id} className={`border-slate-200/60 shadow-sm hover:shadow-md transition-all overflow-hidden ${isFailed ? 'border-rose-100' : ''}`}>
+                <Card key={job.id} className={`border-slate-200/60 shadow-sm hover:shadow-md transition-all overflow-hidden ${isFailed ? 'border-blue-100' : ''}`}>
                   <CardContent className="p-0">
                     <div className="p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                       
                       {/* Left: Info */}
                       <div className="flex items-start gap-5 min-w-0">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${isFailed ? 'bg-rose-50 text-rose-500 border border-rose-100' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${isFailed ? 'bg-blue-50 text-blue-500 border border-blue-100' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
                           <FileSpreadsheet className="w-7 h-7" />
                         </div>
                         <div className="min-w-0">
@@ -131,21 +131,21 @@ export default function JobsPage() {
                       {/* Right: Progress & Status */}
                       <div className="w-full lg:w-[320px] space-y-3">
                         <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest mb-1.5">
-                          <span className={isFailed ? 'text-rose-500' : 'text-slate-500'}>
+                          <span className={isFailed ? 'text-blue-500' : 'text-slate-500'}>
                             {job.status === 'PROCESSING' ? 'Processing Progress' : job.status === 'FAILED' ? 'Execution Halted' : 'Job Finalized'}
                           </span>
                           <span className="font-black text-slate-900">{Math.round(progress)}%</span>
                         </div>
                         <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
                           <div 
-                            className={`h-full transition-all duration-500 ${isFailed ? 'bg-rose-500' : job.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-primary'}`} 
+                            className={`h-full transition-all duration-500 ${isFailed ? 'bg-blue-500' : job.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-primary'}`} 
                             style={{ width: `${progress}%` }}
                           />
                         </div>
                         {job.error_log && (
-                          <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-100 rounded-xl mt-3">
-                            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <p className="text-[11px] font-bold text-rose-700 leading-relaxed">
+                          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl mt-3">
+                            <AlertTriangle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                            <p className="text-[11px] font-bold text-blue-700 leading-relaxed">
                               Error: {typeof job.error_log === 'string' ? job.error_log : JSON.stringify(job.error_log)}
                             </p>
                           </div>

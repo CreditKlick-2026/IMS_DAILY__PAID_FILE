@@ -16,7 +16,7 @@ const iconMap: Record<string, React.ReactNode> = {
 // ── Custom React Flow node ───────────────────────────────────────────────────
 const CustomNode = ({ data }: any) => (
   <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 min-w-[320px] overflow-hidden relative">
-    <Handle type="target" position={Position.Left} className="w-3 h-3 !bg-indigo-400 border-2 border-white" />
+    <Handle type="target" position={Position.Left} className="w-3 h-3 !bg-blue-400 border-2 border-white" />
     <div className={`absolute top-0 left-0 w-full h-1.5 ${data.stripeColor || 'bg-slate-200'}`}></div>
     <div className="flex items-center gap-4 mb-4">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-inner ${data.color || 'bg-slate-100 text-slate-600'}`}>
@@ -96,7 +96,7 @@ const CustomNode = ({ data }: any) => (
         </div>
       </div>
     ))}
-    <Handle type="source" position={Position.Right} className="w-3 h-3 !bg-indigo-400 border-2 border-white" />
+    <Handle type="source" position={Position.Right} className="w-3 h-3 !bg-blue-400 border-2 border-white" />
   </div>
 );
 
@@ -165,9 +165,9 @@ export default function TraceEngine({
           onClick={() => record && fetchTrace(record)}
           disabled={loading}
           title="Re-fetch latest calculation"
-          className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center hover:bg-indigo-50 shadow-sm transition-colors text-slate-500 disabled:opacity-50"
+          className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center hover:bg-blue-50 shadow-sm transition-colors text-slate-500 disabled:opacity-50"
         >
-          <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-500' : ''}`} />
+          <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin text-blue-500' : ''}`} />
         </button>
       </div>
 
@@ -176,8 +176,8 @@ export default function TraceEngine({
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-50/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
               </div>
               <p className="text-sm font-semibold text-slate-600">Fetching latest calculation…</p>
               <p className="text-xs text-slate-400">Pulling fresh data from backend</p>
@@ -186,12 +186,12 @@ export default function TraceEngine({
         )}
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-center max-w-sm shadow-lg">
-              <p className="text-sm font-bold text-rose-700 mb-1">Trace Engine Error</p>
-              <p className="text-xs text-rose-500">{error}</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center max-w-sm shadow-lg">
+              <p className="text-sm font-bold text-blue-700 mb-1">Trace Engine Error</p>
+              <p className="text-xs text-blue-500">{error}</p>
               <button
                 onClick={() => record && fetchTrace(record)}
-                className="mt-3 px-4 py-1.5 bg-rose-600 text-white text-xs rounded-lg hover:bg-rose-700 transition-colors"
+                className="mt-3 px-4 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Retry
               </button>

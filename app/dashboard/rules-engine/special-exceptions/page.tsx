@@ -126,7 +126,7 @@ export default function SpecialExceptionsPage() {
           <button 
               disabled={isSavingGrid}
               onClick={handleSaveGrid}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition-colors"
           >
               {isSavingGrid ? 'Saving...' : 'Save Grid'}
           </button>
@@ -155,7 +155,7 @@ export default function SpecialExceptionsPage() {
                                         newGrid[idx].target_collection = e.target.value;
                                         setSpecialGrid(newGrid);
                                     }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-full"
+                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                 />
                             </td>
                             <td className="px-4 py-2">
@@ -168,7 +168,7 @@ export default function SpecialExceptionsPage() {
                                         newGrid[idx].incentive_percentage = e.target.value;
                                         setSpecialGrid(newGrid);
                                     }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-full"
+                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                 />
                             </td>
                             <td className="px-4 py-2 text-right">
@@ -189,7 +189,7 @@ export default function SpecialExceptionsPage() {
                     <td colSpan={3} className="px-4 py-3 bg-slate-50/30">
                         <button 
                             onClick={() => setSpecialGrid([...specialGrid, { target_collection: '', incentive_percentage: '' }])}
-                            className="text-indigo-600 hover:text-indigo-800 text-sm font-bold w-full text-left"
+                            className="text-blue-600 hover:text-blue-800 text-sm font-bold w-full text-left"
                         >
                             + Add New Rule
                         </button>

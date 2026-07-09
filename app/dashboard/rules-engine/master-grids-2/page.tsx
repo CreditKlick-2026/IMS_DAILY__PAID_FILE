@@ -1,219 +1,193 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-
-type AssociateSlab = {
-  client: string;
-  product: string;
-  vintage: string;
-  level: string;
-  min: number | string;
-  max: number | string;
-  payout_pct: string;
-};
-
-type Rider = {
-  role: string;
-  docking: string | number;
-  payout: string | number;
-};
-
-type MasterGrid2Data = {
-  associateSlabs: AssociateSlab[];
-  riders: Rider[];
-  column_mappings?: Record<string, string>;
-};
+import { Card, Spinner } from '@shopify/polaris';
 
 export default function MasterGrid2Page() {
-  const [data, setData] = useState<MasterGrid2Data>({ associateSlabs: [], riders: [] });
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'associate' | 'riders'>('associate');
-  const [filterClient, setFilterClient] = useState('');
-  const [filterProduct, setFilterProduct] = useState('');
-  const [filterVintage, setFilterVintage] = useState('');
+  const [activeTab, setActiveTab] = useState<'slabs' | 'riders'>('slabs');
 
   useEffect(() => {
     fetch('/api/admin/master-grids-2')
-      .then(r => r.json())
-      .then(res => {
-        if (res.success && res.data) setData(res.data);
+      .then(res => res.json())
+      .then(json => {
+        setData(json.data);
+        setLoading(false);
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(e => {
+        console.error(e);
+        setLoading(false);
+      });
   }, []);
 
-  const clients = [...new Set(data.associateSlabs.map(s => s.client))];
-  const products = [...new Set(data.associateSlabs.filter(s => !filterClient || s.client === filterClient).map(s => s.product))];
-  const vintages = [...new Set(data.associateSlabs.filter(s => (!filterClient || s.client === filterClient) && (!filterProduct || s.product === filterProduct)).map(s => s.vintage))];
-
-  const filteredSlabs = data.associateSlabs.filter(s =>
-    (!filterClient || s.client === filterClient) &&
-    (!filterProduct || s.product === filterProduct) &&
-    (!filterVintage || s.vintage === filterVintage)
-  );
-
-  const formatVal = (v: number | string | null) => {
-    if (v === null || v === undefined || v === '-') return '—';
-    if (typeof v === 'number') return '₹' + v.toLocaleString('en-IN');
-    return String(v);
-  };
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
-
-      {/* Header */}
-      <div className="rounded-xl border bg-white shadow-sm p-5 shrink-0">
-        <div className="flex items-center justify-between mb-1">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">Master Grid 2 — Incentive Slabs</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Collection-based slab incentives for Axis Bank and other clients. Read-only.</p>
-          </div>
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-200 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block"></span>
-            {data.associateSlabs.length} Rules Loaded
-          </span>
-        </div>
-
-        {/* Column Mappings (Read-Only) */}
-        <div className="mt-4 border-t pt-4">
-          <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Calculation Column Mappings (Read-Only)</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.entries(data.column_mappings || {
-              collection: 'total_money_collected',
-              employee_code: 'employee_code',
-              employee_name: 'employee_name',
-              tl_name: 'tl_name',
-              am_name: 'am_name',
-              salary: 'ctc',
-              doj: 'date_of_joining',
-              designation: 'job_title'
-            }).map(([key, val]) => (
-              <div key={key}>
-                <label className="block text-xs font-medium text-slate-500 mb-0.5 capitalize">{key.replace(/_/g, ' ')} Col</label>
-                <input readOnly value={val} className="w-full border rounded-md px-3 py-1.5 text-xs bg-slate-50 outline-none text-slate-500 cursor-not-allowed" />
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Master Grid 2 — Axis Bank (Credit Card - Woff - BAU)</h1>
+        <p className="text-gray-500 mt-1">Configure tiers for Associates (Vintage), TLs (PCP), and AMs (PCP)</p>
       </div>
-
-      {/* Tabs */}
-      <div className="flex gap-4 border-b">
-        <button onClick={() => setActiveTab('associate')} className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'associate' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+      <div className="flex gap-4 border-b mt-4">
+        <button onClick={() => setActiveTab('slabs')} className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'slabs' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
           Associate Slabs
         </button>
-        <button onClick={() => setActiveTab('riders')} className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'riders' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
-          Riders &amp; Docking Rules ({data.riders.length})
+        <button onClick={() => setActiveTab('riders')} className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'riders' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>
+          Riders & Docking Rules ({data?.riders?.length || 0})
         </button>
       </div>
 
-      {/* Associate Slabs Tab */}
-      {activeTab === 'associate' && (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-          {/* Filters */}
-          <div className="p-4 border-b bg-slate-50 flex flex-wrap gap-3 items-center">
-            <select value={filterClient} onChange={e => { setFilterClient(e.target.value); setFilterProduct(''); setFilterVintage(''); }}
-              className="px-3 py-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-400 bg-white">
-              <option value="">All Clients</option>
-              {clients.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={filterProduct} onChange={e => { setFilterProduct(e.target.value); setFilterVintage(''); }}
-              className="px-3 py-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-400 bg-white">
-              <option value="">All Products</option>
-              {products.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <select value={filterVintage} onChange={e => setFilterVintage(e.target.value)}
-              className="px-3 py-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-400 bg-white">
-              <option value="">All Vintages</option>
-              {vintages.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-            <span className="ml-auto text-xs text-slate-400">{filteredSlabs.length} rules</span>
-          </div>
+      {activeTab === 'slabs' && (
+        <div className="space-y-6">
 
-          {loading ? (
-            <div className="p-8 text-center text-slate-500 text-sm">Loading...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 text-slate-500 border-b sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Client</th>
-                    <th className="px-4 py-3 font-medium">Product / Bucket</th>
-                    <th className="px-4 py-3 font-medium">Vintage</th>
-                    <th className="px-4 py-3 font-medium">Level</th>
-                    <th className="px-4 py-3 font-medium text-right">Min Collection</th>
-                    <th className="px-4 py-3 font-medium text-right">Max Collection</th>
-                    <th className="px-4 py-3 font-medium text-right">Payout %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSlabs.map((slab, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                      <td className="px-4 py-2.5 font-medium text-slate-700">{slab.client}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{slab.product}</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${slab.vintage?.includes('<90') ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'}`}>
-                          {slab.vintage || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600 font-medium">{slab.level}</td>
-                      <td className="px-4 py-2.5 text-right text-slate-700 font-mono text-xs">{formatVal(slab.min)}</td>
-                      <td className="px-4 py-2.5 text-right text-slate-700 font-mono text-xs">{formatVal(slab.max)}</td>
-                      <td className="px-4 py-2.5 text-right">
-                        <span className={`font-bold text-sm ${parseFloat(slab.payout_pct) > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                          {slab.payout_pct}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredSlabs.length === 0 && (
-                    <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No slabs found for selected filters.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Associate Slabs (Vintage & Collection based)</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vintage Tier</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Collection</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Collection</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout (%)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data?.associateSlabs?.map((slab: any, idx: number) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{slab.vintage}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slab.level}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slab.min}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slab.max}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{slab.payout_pct}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Team Leader Slabs (PCP based)</h3>
+          {(!data?.tlSlabs || data?.tlSlabs.length === 0) && (
+            <span className="text-xs text-orange-500 bg-orange-50 px-2 py-1 rounded border border-orange-200">Awaiting TL Data</span>
           )}
         </div>
-      )}
-
-      {/* Riders Tab */}
-      {activeTab === 'riders' && (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-          <div className="p-4 border-b bg-amber-50 flex items-center gap-2">
-            <span className="text-amber-600 font-bold text-sm">⚡ Rider / Docking Rules</span>
-            <span className="text-xs text-amber-600">These multipliers apply to base incentive amounts</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 border-b sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Role / Criteria</th>
-                  <th className="px-4 py-3 font-medium">Docking Condition</th>
-                  <th className="px-4 py-3 font-medium text-right">Payout Multiplier</th>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min PCP</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max PCP</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout (%)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data?.tlSlabs?.map((slab: any, idx: number) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slab.pcp_min}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slab.pcp_max}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{slab.payout_pct}%</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.riders.map((rider, idx) => (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                    <td className="px-4 py-2.5 text-slate-700 font-medium">{rider.role}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{String(rider.docking)}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <span className={`font-bold text-sm ${
-                        typeof rider.payout === 'number' && rider.payout >= 1 ? 'text-emerald-600' :
-                        typeof rider.payout === 'number' && rider.payout > 0 ? 'text-amber-600' :
-                        typeof rider.payout === 'string' ? 'text-blue-600' : 'text-red-500'
-                      }`}>
-                        {typeof rider.payout === 'number' ? `${rider.payout}x` : String(rider.payout)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {(!data?.tlSlabs || data?.tlSlabs.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No TL slabs available yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Assistant Manager Slabs (PCP based)</h3>
+          {(!data?.amSlabs || data?.amSlabs.length === 0) && (
+            <span className="text-xs text-orange-500 bg-orange-50 px-2 py-1 rounded border border-orange-200">Awaiting AM Data</span>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min PCP</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max PCP</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout (%)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data?.amSlabs?.map((slab: any, idx: number) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{slab.pcp_min}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slab.pcp_max}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{slab.payout_pct}%</td>
+                </tr>
+              ))}
+              {(!data?.amSlabs || data?.amSlabs.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No AM slabs available yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+              </div>
+      )}
+      {activeTab === 'riders' && (
+        <div className="space-y-6">
+  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Rider and Docker Rules</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role & Rule</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition (Docking)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout Multiplier / Extra</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data?.riders?.map((rider: any, idx: number) => (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{rider.role}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{rider.docking}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                    {typeof rider.payout === 'number' ? (rider.payout * 100) + '%' : rider.payout}
+                  </td>
+                </tr>
+              ))}
+              {(!data?.riders || data?.riders.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No rider rules available.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+              </div>
         </div>
       )}
-
     </div>
   );
 }

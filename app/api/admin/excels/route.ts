@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     const yearStr = searchParams.get('year');
     const locationName = searchParams.get('location');
     const processId = searchParams.get('client_id'); // This is actually process_id from frontend
+    const clientName = searchParams.get('client_name');
     const productName = searchParams.get('product_type');
 
     let queryText = `
@@ -62,6 +63,11 @@ export async function GET(req: Request) {
     if (processId) {
       queryParams.push(parseInt(processId));
       queryText += ` AND COALESCE(u.client_id, u.process_id) = $${queryParams.length} `;
+    }
+
+    if (clientName) {
+      queryParams.push(clientName);
+      queryText += ` AND c.name = $${queryParams.length} `;
     }
 
     if (productName) {

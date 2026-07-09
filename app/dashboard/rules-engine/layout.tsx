@@ -12,10 +12,15 @@ export default function RulesEngineLayout({ children }: { children: React.ReactN
     { label: 'Overview', path: '/dashboard/rules-engine', icon: Activity },
     { label: 'Locations', path: '/dashboard/rules-engine/locations', icon: MapPin },
     { label: 'Clients', path: '/dashboard/rules-engine/clients', icon: Briefcase },
+    { label: 'Keka Columns', path: '/dashboard/rules-engine/keka-columns', icon: FileSpreadsheet },
     { label: 'Master Grid 1', path: '/dashboard/rules-engine/master-grids', icon: Grid3X3 },
     { label: 'Master Grid 2', path: '/dashboard/rules-engine/master-grids-2', icon: Grid3X3 },
     { label: 'Master Grid 3', path: '/dashboard/rules-engine/master-grids-3', icon: Grid3X3 },
     { label: 'Master Grid 4', path: '/dashboard/rules-engine/master-grids-4', icon: Grid3X3 },
+    { label: 'Master Grid 5', path: '/dashboard/rules-engine/master-grids-5', icon: Grid3X3 },
+    { label: 'Master Grid 6', path: '/dashboard/rules-engine/master-grids-6', icon: Grid3X3 },
+    { label: 'Master Grid 7', path: '/dashboard/rules-engine/master-grids-7', icon: Grid3X3 },
+    { label: 'Master Grid 8', path: '/dashboard/rules-engine/master-grids-8', icon: Grid3X3 },
     { label: 'Special Exceptions', path: '/dashboard/rules-engine/special-exceptions', icon: AlertTriangle },
   ];
 
@@ -38,11 +43,11 @@ export default function RulesEngineLayout({ children }: { children: React.ReactN
                     href={item.path}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive 
-                        ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100' 
+                        ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
                     }`}
                   >
-                    <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400"} />
+                    <Icon size={18} className={isActive ? "text-blue-600" : "text-slate-400"} />
                     {item.label}
                   </Link>
                 </li>

@@ -363,7 +363,7 @@ export default function ClientsPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-            <Building2 className="text-indigo-600" /> Clients Management
+            <Building2 className="text-blue-600" /> Clients Management
           </h1>
           <p className="text-slate-500 mt-1 max-w-xl">
             Add clients and distribute them by assigning operating locations.
@@ -376,14 +376,14 @@ export default function ClientsPage() {
                 placeholder="Search clients..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64 bg-white/50 backdrop-blur-sm"
+                className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 bg-white/50 backdrop-blur-sm"
               />
               <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             </div>
 
             <button
               onClick={() => setAddMode(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
             >
               <Plus size={16} /> Add Client
             </button>
@@ -392,22 +392,22 @@ export default function ClientsPage() {
 
         {/* ADD CLIENT FORM */}
         {addMode && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
-            <h3 className="font-semibold text-indigo-900 mb-4 border-b border-indigo-100 pb-2">Add New Client</h3>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-200">
+            <h3 className="font-semibold text-blue-900 mb-4 border-b border-blue-100 pb-2">Add New Client</h3>
             
             {addClientNameMode && (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-5 shadow-sm">
-                <h4 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5 shadow-sm">
+                <h4 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
                   <Plus size={16} /> Create New Client Name
                 </h4>
                 <div className="flex flex-col md:flex-row gap-3 items-end">
                   <div className="flex-1 w-full">
-                    <label className="block text-xs font-semibold text-indigo-800 mb-1">Client Name</label>
+                    <label className="block text-xs font-semibold text-blue-800 mb-1">Client Name</label>
                     <input
                       autoFocus
                       type="text"
                       placeholder="e.g. SBI Recovery..."
-                      className="w-full px-4 py-2 border border-indigo-200 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                      className="w-full px-4 py-2 border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                     />
@@ -416,7 +416,7 @@ export default function ClientsPage() {
                     <button
                       disabled={!newName.trim()}
                       onClick={() => setAddClientNameMode(false)}
-                      className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium shadow-sm disabled:opacity-50 transition-colors"
+                      className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium shadow-sm disabled:opacity-50 transition-colors"
                     >
                       Confirm Name
                     </button>
@@ -471,7 +471,7 @@ export default function ClientsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-sm font-semibold text-indigo-900">Client Name</label>
+                  <label className="block text-sm font-semibold text-blue-900">Client Name</label>
                   {!addClientNameMode && (
                     <button
                       type="button"
@@ -486,7 +486,7 @@ export default function ClientsPage() {
                   <select
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="flex-1 px-4 py-2.5 border border-indigo-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white"
+                    className="flex-1 px-4 py-2.5 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-sm bg-white"
                   >
                     <option value="">-- Select Existing Client --</option>
                     {newName && !clients.some(c => c.name === newName) && (
@@ -501,7 +501,7 @@ export default function ClientsPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-sm font-semibold text-indigo-900">Product Type</label>
+                  <label className="block text-sm font-semibold text-blue-900">Product Type</label>
                   {!addProductMode && (
                     <button
                       type="button"
@@ -516,7 +516,7 @@ export default function ClientsPage() {
                   <select
                     value={newProductType}
                     onChange={(e) => setNewProductType(e.target.value)}
-                    className="flex-1 px-4 py-2.5 border border-indigo-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white"
+                    className="flex-1 px-4 py-2.5 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-sm bg-white"
                   >
                     {products.length === 0 && <option value="Card">Credit Card</option>}
                     {products.map(p => (
@@ -539,13 +539,13 @@ export default function ClientsPage() {
             </div>
             {locations.length > 0 && (
               <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold text-indigo-900">Assign to Locations:</span>
+                <span className="text-sm font-semibold text-blue-900">Assign to Locations:</span>
                 <div className="flex flex-wrap gap-2">
                   {locations.map(loc => (
                     <label 
                       key={loc.id} 
                       className={`flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer text-sm transition-colors ${
-                        newLocationIds.includes(loc.id) ? 'bg-indigo-100 border-indigo-300 text-indigo-900' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        newLocationIds.includes(loc.id) ? 'bg-blue-100 border-blue-300 text-blue-900' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       <input 
@@ -565,7 +565,7 @@ export default function ClientsPage() {
               </div>
             )}
             
-            <div className="flex justify-end gap-3 pt-5 border-t border-indigo-100 mt-5">
+            <div className="flex justify-end gap-3 pt-5 border-t border-blue-100 mt-5">
               <button
                 onClick={() => {
                   setAddMode(false);
@@ -581,7 +581,7 @@ export default function ClientsPage() {
               <button
                 disabled={saving || !newName.trim()}
                 onClick={handleAddClient}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Saving...' : 'Save Client'}
               </button>
@@ -592,7 +592,7 @@ export default function ClientsPage() {
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="px-5 py-4 border-b bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-800">Available Clients</h3>
-          <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full">
+          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
             {filteredClients.length} {filteredClients.length === 1 ? 'Client' : 'Clients'}
           </span>
         </div>
@@ -613,7 +613,7 @@ export default function ClientsPage() {
               <tr>
                 <td colSpan={4} className="px-5 py-8 text-center text-slate-400">
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     Loading clients...
                   </div>
                 </td>
@@ -681,7 +681,7 @@ export default function ClientsPage() {
                     </td>
                     <td className="px-5 py-4">
                       {client.assigned_grid ? (
-                        <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-medium px-2 py-1 rounded-md border border-purple-100">
+                        <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-md border border-blue-100">
                           {client.assigned_grid === 'grid_1' ? 'Master Grid 1' : client.assigned_grid}
                         </span>
                       ) : (
@@ -692,7 +692,7 @@ export default function ClientsPage() {
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => openGridModal(client)}
-                          className="text-purple-600 hover:text-purple-800 hover:bg-purple-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-purple-100"
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-blue-100"
                         >
                           <Columns size={14} /> Assign Grid
                         </button>
@@ -704,7 +704,7 @@ export default function ClientsPage() {
                         </button>
                         <button
                           onClick={() => openMappingModal(client)}
-                          className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-indigo-100"
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-blue-100"
                         >
                           <MapPin size={14} /> Assign Locations
                         </button>
@@ -731,7 +731,7 @@ export default function ClientsPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <MapPin className="text-indigo-600" size={18} />
+                <MapPin className="text-blue-600" size={18} />
                 Assign Locations to {selectedClient.name}
               </h3>
               <button onClick={() => setSelectedClient(null)} className="text-slate-400 hover:text-slate-600">
@@ -750,16 +750,16 @@ export default function ClientsPage() {
                       <label 
                         key={loc.id} 
                         className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                          isSelected ? 'bg-indigo-50 border-indigo-200' : 'hover:bg-slate-50 border-slate-200'
+                          isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50 border-slate-200'
                         }`}
                       >
                         <input 
                           type="checkbox" 
-                          className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                          className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                           checked={isSelected}
                           onChange={() => toggleLocation(loc.id)}
                         />
-                        <span className={`font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                        <span className={`font-medium ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
                           {loc.name}
                         </span>
                       </label>
@@ -779,7 +779,7 @@ export default function ClientsPage() {
               <button
                 disabled={savingMapping}
                 onClick={handleSaveMapping}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors font-medium text-sm disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium text-sm disabled:opacity-50"
               >
                 {savingMapping ? 'Saving...' : 'Save Assignments'}
               </button>
@@ -823,7 +823,7 @@ export default function ClientsPage() {
                           {col.display}
                         </span>
                       </label>
-                      <button onClick={() => handleDeleteMasterColumn(col.key)} className="text-rose-400 hover:text-rose-600 p-1">
+                      <button onClick={() => handleDeleteMasterColumn(col.key)} className="text-blue-400 hover:text-blue-600 p-1">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -883,7 +883,7 @@ export default function ClientsPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Columns className="text-purple-600" size={18} />
+                <Columns className="text-blue-600" size={18} />
                 Assign Grid Logic
               </h3>
               <button onClick={() => setAssigningGridClient(null)} className="text-slate-400 hover:text-slate-600">
@@ -900,13 +900,17 @@ export default function ClientsPage() {
               <select
                 value={selectedGrid}
                 onChange={(e) => setSelectedGrid(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
               >
                 <option value="">-- No Grid Assigned --</option>
                 <option value="grid_1">Master Grid 1</option>
                 <option value="grid_2">Master Grid 2</option>
                 <option value="grid_3">Master Grid 3</option>
                 <option value="grid_4">Master Grid 4</option>
+                <option value="grid_5">Master Grid 5</option>
+                <option value="grid_6">Master Grid 6</option>
+                <option value="grid_7">Master Grid 7</option>
+                <option value="grid_8">Master Grid 8</option>
               </select>
             </div>
             
@@ -928,7 +932,7 @@ export default function ClientsPage() {
                 <button
                   disabled={savingGrid || !selectedGrid}
                   onClick={handleSaveGrid}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingGrid ? 'Assigning...' : 'Assign Grid'}
                 </button>

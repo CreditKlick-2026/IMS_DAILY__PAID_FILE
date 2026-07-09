@@ -139,19 +139,12 @@ export default function UploadPage() {
     const fetchGlobalDate = async () => {
       let dt: Date | null = null;
       try {
-        const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata');
+        const res = await fetch('/api/time');
         const data = await res.json();
         dt = new Date(data.datetime);
       } catch {
-        // fallback: try timeapi.io
-        try {
-          const res = await fetch('https://timeapi.io/api/time/current/zone?timeZone=Asia/Kolkata');
-          const data = await res.json();
-          dt = new Date(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}T${String(data.hour).padStart(2, '0')}:${String(data.minute).padStart(2, '0')}:${String(data.seconds).padStart(2, '0')}+05:30`);
-        } catch {
-          console.warn("Time APIs failed, falling back to local system time.");
-          dt = new Date();
-        }
+        console.warn("Time API failed, falling back to local system time.");
+        dt = new Date();
       }
       if (dt) {
         setGlobalDateObj(dt);
@@ -482,7 +475,7 @@ export default function UploadPage() {
       <div className="w-full mx-auto px-4 py-6">
 
         {/* Global Page Filters */}
-        <div className="mb-6 flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div className="mb-6 flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
           {user?.role === 'admin' && (
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Location:</span>
@@ -533,9 +526,9 @@ export default function UploadPage() {
 
           {user?.role === 'admin' && (
             <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
-              <span className="text-xs font-bold text-purple-600 uppercase tracking-widest">Admin Proxy:</span>
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Admin Proxy:</span>
               <select 
-                className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px]"
+                className="border rounded-md px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
                 value={targetEmployeeId}
                 onChange={e => setTargetEmployeeId(e.target.value)}
               >
@@ -644,13 +637,13 @@ export default function UploadPage() {
             {/* Page Header Card */}
             <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
               {/* Top gradient accent line */}
-              <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+              <div className="h-1 bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500" />
               
               <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 {/* Left: Title */}
                 <div className="space-y-0.5">
                   <h2 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
                       <Upload className="w-4 h-4 text-white" style={{ fill: 'none' }} />
                     </div>
                     Upload Data
@@ -669,8 +662,8 @@ export default function UploadPage() {
                   )}
                   {/* Year Badge */}
                   {selectedYear && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg">
-                      <span className="text-xs font-bold text-indigo-600">{selectedYear}</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                      <span className="text-xs font-bold text-blue-600">{selectedYear}</span>
                     </div>
                   )}
                   {/* Countdown Timer */}
@@ -703,7 +696,7 @@ export default function UploadPage() {
                     {user?.role === 'admin' && (
                       <input 
                         type="date" 
-                        className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-purple-500 ml-2"
+                        className="border rounded-md px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 ml-2"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                       />
@@ -742,7 +735,7 @@ export default function UploadPage() {
                     onChange={handleFileChange} 
                   />
 
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${file ? 'bg-gradient-to-br from-primary to-indigo-600 text-white shadow-xl shadow-primary/30 scale-110' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-110 group-hover:bg-primary/20'}`}>
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${file ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-xl shadow-primary/30 scale-110' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-110 group-hover:bg-primary/20'}`}>
                     {file ? <FileSpreadsheet className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                   </div>
 
@@ -863,7 +856,7 @@ export default function UploadPage() {
                   <Button
                     onClick={handleUpload}
                     disabled={!file || uploading || !validationResult?.isValid || !selectedDate || !selectedClient}
-                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedClient) ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                    className={`flex-[2] py-5 rounded-xl text-sm font-bold shadow-md transition-all duration-300 ${(validationResult?.isValid && selectedDate && selectedClient) ? 'bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/25 text-white hover:scale-[1.01]' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                     size="lg"
                   >
                     {uploading ? (
@@ -912,7 +905,7 @@ export default function UploadPage() {
 
                   <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border p-0.5">
                     <div 
-                      className={`h-full rounded-full transition-all duration-700 ease-out ${activeJob.status === 'FAILED' ? 'bg-destructive' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}
+                      className={`h-full rounded-full transition-all duration-700 ease-out ${activeJob.status === 'FAILED' ? 'bg-destructive' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>

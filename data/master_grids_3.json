@@ -1,83 +1,162 @@
 {
   "associateSlabs": [
     {
-      "min": 200001,
-      "max": 250000,
-      "payout_pct": "1.75"
+      "vintage": "<90",
+      "min": 0,
+      "max": 99999,
+      "payout_pct": "0.00"
     },
     {
-      "min": 250001,
-      "max": 300000,
+      "vintage": "<90",
+      "min": 100000,
+      "max": 149999,
       "payout_pct": "2.00"
     },
     {
-      "min": 300001,
-      "max": 350000,
+      "vintage": "<90",
+      "min": 150000,
+      "max": 199999,
+      "payout_pct": "2.25"
+    },
+    {
+      "vintage": "<90",
+      "min": 200000,
+      "max": 249999,
       "payout_pct": "2.50"
     },
     {
-      "min": 351000,
-      "max": 400000,
+      "vintage": "<90",
+      "min": 250000,
+      "max": 349999,
       "payout_pct": "2.75"
     },
     {
-      "min": 400001,
-      "max": 500000,
+      "vintage": "<90",
+      "min": 350000,
+      "max": 449999,
       "payout_pct": "3.00"
     },
     {
-      "min": 500001,
-      "max": 600000,
-      "payout_pct": "3.25"
+      "vintage": "<90",
+      "min": 450000,
+      "max": "-",
+      "payout_pct": "3.50"
     },
     {
-      "min": 600001,
+      "vintage": ">91",
+      "min": 0,
+      "max": 149999,
+      "payout_pct": "0.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 150000,
+      "max": 199999,
+      "payout_pct": "2.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 200000,
+      "max": 249999,
+      "payout_pct": "2.25"
+    },
+    {
+      "vintage": ">91",
+      "min": 250000,
+      "max": 349999,
+      "payout_pct": "2.50"
+    },
+    {
+      "vintage": ">91",
+      "min": 350000,
+      "max": 449999,
+      "payout_pct": "2.75"
+    },
+    {
+      "vintage": ">91",
+      "min": 450000,
+      "max": 549999,
+      "payout_pct": "3.00"
+    },
+    {
+      "vintage": ">91",
+      "min": 550000,
       "max": "-",
       "payout_pct": "3.50"
     }
   ],
   "tlSlabs": [
     {
-      "pcp_min": 225000,
-      "pcp_max": 250000,
+      "pcp_min": 0,
+      "pcp_max": 149999,
+      "payout_pct": "0.00"
+    },
+    {
+      "pcp_min": 150000,
+      "pcp_max": 174999,
       "payout_pct": "0.40"
     },
     {
-      "pcp_min": 250001,
-      "pcp_max": 274999,
+      "pcp_min": 175000,
+      "pcp_max": 199999,
       "payout_pct": "0.60"
     },
     {
-      "pcp_min": 275000,
-      "pcp_max": 299999,
-      "payout_pct": "0.80"
-    },
-    {
-      "pcp_min": 300000,
-      "pcp_max": "-",
-      "payout_pct": "1.00"
-    }
-  ],
-  "amSlabs": [
-    {
-      "pcp_min": 205000,
+      "pcp_min": 200000,
       "pcp_max": 224999,
-      "payout_pct": "0.25"
+      "payout_pct": "0.80"
     },
     {
       "pcp_min": 225000,
       "pcp_max": 249999,
-      "payout_pct": "0.30"
+      "payout_pct": "1.00"
     },
     {
       "pcp_min": 250000,
       "pcp_max": 274999,
-      "payout_pct": "0.35"
+      "payout_pct": "1.10"
     },
     {
       "pcp_min": 275000,
       "pcp_max": "-",
+      "payout_pct": "1.20"
+    }
+  ],
+  "amSlabs": [
+    {
+      "pcp_min": 0,
+      "pcp_max": 149999,
+      "payout_pct": "0.00"
+    },
+    {
+      "pcp_min": 150000,
+      "pcp_max": 174999,
+      "payout_pct": "0.15"
+    },
+    {
+      "pcp_min": 175000,
+      "pcp_max": 199999,
+      "payout_pct": "0.25"
+    },
+    {
+      "pcp_min": 200000,
+      "pcp_max": 224999,
+      "payout_pct": "0.35"
+    },
+    {
+      "pcp_min": 225000,
+      "pcp_max": 249999,
       "payout_pct": "0.40"
+    },
+    {
+      "pcp_min": 250000,
+      "pcp_max": 274999,
+      "payout_pct": "0.45"
+    },
+    {
+      "pcp_min": 275000,
+      "pcp_max": "-",
+      "payout_pct": "0.50"
     }
   ],
   "column_mappings": {

@@ -229,6 +229,32 @@ async function startWorker() {
         const workbook = xlsx.readFile(currentFilePath);
         
         if (jobType === 'KEKA') {
+             const kekaColumnsPath = path.join(process.cwd(), 'data', 'keka_columns.json');
+             let kekaColumns = [
+                { key: 'location', labels: ['location', 'Location'], display: 'location' },
+                { key: 'employee_id', labels: ['employee_id', 'Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE'], display: 'employee_id' },
+                { key: 'name', labels: ['name', 'Name', 'Employee Name', 'EmpName'], display: 'name' },
+                { key: 'designation', labels: ['designation', 'Designation', 'Role', 'DESIGNATION'], display: 'designation' },
+                { key: 'agent_ohr', labels: ['agent_ohr', 'Agent OHR', 'AgentOHR', 'OHR'], display: 'agent_ohr' },
+                { key: 'doj', labels: ['doj', 'DOJ', 'Date of Joining'], display: 'doj' },
+                { key: 'doc', labels: ['doc', 'DOC', 'Date of Calling'], display: 'doc' },
+                { key: 'salary', labels: ['salary', 'Salary', 'CTC', 'Target'], display: 'salary' },
+             ];
+             try {
+                 if (require('fs').existsSync(kekaColumnsPath)) {
+                     const parsedData = JSON.parse(require('fs').readFileSync(kekaColumnsPath, 'utf8'));
+                     if (Array.isArray(parsedData)) {
+                         kekaColumns = parsedData; // legacy support
+                     } else {
+                         const locStr = jobLocationId || 'all';
+                         const cliStr = processId || 'all';
+                         const prodStr = productType || 'all';
+                         const configKey = `${locStr}_${cliStr}_${prodStr}`;
+                         kekaColumns = parsedData[configKey] || parsedData['default'] || kekaColumns;
+                     }
+                 }
+             } catch(e) { console.error('Failed to read keka_columns.json', e); }
+
              const sheetName = workbook.SheetNames[0];
              const sheet = workbook.Sheets[sheetName];
              const rawRows = xlsx.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
@@ -279,34 +305,48 @@ async function startWorker() {
                          return null;
                      };
                      
-                     const location = get(['Location']);
-                     const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE']);
-                     const name = get(['Name', 'Employee Name', 'EmpName']);
-                     const designation = get(['Designation', 'Role', 'DESIGNATION']);
-                     const agentOhr = String(get(['Agent OHR', 'AgentOHR', 'OHR']) || '');
-                     const dojRaw = get(['DOJ', 'Date of Joining']);
+                     const dynamicData: Record<string, any> = {};
+                     kekaColumns.forEach((col: any) => {
+                         const val = get(col.labels);
+                         if (val !== null) dynamicData[col.key] = val;
+                     });
+
+                     const location = dynamicData['location'];
+                     const empCode = dynamicData['employee_id'];
+                     const name = dynamicData['name'];
+                     const designation = dynamicData['designation'];
+                     const agentOhr = String(dynamicData['agent_ohr'] || '');
+                     const dojRaw = dynamicData['doj'];
                      let dojDate = null;
                      if (dojRaw) {
                          if (typeof dojRaw === 'number') dojDate = new Date(Math.round((dojRaw - 25569) * 86400 * 1000));
                          else dojDate = new Date(dojRaw);
                      }
-                     const docRaw = get(['DOC', 'Date of Calling']);
+                     const docRaw = dynamicData['doc'];
                      let docDate = null;
                      if (docRaw) {
                          if (typeof docRaw === 'number') docDate = new Date(Math.round((docRaw - 25569) * 86400 * 1000));
                          else docDate = new Date(docRaw);
                      }
-                     const tlName = get(['TL_Name', 'TL Name', 'Team Leader', 'tl', 'TL']);
-                     const amName = get(['AM', 'AM Name', 'Area Manager', 'am']);
-                     const salaryStr = String(get(['Salary', 'CTC', 'Target', 'salary']) || '0').replace(/,/g, '');
+                     const tlName = dynamicData['tl_name'];
+                     const amName = dynamicData['am_name'];
+                     const salaryStr = String(dynamicData['salary'] || '0').replace(/,/g, '');
                      const salary = parseFloat(salaryStr) || 0;
+
+                     const coreKeys = ['location', 'employee_id', 'name', 'designation', 'agent_ohr', 'doj', 'doc', 'salary', 'tl_name', 'am_name'];
+                     const extraData: Record<string, any> = {};
+                     Object.keys(dynamicData).forEach(key => {
+                         if (!coreKeys.includes(key)) {
+                             extraData[key] = dynamicData[key];
+                         }
+                     });
                      
                      if (!empCode) {
                          failed++;
                          errorDetails.push(`Row ${absoluteIndex + 2}: Missing Employee Code`);
                      } else {
-                         valueStrings.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, CURRENT_TIMESTAMP)`);
-                         params.push(location, empCode, name, designation, agentOhr, dojDate, docDate, salary, tlName, amName);
+                         valueStrings.push(`($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, CURRENT_TIMESTAMP)`);
+                         params.push(processLocationName || location, empCode, name, designation, agentOhr, dojDate, docDate, salary, tlName, amName, processClientName || null, productType || null, extraData);
                          batchValidRows++;
                      }
                  }
@@ -314,9 +354,22 @@ async function startWorker() {
                  if (valueStrings.length > 0) {
                      try {
                          const insertRes = await pool.query(`
-                             INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, tl_name, am_name, updated_at)
+                             INSERT INTO employee_keka_data (location, employee_id, name, designation, agent_ohr, doj, doc, salary, tl_name, am_name, client, product, extra_data, updated_at)
                              VALUES ${valueStrings.join(', ')}
-                             ON CONFLICT (employee_id) DO NOTHING
+                             ON CONFLICT (employee_id) DO UPDATE SET
+                               location = EXCLUDED.location,
+                               name = EXCLUDED.name,
+                               designation = EXCLUDED.designation,
+                               agent_ohr = EXCLUDED.agent_ohr,
+                               doj = EXCLUDED.doj,
+                               doc = EXCLUDED.doc,
+                               salary = EXCLUDED.salary,
+                               tl_name = EXCLUDED.tl_name,
+                               am_name = EXCLUDED.am_name,
+                               client = EXCLUDED.client,
+                               product = EXCLUDED.product,
+                               extra_data = employee_keka_data.extra_data || EXCLUDED.extra_data,
+                               updated_at = CURRENT_TIMESTAMP
                              RETURNING employee_id
                          `, params);
                          
@@ -493,7 +546,7 @@ async function startWorker() {
                   return null;
                 };
                 
-                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+                placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
                 values.push(
                   get(['Account_No', 'Account No', 'LAN', 'Loan No']),
                   get(['Employee_Code', 'Employee Code', 'EmpCode']),
@@ -519,13 +572,14 @@ async function startWorker() {
                   uploadedByName,
                   row._isDuplicate ? true : false,
                   row._duplicateReason || null,
-                  processId || null
+                  processId || null,
+                  get(['recovery_or_upgrade', 'RECOVERY/UPGRADE', 'Recovery_or_Upgrade', 'Recovery_Upgrade', 'RECOVERY', 'UPGRADE']) || null
                 );
               }
 
               await client.query(`
                 INSERT INTO dpf_records 
-                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, cm, aph, ph, mobile_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag, client_id)
+                  (account_no, employee_code, employee_name, client, product, bucket, location, money_collected, payment_mode, tl_name, am, cm, aph, ph, mobile_no, job_id, upload_at, uploaded_by_employee_id, uploaded_by_name, is_duplicate, fraud_flag, client_id, recovery_or_upgrade)
                 VALUES ${placeholders.join(', ')}
               `, values);
               processed += batch.length;
