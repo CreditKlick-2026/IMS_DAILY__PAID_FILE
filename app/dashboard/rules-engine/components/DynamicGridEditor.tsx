@@ -19,6 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
+
 interface DynamicGridEditorProps {
     gridId: string;
     title: string;
@@ -69,7 +70,7 @@ export default function DynamicGridEditor({ gridId, title, subtitle, hasClientPr
     };
 
     const addAssociateSlab = () => {
-        const newSlab = hasClientProduct 
+        const newSlab = hasClientProduct
             ? { client: '', product: '', vintage: '', level: '', min: '', max: '', payout_pct: '0.00' }
             : { vintage: '', min: '', max: '', payout_pct: '0.00' };
         setData((prev: any) => ({ ...prev, associateSlabs: [...prev.associateSlabs, newSlab] }));
@@ -156,7 +157,7 @@ export default function DynamicGridEditor({ gridId, title, subtitle, hasClientPr
                     <TabsTrigger value="am">AM Slabs</TabsTrigger>
                     <TabsTrigger value="riders">Riders</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="associate">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
