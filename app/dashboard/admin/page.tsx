@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { ButtonGroup, Button } from '@shopify/polaris';
+import '@shopify/polaris/build/esm/styles.css';
 import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
-import { 
-  Users, Activity, Shield, Trash2, Settings, MoreVertical, Database, 
+import {
+  Users, Activity, Shield, Trash2, Settings, MoreVertical, Database,
   CheckCircle2, AlertCircle, Edit3, XCircle, Search, Menu, LogOut, FileSpreadsheet, FileText, Loader2, UserPlus, Layers, Info, Upload, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import * as XLSX from 'xlsx';
@@ -33,9 +35,9 @@ export default function AdminPage() {
   const [filterLocation, setFilterLocation] = useState("");
   const [filterClient, setFilterClient] = useState("");
   const [filterProduct, setFilterProduct] = useState("");
-  const [locationOptions, setLocationOptions] = useState<{id: number, name: string}[]>([]);
+  const [locationOptions, setLocationOptions] = useState<{ id: number, name: string }[]>([]);
   const [clientOptions, setClientOptions] = useState<any[]>([]);
-  
+
   const [trackerMonth, setTrackerMonth] = useState(new Date().getMonth() + 1);
   const [trackerYear, setTrackerYear] = useState(new Date().getFullYear());
   const [trackerData, setTrackerData] = useState<any[]>([]);
@@ -47,11 +49,11 @@ export default function AdminPage() {
   const [uploadingKeka, setUploadingKeka] = useState(false);
   const [isValidatingKeka, setIsValidatingKeka] = useState(false);
   const [kekaValidationResult, setKekaValidationResult] = useState<any>(null);
-  const [kekaValidatedData, setKekaValidatedData] = useState<{valid: any[], invalid: any[]}|null>(null);
-  const [kekaValidationView, setKekaValidationView] = useState<'summary'|'valid'|'invalid'>('summary');
+  const [kekaValidatedData, setKekaValidatedData] = useState<{ valid: any[], invalid: any[] } | null>(null);
+  const [kekaValidationView, setKekaValidationView] = useState<'summary' | 'valid' | 'invalid'>('summary');
   const [kekaMessage, setKekaMessage] = useState("");
   const [activeKekaJob, setActiveKekaJob] = useState<any | null>(null);
-  
+
   const [kekaLocation, setKekaLocation] = useState('');
   const [kekaClientName, setKekaClientName] = useState('');
   const [kekaProductType, setKekaProductType] = useState('');
@@ -77,14 +79,14 @@ export default function AdminPage() {
     let url = '/api/admin/keka-columns';
     const kekaClientObj = clientOptions.find(c => c.name === kekaClientName && c.product_type === kekaProductType);
     if (kekaLocation && kekaClientObj && kekaProductType) {
-       url += `?location_id=${kekaLocation}&client_id=${kekaClientObj.id}&product_type=${kekaProductType}`;
-       fetch(url).then(res => res.json()).then(data => {
-         if (data.success) {
-           setKekaColumns(data.data);
-         }
-       }).catch(console.error);
+      url += `?location_id=${kekaLocation}&client_id=${kekaClientObj.id}&product_type=${kekaProductType}`;
+      fetch(url).then(res => res.json()).then(data => {
+        if (data.success) {
+          setKekaColumns(data.data);
+        }
+      }).catch(console.error);
     } else {
-       setKekaColumns([]);
+      setKekaColumns([]);
     }
   }, [kekaLocation, kekaClientName, kekaProductType, clientOptions]);
 
@@ -96,7 +98,7 @@ export default function AdminPage() {
     eventSource.onmessage = (event) => {
       const updatedJob = JSON.parse(event.data);
       setActiveKekaJob(updatedJob);
-      
+
       if (updatedJob.status === 'COMPLETED' || updatedJob.status === 'FAILED') {
         eventSource.close();
       }
@@ -147,7 +149,7 @@ export default function AdminPage() {
     if (filterLocation) url += `&location=${encodeURIComponent(filterLocation)}`;
     if (filterClient) url += `&client_name=${encodeURIComponent(filterClient)}`;
     if (filterProduct) url += `&product_type=${encodeURIComponent(filterProduct)}`;
-    
+
     fetch(url)
       .then(r => r.json())
       .then(d => {
@@ -171,7 +173,7 @@ export default function AdminPage() {
     if (filterLocation) url += `&location=${encodeURIComponent(filterLocation)}`;
     if (filterClient) url += `&client_name=${encodeURIComponent(filterClient)}`;
     if (filterProduct) url += `&product_type=${encodeURIComponent(filterProduct)}`;
-    
+
     fetch(url)
       .then(r => r.json())
       .then(d => {
@@ -211,8 +213,8 @@ export default function AdminPage() {
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-            setSpecialEmployees(d.employees);
-            setSpecialTotal(d.total || 0);
+          setSpecialEmployees(d.employees);
+          setSpecialTotal(d.total || 0);
         }
         setSpecialLoading(false);
       })
@@ -241,10 +243,10 @@ export default function AdminPage() {
         body: JSON.stringify({ grid: specialGrid })
       });
       if (res.ok) {
-          alert('Grid updated successfully');
-          fetchSpecialGrid();
+        alert('Grid updated successfully');
+        fetchSpecialGrid();
       } else {
-          alert('Failed to update grid');
+        alert('Failed to update grid');
       }
     } catch (e) {
       alert("Error updating grid");
@@ -275,7 +277,7 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-        const res = await fetch('/api/users', {
+      const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_id: newEmployeeId, name: newUsername, username: newUsername, email: newEmail, password: newPassword, role: newRole, location_id: newRole === 'user' ? newLocation : null })
@@ -377,14 +379,14 @@ export default function AdminPage() {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        
+
         let bestResult: any = null;
         let maxTotalMatches = -1;
 
         for (const sheetName of workbook.SheetNames) {
           const sheet = workbook.Sheets[sheetName];
           const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-          
+
           if (!rows || rows.length === 0) continue;
 
           let currentSheetMaxMatches = 0;
@@ -393,7 +395,7 @@ export default function AdminPage() {
           for (let i = 0; i < Math.min(50, rows.length); i++) {
             const row = rows[i];
             if (!row || !Array.isArray(row)) continue;
-            
+
             const normalizedRow = row.map(k => normalize(String(k)));
             let matches = 0;
             kekaColumns.forEach(req => {
@@ -441,14 +443,14 @@ export default function AdminPage() {
           setKekaValidatedData(null);
         } else {
           setKekaValidationResult(bestResult);
-          
+
           if (!bestResult.isValid) {
             setKekaMessage(`Found some headers, but ${bestResult.missingHeaders.length} are missing.`);
             setKekaValidatedData(null);
           } else {
             const sheet = workbook.Sheets[bestResult.sheetName];
             const allData = XLSX.utils.sheet_to_json(sheet, { range: bestResult.headerIndex }) as any[];
-            
+
             const validRows: any[] = [];
             const invalidRows: any[] = [];
 
@@ -463,10 +465,10 @@ export default function AdminPage() {
               };
 
               const empCode = get(['Employee_Code', 'Employee Code', 'EmpCode', 'EMP CODE']);
-              
+
               const errors = [];
               if (!empCode) errors.push("Missing Employee Code");
-              
+
               if (errors.length > 0) {
                 invalidRows.push({ _rowIndex: idx + 2, _errors: errors, ...row });
               } else {
@@ -535,15 +537,15 @@ export default function AdminPage() {
   };
 
   const adminModules = [
-    { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} className="text-primary" /> },
-    { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} className="text-primary" /> },
-    { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} className="text-primary" /> },
-    { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} className="text-primary" /> },
-    { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileText size={20} className="text-primary" /> },
+    { id: 'tracker', title: 'Daily Tracker', subtitle: 'Date-wise matrix of uploaded files', icon: <Activity size={20} /> },
+    { id: 'users', title: 'User Management', subtitle: 'Manage user roles, access, and profiles', icon: <Users size={20} /> },
+    { id: 'excels', title: 'Uploaded Excels', subtitle: 'View who uploaded which excel and manage them', icon: <FileSpreadsheet size={20} /> },
+    { id: 'keka', title: 'Keka Upload', subtitle: 'Upload and manage Master Employee Data', icon: <Database size={20} /> },
+    { id: 'keka-excels', title: 'Keka Excels', subtitle: 'View and manage uploaded Keka files', icon: <FileText size={20} /> },
   ];
 
   const renderContent = () => {
-    switch(activeItem) {
+    switch (activeItem) {
 
       case 'tracker':
         const daysInMonth = new Date(trackerYear, trackerMonth, 0).getDate();
@@ -553,8 +555,8 @@ export default function AdminPage() {
         const currentDay = today.getDate();
 
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -566,7 +568,7 @@ export default function AdminPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-[13px] font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterLocation}
                   onChange={(e) => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}
                 >
@@ -576,40 +578,40 @@ export default function AdminPage() {
                   ))}
                 </select>
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-[13px] font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterClient}
                   onChange={(e) => { setFilterClient(e.target.value); setFilterProduct(''); }}
                 >
                   <option value="">All Processes</option>
                   {Array.from(new Set(clientOptions.filter(c => {
-                      if (!filterLocation) return true;
-                      const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
-                      return locName && c.location_names?.includes(locName);
+                    if (!filterLocation) return true;
+                    const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
+                    return locName && c.location_names?.includes(locName);
                   }).map(p => p.name))).sort().map((name: any) => (
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-[13px] font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
                   value={filterProduct}
                   onChange={(e) => setFilterProduct(e.target.value)}
                 >
                   <option value="">All Products</option>
                   {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || c.name === filterClient).map((c: any) => c.product_type).filter(Boolean))).sort().map((p: any) => (
-                      <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-[13px] font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={trackerMonth}
                   onChange={(e) => setTrackerMonth(parseInt(e.target.value))}
                 >
                   {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
+                    <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
                   ))}
                 </select>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-[13px] font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
                   value={trackerYear}
                   onChange={(e) => setTrackerYear(parseInt(e.target.value))}
                 >
@@ -636,28 +638,28 @@ export default function AdminPage() {
             </div>
 
             {/* Clean Legend */}
-            <div className="flex flex-wrap items-center gap-6 px-2 mb-6">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status Legend:</span>
-              <div className="flex items-center gap-2 text-sm font-bold text-emerald-600"><CheckCircle2 className="w-4 h-4" /> User Upload</div>
-              <div className="flex items-center gap-2 text-sm font-bold text-blue-600"><Shield className="w-4 h-4" /> Admin Proxy</div>
-              <div className="flex items-center gap-2 text-sm font-bold text-amber-600"><Trash2 className="w-4 h-4" /> Admin Deleted</div>
-              <div className="flex items-center gap-2 text-sm font-bold text-red-500"><XCircle className="w-4 h-4" /> Pending</div>
+            <div className="flex flex-wrap items-center gap-3 px-2 mb-4">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status Legend:</span>
+              <div className="flex items-center gap-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="w-3.5 h-3.5" /> User Upload</div>
+              <div className="flex items-center gap-1 text-xs font-bold text-blue-600"><Shield className="w-3.5 h-3.5" /> Admin Proxy</div>
+              <div className="flex items-center gap-1 text-xs font-bold text-amber-600"><Trash2 className="w-3.5 h-3.5" /> Admin Deleted</div>
+              <div className="flex items-center gap-1 text-xs font-bold text-red-500"><XCircle className="w-3.5 h-3.5" /> Pending</div>
             </div>
-            
-            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+
+            <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1">
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-sm text-center border-collapse">
+                <table className="w-full text-xs text-center border-collapse">
                   <thead className="bg-slate-50/50 border-b border-slate-100 whitespace-nowrap sticky top-0 z-20">
                     <tr>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-left border-r border-slate-100 sticky left-0 z-30 bg-slate-50/50">
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left border-r border-slate-100 sticky left-0 z-30 bg-slate-50/50">
                         Agent / User
                       </th>
                       {daysArray.map(day => (
-                        <th key={day} className={`px-2 py-4 text-xs font-black uppercase tracking-widest border-b border-slate-100 min-w-[36px] transition-colors ${isCurrentMonth && day === currentDay ? 'bg-blue-50 text-blue-600' : 'text-slate-400'}`}>
+                        <th key={day} className={`px-1.5 py-3 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 min-w-[28px] transition-colors ${isCurrentMonth && day === currentDay ? 'bg-blue-50 text-blue-600' : 'text-slate-400'}`}>
                           {day}
                         </th>
                       ))}
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-l border-b border-slate-100 sticky right-0 z-30 bg-slate-50/50">
+                      <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border-l border-b border-slate-100 sticky right-0 z-30 bg-slate-50/50">
                         Missing
                       </th>
                     </tr>
@@ -672,40 +674,38 @@ export default function AdminPage() {
                         let pendingCount = 0;
                         return (
                           <tr key={u.employee_id || u.username} className="group hover:bg-muted/30 transition-colors bg-card">
-                            <td className="px-5 py-3 text-left border-r border-border sticky left-0 bg-card group-hover:bg-muted/30 transition-colors z-10">
-                              <p className="font-semibold text-foreground">{u.name}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{u.employee_id}</p>
+                            <td className="px-4 py-2 text-left border-r border-border sticky left-0 bg-card group-hover:bg-muted/30 transition-colors z-10 whitespace-nowrap">
+                              <p className="font-semibold text-foreground text-xs">{u.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{u.employee_id}</p>
                             </td>
                             {daysArray.map(day => {
                               const dateStr = `${trackerYear}-${String(trackerMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                               const cellStatus = u.uploads[dateStr];
                               const isUploaded = !!cellStatus;
                               const isFuture = isCurrentMonth && day > currentDay;
-                              
+
                               if (!isUploaded && !isFuture) pendingCount++;
 
                               return (
-                                <td key={day} className={`p-1 transition-colors ${isCurrentMonth && day === currentDay ? 'bg-primary/5' : ''}`}>
-                                  <div className="flex items-center justify-center w-full h-full min-h-[32px]">
+                                <td key={day} className={`p-0.5 transition-colors ${isCurrentMonth && day === currentDay ? 'bg-primary/5' : ''}`}>
+                                  <div className="flex items-center justify-center w-full h-full min-h-[28px]">
                                     {!isUploaded ? (
-                                      isFuture ? <span className="w-1.5 h-1.5 rounded-full bg-border"></span> : 
-                                      <div title="Pending" className="flex items-center justify-center"><XCircle className="w-4 h-4 text-destructive/70" /></div>
+                                      isFuture ? <span className="w-1.5 h-1.5 rounded-full bg-border"></span> :
+                                        <div title="Pending" className="flex items-center justify-center"><XCircle className="w-3.5 h-3.5 text-destructive/70" /></div>
                                     ) : (
-                                      cellStatus === 'DELETED_BY_ADMIN' ? <div title="Uploaded but Deleted by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Trash2 className="w-4 h-4 text-orange-500" /></div> :
-                                      cellStatus === 'UPLOADED_BY_ADMIN' ? <div title="Proxy Upload by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Shield className="w-4 h-4 text-blue-500" /></div> :
-                                      cellStatus === 'FAILED' ? <div title="Failed Upload" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><AlertCircle className="w-4 h-4 text-destructive" /></div> :
-                                      <div title="Uploaded by User" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>
+                                      cellStatus === 'DELETED_BY_ADMIN' ? <div title="Uploaded but Deleted by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Trash2 className="w-3.5 h-3.5 text-orange-500" /></div> :
+                                        cellStatus === 'UPLOADED_BY_ADMIN' ? <div title="Proxy Upload by Admin" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><Shield className="w-3.5 h-3.5 text-blue-500" /></div> :
+                                          cellStatus === 'FAILED' ? <div title="Failed Upload" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><AlertCircle className="w-3.5 h-3.5 text-destructive" /></div> :
+                                            <div title="Uploaded by User" className="flex items-center justify-center cursor-help hover:scale-110 transition-transform"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /></div>
                                     )}
                                   </div>
                                 </td>
                               );
                             })}
-                            <td className="px-5 py-3 font-bold text-base border-l border-border sticky right-0 z-10 bg-card group-hover:bg-muted/30 transition-colors text-center">
-                              {pendingCount > 0 ? (
-                                <span className="text-destructive">{pendingCount}</span>
-                              ) : (
-                                <span className="text-muted-foreground opacity-30">0</span>
-                              )}
+                            <td className="px-3 py-1.5 border-l border-border sticky right-0 bg-card group-hover:bg-muted/30 transition-colors z-10 text-center">
+                              <span className={`font-black text-[11px] ${pendingCount > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                {pendingCount > 0 ? pendingCount : '0'}
+                              </span>
                             </td>
                           </tr>
                         );
@@ -719,8 +719,8 @@ export default function AdminPage() {
         );
       case 'excels':
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -730,9 +730,9 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-sm text-slate-500 font-medium ml-13 mt-1">View who uploaded which excel and manage records.</p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[120px] truncate"
                   value={filterLocation}
                   onChange={(e) => { setFilterLocation(e.target.value); setFilterClient(''); setFilterProduct(''); }}
                 >
@@ -742,41 +742,41 @@ export default function AdminPage() {
                   ))}
                 </select>
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[120px] truncate"
                   value={filterClient}
                   onChange={(e) => { setFilterClient(e.target.value); setFilterProduct(''); }}
                 >
                   <option value="">All Processes</option>
                   {Array.from(new Set(clientOptions.filter(c => {
-                      if (!filterLocation) return true;
-                      const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
-                      return locName && c.location_names?.includes(locName);
+                    if (!filterLocation) return true;
+                    const locName = locationOptions.find((l: any) => l.name === filterLocation)?.name;
+                    return locName && c.location_names?.includes(locName);
                   }).map(p => p.name))).sort().map((name: any) => (
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
                 <select
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[160px] truncate"
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[120px] truncate"
                   value={filterProduct}
                   onChange={(e) => setFilterProduct(e.target.value)}
                 >
                   <option value="">All Products</option>
                   {Array.from(new Set(clientOptions.filter((c: any) => !filterClient || c.name === filterClient).map((c: any) => c.product_type).filter(Boolean))).sort().map((p: any) => (
-                      <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[100px]"
                   value={deleteMonth}
                   onChange={(e) => setDeleteMonth(parseInt(e.target.value))}
                 >
                   <option value={0}>All Months</option>
                   {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
+                    <option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('default', { month: 'short' })}</option>
                   ))}
                 </select>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[90px]"
                   value={deleteYear}
                   onChange={(e) => setDeleteYear(parseInt(e.target.value))}
                 >
@@ -794,10 +794,10 @@ export default function AdminPage() {
                       setDeleteMonth(0);
                       setDeleteYear(0);
                     }}
-                    className="p-2 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center rounded-xl hover:bg-red-50"
+                    className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center rounded-lg shadow-sm border border-red-200 hover:border-red-500"
                     title="Clear Filters"
                   >
-                    <XCircle className="w-5 h-5" />
+                    Clear Filters
                   </button>
                 )}
               </div>
@@ -818,34 +818,34 @@ export default function AdminPage() {
 
                   return Object.keys(groupedExcels).map(user => (
                     <div key={user} className="border rounded-xl overflow-hidden shadow-sm">
-                      <div 
-                        className="px-5 py-4 bg-slate-50/80 cursor-pointer flex justify-between items-center hover:bg-slate-100 transition-colors"
+                      <div
+                        className="px-4 py-3 bg-slate-50/80 cursor-pointer flex justify-between items-center hover:bg-slate-100 transition-colors"
                         onClick={() => setExpandedUser(expandedUser === user ? null : user)}
                       >
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-blue-500" />
-                          <span className="font-bold text-lg">{user}</span>
+                        <div className="flex items-center gap-2.5">
+                          <Users className="w-4 h-4 text-blue-500" />
+                          <span className="font-semibold text-[15px]">{user}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-muted-foreground text-sm font-medium bg-white px-3 py-1 rounded-full border">{groupedExcels[user].length} Files Uploaded</span>
-                          <svg className={`w-5 h-5 text-slate-400 transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          <span className="text-muted-foreground text-xs font-medium bg-white px-2.5 py-1 rounded-full border">{groupedExcels[user].length} Files Uploaded</span>
+                          <svg className={`w-4 h-4 text-slate-400 transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </div>
                       </div>
-                      
+
                       {expandedUser === user && (
                         <div className="border-t">
                           <table className="w-full text-sm text-left">
-                            <thead className="bg-white text-muted-foreground border-b">
+                            <thead className="bg-slate-50/50 border-b border-slate-100">
                               <tr>
-                                <th className="px-5 py-3 font-medium">Uploaded Date</th>
-                                <th className="px-5 py-3 font-medium">Location</th>
-                                <th className="px-5 py-3 font-medium">Process</th>
-                                <th className="px-5 py-3 font-medium">Product Type</th>
-                                <th className="px-5 py-3 font-medium">Bucket</th>
-                                <th className="px-5 py-3 font-medium">File Name</th>
-                                <th className="px-5 py-3 font-medium">Status</th>
-                                <th className="px-5 py-3 font-medium">Rows (Processed / Total)</th>
-                                <th className="px-5 py-3 font-medium text-right">Actions</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Uploaded Date</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Process</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Product Type</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bucket</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">File Name</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rows (Processed / Total)</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y bg-white">
@@ -853,47 +853,47 @@ export default function AdminPage() {
                                 const fileName = job.file_path ? job.file_path.split(/[\/\\]/).pop().split('_').slice(1).join('_') || job.file_path : 'Unknown';
                                 return (
                                   <tr key={job.id} className="hover:bg-slate-50/50">
-                                    <td className="px-5 py-3 font-medium">
+                                    <td className="px-4 py-2.5 text-[11px] font-medium text-slate-700">
                                       {job.upload_at ? new Date(job.upload_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                      <span className="block text-xs text-muted-foreground font-normal">Sys: {new Date(job.created_at).toLocaleString()}</span>
+                                      <span className="block text-[9px] text-muted-foreground mt-0.5">Sys: {new Date(job.created_at).toLocaleString()}</span>
                                     </td>
-                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.location_name || '-'}</td>
-                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.client_name || '-'}</td>
-                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.product_type || '-'}</td>
-                                    <td className="px-5 py-3 text-slate-700 font-medium whitespace-nowrap">{job.buckets || '-'}</td>
-                                    <td className="px-5 py-3 text-slate-600 font-medium max-w-[200px] truncate" title={fileName}>{fileName}</td>
-                                    <td className="px-5 py-3 text-muted-foreground">
-                                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${job.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : job.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    <td className="px-4 py-2.5 text-[11px] text-slate-700 font-medium whitespace-nowrap">{job.location_name || '-'}</td>
+                                    <td className="px-4 py-2.5 text-[11px] text-slate-700 font-medium whitespace-nowrap">{job.client_name || '-'}</td>
+                                    <td className="px-4 py-2.5 text-[11px] text-slate-700 font-medium whitespace-nowrap">{job.product_type || '-'}</td>
+                                    <td className="px-4 py-2.5 text-[11px] text-slate-700 font-medium whitespace-nowrap">{job.buckets || '-'}</td>
+                                    <td className="px-4 py-2.5 text-[11px] text-slate-600 font-medium max-w-[180px] truncate" title={fileName}>{fileName}</td>
+                                    <td className="px-4 py-2.5 text-muted-foreground">
+                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${job.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : job.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
                                         {job.status}
                                       </span>
                                     </td>
-                                    <td className="px-5 py-3 text-muted-foreground font-medium">{job.processed_rows} / {job.total_rows}</td>
-                                    <td className="px-5 py-3 text-right">
-                                      <div className="flex items-center justify-end gap-2">
+                                    <td className="px-4 py-2.5 text-[11px] text-muted-foreground font-medium">{job.processed_rows} / {job.total_rows}</td>
+                                    <td className="px-4 py-2.5 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
 
                                         {job.status !== 'DELETED_BY_ADMIN' ? (
                                           <>
                                             {job.file_path && (
-                                              <a 
+                                              <a
                                                 href={`/${job.file_path.replace(/\\/g, '/')}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="text-xs bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-3 py-2 rounded-lg border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
+                                                className="text-[10px] bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-2 py-1 rounded border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
                                                 download
                                               >
                                                 Download
                                               </a>
                                             )}
-                                            <button 
+                                            <button
                                               onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
-                                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
+                                              className="text-[10px] bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-2 py-1 rounded border border-red-200 hover:border-red-500 transition-all shadow-sm"
                                             >
                                               Delete File
                                             </button>
                                           </>
                                         ) : (
-                                          <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">Deleted</span>
+                                          <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded">Deleted</span>
                                         )}
                                       </div>
                                     </td>
@@ -913,8 +913,8 @@ export default function AdminPage() {
         );
       case 'users':
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -924,11 +924,11 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Manage system access and roles.</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAddUserModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
               >
-                <UserPlus size={16} />
+                <UserPlus size={14} />
                 Add User
               </button>
             </div>
@@ -937,14 +937,14 @@ export default function AdminPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-slate-50/50 border-b border-slate-100">
                     <tr>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Emp ID</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Name</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Username</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Email</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Role</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Location</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Emp ID</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Username</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -955,29 +955,29 @@ export default function AdminPage() {
                     ) : (
                       users.map((u: any) => (
                         <tr key={u.id} className="hover:bg-slate-50/80 transition-colors group">
-                          <td className="px-6 py-4 text-slate-500 font-medium">{u.employee_id || '-'}</td>
-                          <td className="px-6 py-4 font-bold text-slate-800">{u.name || '-'}</td>
-                          <td className="px-6 py-4 font-medium text-slate-700">{u.username}</td>
-                          <td className="px-6 py-4 text-slate-500">{u.email || '-'}</td>
-                          <td className="px-6 py-4 capitalize">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                          <td className="px-4 py-2.5 text-[11px] text-slate-500 font-medium">{u.employee_id || '-'}</td>
+                          <td className="px-4 py-2.5 text-xs font-semibold text-slate-800">{u.name || '-'}</td>
+                          <td className="px-4 py-2.5 text-xs font-medium text-slate-700">{u.username}</td>
+                          <td className="px-4 py-2.5 text-xs text-slate-500">{u.email || '-'}</td>
+                          <td className="px-4 py-2.5 capitalize">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
                               {u.role}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-medium text-slate-600">{u.location || '-'}</td>
-                          <td className="px-6 py-4"><span className="text-emerald-600 font-bold text-sm bg-emerald-50 px-2.5 py-1 rounded-lg">Active</span></td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
+                          <td className="px-4 py-2.5 text-xs font-medium text-slate-600">{u.location || '-'}</td>
+                          <td className="px-4 py-2.5"><span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded">Active</span></td>
+                          <td className="px-4 py-2.5 text-right">
+                            <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
                                 onClick={() => handleEditPassword(u.id, u.username)}
-                                className="text-xs bg-slate-50 hover:bg-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition-colors shadow-sm"
+                                className="text-[10px] bg-slate-50 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded border border-slate-200 transition-colors shadow-sm"
                               >
                                 Edit Pass
                               </button>
                               {u.role !== 'admin' && (
-                                <button 
+                                <button
                                   onClick={() => handleDeleteUser(u.id, u.username)}
-                                  className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-colors shadow-sm"
+                                  className="text-[10px] bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-2 py-1 rounded border border-red-200 transition-colors shadow-sm"
                                 >
                                   Delete
                                 </button>
@@ -1003,47 +1003,47 @@ export default function AdminPage() {
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">Employee ID</label>
-                      <input 
-                        type="text" 
-                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500" 
-                        value={newEmployeeId} 
-                        onChange={e => setNewEmployeeId(e.target.value)} 
+                      <input
+                        type="text"
+                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                        value={newEmployeeId}
+                        onChange={e => setNewEmployeeId(e.target.value)}
                         placeholder="Enter Employee ID"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Username / Name</label>
-                      <input 
-                        type="text" 
-                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500" 
-                        value={newUsername} 
-                        onChange={e => setNewUsername(e.target.value)} 
+                      <input
+                        type="text"
+                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                        value={newUsername}
+                        onChange={e => setNewUsername(e.target.value)}
                         placeholder="Enter username"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Email</label>
-                      <input 
-                        type="email" 
-                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500" 
-                        value={newEmail} 
-                        onChange={e => setNewEmail(e.target.value)} 
+                      <input
+                        type="email"
+                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
                         placeholder="Enter email address"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Password</label>
-                      <input 
-                        type="text" 
-                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500" 
-                        value={newPassword} 
-                        onChange={e => setNewPassword(e.target.value)} 
+                      <input
+                        type="text"
+                        className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
                         placeholder="Enter password"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Role</label>
-                      <select 
+                      <select
                         className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 bg-white"
                         value={newRole}
                         onChange={e => setNewRole(e.target.value)}
@@ -1055,7 +1055,7 @@ export default function AdminPage() {
                     {newRole === 'user' && (
                       <div>
                         <label className="block text-sm font-medium mb-1">Location</label>
-                        <select 
+                        <select
                           className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 bg-white"
                           value={newLocation}
                           onChange={e => setNewLocation(e.target.value)}
@@ -1069,14 +1069,14 @@ export default function AdminPage() {
                     )}
                   </div>
                   <div className="px-6 py-4 bg-slate-50 border-t flex justify-end gap-3">
-                    <button 
-                      onClick={() => setShowAddUserModal(false)} 
+                    <button
+                      onClick={() => setShowAddUserModal(false)}
                       className="px-4 py-2 border rounded-md hover:bg-slate-100 text-sm font-medium"
                     >
                       Cancel
                     </button>
-                    <button 
-                      onClick={handleAddUser} 
+                    <button
+                      onClick={handleAddUser}
                       disabled={isSubmitting}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                     >
@@ -1090,8 +1090,8 @@ export default function AdminPage() {
         );
       case 'keka':
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -1101,32 +1101,26 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-sm text-slate-500 font-medium ml-13 mt-1">Upload and manage Master Employee Data.</p>
               </div>
-            </div>
 
-            {/* Keka Filters */}
-            <div className="mb-6 flex items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 overflow-x-auto">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Location:</span>
-                  <select 
-                    className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[180px]"
-                    value={kekaLocation}
-                    onChange={e => {
-                      setKekaLocation(e.target.value);
-                      setKekaClientName('');
-                      setKekaProductType('');
-                    }}
-                  >
-                    <option value="">-- Select Location --</option>
-                    {locationOptions.map(l => (
-                      <option key={l.id} value={l.id}>{l.name}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Keka Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[140px] truncate"
+                  value={kekaLocation}
+                  onChange={e => {
+                    setKekaLocation(e.target.value);
+                    setKekaClientName('');
+                    setKekaProductType('');
+                  }}
+                >
+                  <option value="">-- Select Location --</option>
+                  {locationOptions.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
 
-              <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Client:</span>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[200px]"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[140px] truncate"
                   value={kekaClientName}
                   onChange={e => {
                     const val = e.target.value;
@@ -1148,12 +1142,9 @@ export default function AdminPage() {
                     <option key={name as string} value={name as string}>{name as string}</option>
                   ))}
                 </select>
-              </div>
 
-              <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Product:</span>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer min-w-[200px]"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[140px] truncate"
                   value={kekaProductType}
                   onChange={e => setKekaProductType(e.target.value)}
                   disabled={!kekaClientName}
@@ -1167,25 +1158,39 @@ export default function AdminPage() {
                     <option key={p.id} value={p.product_type}>{p.product_type}</option>
                   ))}
                 </select>
+
+                {(kekaLocation || kekaClientName || kekaProductType) && (
+                  <button
+                    onClick={() => {
+                      setKekaLocation('');
+                      setKekaClientName('');
+                      setKekaProductType('');
+                    }}
+                    className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center rounded-lg shadow-sm border border-red-200 hover:border-red-500"
+                    title="Clear Filters"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-5">
               {/* Left Side: Validation Status */}
-              <div className="w-full lg:w-[320px] flex-shrink-0">
-                <Card className="h-full border-slate-200/80 shadow-sm">
-                  <CardHeader className="border-b py-3 px-5">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
+              <div className="w-full lg:w-[260px] flex-shrink-0">
+                <Card className="h-full border-slate-200/80 shadow-sm rounded-xl">
+                  <CardHeader className="border-b py-2 px-4 bg-slate-50/50">
+                    <CardTitle className="text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                       <span className="font-bold">Column Validation</span>
                     </CardTitle>
-                    <CardDescription className="text-xs">
-                      {(kekaLocation && kekaClientName && kekaProductType) 
-                        ? `${kekaColumns.length} required headers checked.` 
+                    <CardDescription className="text-[10px] mt-0.5 font-medium">
+                      {(kekaLocation && kekaClientName && kekaProductType)
+                        ? `${kekaColumns.length} required headers checked.`
                         : 'Select a client to view required columns.'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-4">
+                  <CardContent className="p-3">
                     {isValidatingKeka ? (
                       <div className="flex flex-col items-center py-12 text-slate-400 gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-primary/30" />
@@ -1193,52 +1198,52 @@ export default function AdminPage() {
                       </div>
                     ) : !kekaValidationResult ? (
                       <div className="space-y-3">
-                        <div className="p-3 rounded-xl border flex items-center gap-3 bg-slate-50 border-slate-100">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center shadow-sm bg-slate-200 text-slate-500">
-                            <FileSpreadsheet className="w-5 h-5" />
+                        <div className="p-2.5 rounded-lg border flex items-center gap-2.5 bg-slate-50 border-slate-100 shadow-sm">
+                          <div className="w-7 h-7 rounded flex items-center justify-center bg-slate-200 text-slate-500">
+                            <FileSpreadsheet className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-700">Required Columns</p>
-                            <p className="text-[10px] text-slate-500 font-bold">
+                            <p className="text-xs font-bold text-slate-700 leading-tight">Required Columns</p>
+                            <p className="text-[9px] text-slate-500 font-bold mt-0.5">
                               {(kekaLocation && kekaClientName && kekaProductType) ? 'Must match exactly' : 'Select a client first'}
                             </p>
                           </div>
                         </div>
                         {(kekaLocation && kekaClientName && kekaProductType) && (
-                          <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
+                          <div className="space-y-1 max-h-[250px] overflow-y-auto pr-1 no-scrollbar">
                             {kekaColumns.map(req => (
-                              <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
-                                <span className="text-[11px] font-semibold text-slate-700">{req.display}</span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase">Required</span>
+                              <div key={req.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-slate-50/50 border border-slate-100/60">
+                                <span className="text-[10px] font-semibold text-slate-700">{req.display}</span>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">Required</span>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        <div className={`p-3 rounded-xl border flex items-center gap-3 ${kekaValidationResult.isValid ? 'bg-emerald-50 border-emerald-100' : 'bg-destructive/5 border-destructive/10'}`}>
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-sm ${kekaValidationResult.isValid ? 'bg-emerald-500 text-white' : 'bg-destructive text-white'}`}>
-                            {kekaValidationResult.isValid ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                      <div className="space-y-2">
+                        <div className={`p-2.5 rounded-lg border flex items-center gap-2.5 shadow-sm ${kekaValidationResult.isValid ? 'bg-emerald-50 border-emerald-100' : 'bg-destructive/5 border-destructive/10'}`}>
+                          <div className={`w-7 h-7 rounded flex items-center justify-center ${kekaValidationResult.isValid ? 'bg-emerald-500 text-white' : 'bg-destructive text-white'}`}>
+                            {kekaValidationResult.isValid ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                           </div>
                           <div>
-                            <p className={`text-sm font-bold ${kekaValidationResult.isValid ? 'text-emerald-700' : 'text-destructive'}`}>
+                            <p className={`text-xs font-bold leading-tight ${kekaValidationResult.isValid ? 'text-emerald-700' : 'text-destructive'}`}>
                               {kekaValidationResult.isValid ? 'Ready' : 'Errors Found'}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-bold">{kekaValidationResult.foundHeaders.length}/{kekaColumns.length} matched</p>
+                            <p className="text-[9px] text-slate-500 font-bold mt-0.5">{kekaValidationResult.foundHeaders.length}/{kekaColumns.length} matched</p>
                           </div>
                         </div>
 
-                        <div className="space-y-1 max-h-[350px] overflow-y-auto pr-1 no-scrollbar">
+                        <div className="space-y-1 max-h-[250px] overflow-y-auto pr-1 no-scrollbar">
                           {kekaColumns.map(req => {
                             const found = kekaValidationResult.foundHeaders.includes(req.display);
                             return (
-                              <div key={req.key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50/50 border border-slate-100/60">
-                                <span className={`text-[11px] font-semibold ${found ? 'text-slate-700' : 'text-slate-400'}`}>{req.display}</span>
+                              <div key={req.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-slate-50/50 border border-slate-100/60">
+                                <span className={`text-[10px] font-semibold ${found ? 'text-slate-700' : 'text-slate-400'}`}>{req.display}</span>
                                 {found ? (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                                 ) : (
-                                  <Badge variant="destructive" className="text-[8px] uppercase tracking-tighter px-1.5 py-0">Missing</Badge>
+                                  <Badge variant="destructive" className="text-[7px] uppercase tracking-tighter px-1 py-0">Missing</Badge>
                                 )}
                               </div>
                             );
@@ -1251,32 +1256,32 @@ export default function AdminPage() {
               </div>
 
               {/* Right Side: Upload Area */}
-              <div className="flex-1 space-y-4">
-                <Card className="border border-slate-200/80 shadow-sm overflow-hidden">
-                  <CardContent className="p-5 space-y-4">
-                    <label className={`group relative flex flex-col items-center justify-center gap-5 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 min-h-[200px] ${kekaFile ? 'border-primary/50 bg-gradient-to-b from-primary/5 to-transparent' : 'border-slate-300 bg-slate-50/50 hover:border-primary/60 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(79,125,255,0.08)]'}`}>
+              <div className="flex-1">
+                <Card className="border border-slate-200/80 shadow-sm rounded-xl overflow-hidden h-full">
+                  <CardContent className="p-4 flex flex-col h-full gap-3">
+                    <label className={`group relative flex-1 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 min-h-[140px] ${kekaFile ? 'border-primary/50 bg-gradient-to-b from-primary/5 to-transparent' : 'border-slate-300 bg-slate-50/50 hover:border-primary/60 hover:bg-slate-100 hover:shadow-[0_0_20px_rgba(79,125,255,0.08)]'}`}>
                       <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={handleKekaFileChange} />
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${kekaFile ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-xl shadow-primary/30 scale-110' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-110 group-hover:bg-primary/20'}`}>
-                        {kekaFile ? <FileSpreadsheet className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${kekaFile ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-xl shadow-primary/30 scale-105' : 'bg-primary/10 text-primary shadow-sm group-hover:scale-105 group-hover:bg-primary/20'}`}>
+                        {kekaFile ? <FileSpreadsheet className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
                       </div>
                       {kekaFile ? (
                         <div className="text-center px-4">
-                          <p className="text-base font-bold text-slate-900">{kekaFile.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1 font-medium">{(kekaFile.size / 1024 / 1024).toFixed(2)} MB — {kekaValidationResult?.rowCount || 0} rows found</p>
-                          <button onClick={(e) => { e.preventDefault(); setKekaFile(null); setKekaValidationResult(null); setKekaValidatedData(null); setKekaMessage(""); }} className="mt-3 text-destructive hover:text-destructive hover:bg-destructive/10 font-bold text-xs flex items-center justify-center gap-1 mx-auto py-1 px-2 rounded-md">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear File
+                          <p className="text-sm font-bold text-slate-900 leading-tight">{kekaFile.name}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">{(kekaFile.size / 1024 / 1024).toFixed(2)} MB — {kekaValidationResult?.rowCount || 0} rows found</p>
+                          <button onClick={(e) => { e.preventDefault(); setKekaFile(null); setKekaValidationResult(null); setKekaValidatedData(null); setKekaMessage(""); }} className="mt-2 text-destructive hover:text-destructive hover:bg-destructive/10 font-bold text-[10px] flex items-center justify-center gap-1 mx-auto py-1 px-2 rounded-md transition-colors">
+                            <Trash2 className="w-3 h-3" /> Clear File
                           </button>
                         </div>
                       ) : (
                         <div className="text-center px-4">
-                          <p className="text-sm font-bold text-slate-700">Click to browse or drag & drop</p>
-                          <p className="text-xs text-slate-400 mt-1 font-medium">XLSX, XLS, or CSV supported</p>
+                          <p className="text-xs font-bold text-slate-700">Click to browse or drag & drop</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">XLSX, XLS, or CSV supported</p>
                         </div>
                       )}
                     </label>
 
                     {kekaValidatedData && (
-                      <div className="pt-2 pb-4 space-y-4 animate-in slide-in-from-bottom-2">
+                      <div className="animate-in slide-in-from-bottom-2">
                         {kekaValidationView === 'summary' && (
                           <div className="grid grid-cols-2 gap-4">
                             <button onClick={() => setKekaValidationView('valid')} className="flex flex-col items-center justify-center p-6 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-2xl transition-all shadow-sm group">
@@ -1296,18 +1301,18 @@ export default function AdminPage() {
                       </div>
                     )}
 
-                    <div className="flex gap-3">
-                      <button onClick={validateKekaFile} disabled={!kekaFile || isValidatingKeka || uploadingKeka} className="flex-1 py-4 rounded-xl text-sm font-bold shadow-sm transition-all bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-200 disabled:opacity-50">
+                    <div className="flex gap-2">
+                      <button onClick={validateKekaFile} disabled={!kekaFile || isValidatingKeka || uploadingKeka} className="flex-1 py-2.5 rounded-lg text-xs font-bold shadow-sm transition-all bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 disabled:opacity-50">
                         {isValidatingKeka ? 'Checking...' : 'Validate Data'}
                       </button>
-                      <button onClick={handleKekaUpload} disabled={!kekaFile || uploadingKeka || !kekaValidationResult?.isValid || !kekaLocation || !kekaClientName || !kekaProductType} className={`flex-[2] py-4 rounded-xl text-sm font-bold shadow-md transition-all ${(kekaValidationResult?.isValid && kekaLocation && kekaClientName && kekaProductType) ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-500 disabled:opacity-50'}`}>
+                      <button onClick={handleKekaUpload} disabled={!kekaFile || uploadingKeka || !kekaValidationResult?.isValid || !kekaLocation || !kekaClientName || !kekaProductType} className={`flex-[2] py-2.5 rounded-lg text-xs font-bold shadow-sm transition-all ${(kekaValidationResult?.isValid && kekaLocation && kekaClientName && kekaProductType) ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-500 disabled:opacity-50'}`}>
                         {uploadingKeka ? 'Processing...' : 'Upload & Process'}
                       </button>
                     </div>
 
                     {kekaMessage && (
-                      <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-semibold border ${kekaMessage.includes('Error') ? 'bg-destructive/5 text-destructive border-destructive/20' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                        {kekaMessage.includes('Error') ? <XCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-semibold border ${kekaMessage.includes('Error') ? 'bg-destructive/5 text-destructive border-destructive/20' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                        {kekaMessage.includes('Error') ? <XCircle className="w-3.5 h-3.5 shrink-0" /> : <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
                         {kekaMessage}
                       </div>
                     )}
@@ -1316,91 +1321,116 @@ export default function AdminPage() {
 
                 {/* Live Progress Card */}
                 {activeKekaJob && (
-                  <Card className="border border-primary/20 shadow-md overflow-hidden animate-in zoom-in-95 duration-300 mt-4">
-                    <CardHeader className="bg-primary/5 py-3 px-5">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                           <Activity className="w-4 h-4 text-primary animate-pulse" />
-                           <span className="font-bold">Live Progress</span>
-                         </div>
-                         <Badge variant="outline" className="bg-white font-bold text-[10px]">
-                           {activeKekaJob.id.slice(0, 8)}
-                         </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex justify-between items-end">
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {activeKekaJob.status === 'COMPLETED' ? 'Done' : 'Processing...'}
-                          </p>
-                          <p className="text-2xl font-black text-slate-900">
-                            {activeKekaJob.processed_rows.toLocaleString()} <span className="text-sm font-bold text-slate-400">/ {activeKekaJob.total_rows.toLocaleString()}</span>
+                  <Card className={`shadow-sm overflow-hidden animate-in zoom-in-95 duration-300 mt-3 border rounded-xl ${activeKekaJob.status === 'COMPLETED' ? 'border-emerald-200/60 bg-emerald-50/30' : activeKekaJob.status === 'FAILED' ? 'border-destructive/20 bg-destructive/5' : 'border-blue-200/60 bg-blue-50/30'}`}>
+                    <CardContent className="p-4 space-y-3 relative overflow-hidden">
+                      {/* Optional subtle background glow during processing */}
+                      {activeKekaJob.status === 'PROCESSING' && (
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-blue-600 to-blue-400 bg-[length:200%_100%] animate-pulse" />
+                      )}
+
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            {activeKekaJob.status === 'PROCESSING' ? (
+                              <Activity className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                            ) : activeKekaJob.status === 'COMPLETED' ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5 text-destructive" />
+                            )}
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                              {activeKekaJob.status === 'COMPLETED' ? 'Upload Complete' : activeKekaJob.status === 'FAILED' ? 'Upload Failed' : 'Live Syncing...'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] font-medium text-slate-500 flex items-center gap-1.5">
+                            Job ID: <span className="font-mono bg-white/60 px-1 py-0.5 rounded border border-slate-200/50">{activeKekaJob.id.slice(0, 8)}</span>
                           </p>
                         </div>
-                        <p className="text-xl font-black text-primary">{kekaProgressPercent}%</p>
+                        <div className="text-right flex flex-col items-end">
+                          <p className={`text-2xl font-black leading-none tracking-tight ${activeKekaJob.status === 'COMPLETED' ? 'text-emerald-600' : activeKekaJob.status === 'FAILED' ? 'text-destructive' : 'text-blue-600'}`}>
+                            {kekaProgressPercent}%
+                          </p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                            Progress
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border p-0.5">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-700 ease-out ${activeKekaJob.status === 'FAILED' ? 'bg-destructive' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}
+                      {/* Progress Details */}
+                      <div className="flex items-end justify-between mt-2 mb-1">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-black text-slate-800">{activeKekaJob.processed_rows.toLocaleString()}</span>
+                          <span className="text-[10px] font-bold text-slate-400">/ {activeKekaJob.total_rows.toLocaleString()} rows</span>
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${activeKekaJob.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : activeKekaJob.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {activeKekaJob.status}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden border border-slate-100 shadow-inner">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out relative ${activeKekaJob.status === 'FAILED' ? 'bg-destructive' : activeKekaJob.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-blue-600'}`}
                           style={{ width: `${kekaProgressPercent}%` }}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <div className="flex items-center gap-1.5">
-                          {activeKekaJob.status === 'PROCESSING' && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-                          Status: <span className={activeKekaJob.status === 'COMPLETED' ? 'text-emerald-500' : activeKekaJob.status === 'FAILED' ? 'text-destructive' : 'text-primary'}>{activeKekaJob.status}</span>
+                        >
+                          {activeKekaJob.status === 'PROCESSING' && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+                          )}
                         </div>
                       </div>
 
                       {/* Show Error / Warning Details */}
                       {activeKekaJob.error_log && (
-                        <div className="mt-3 p-3 rounded-lg text-xs font-semibold border bg-slate-50 border-slate-200">
-                          {(() => {
-                            let parsed: any = activeKekaJob.error_log;
-                            if (typeof parsed === 'string') {
-                              try { parsed = JSON.parse(parsed); } catch {}
-                            }
-                            
-                            if (typeof parsed === 'string') {
-                              return <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{parsed}</span></div>;
-                            } else if (parsed && typeof parsed === 'object') {
-                              return (
-                                <div className="flex flex-col gap-1.5 text-slate-600">
-                                  {parsed.failed_count > 0 && (
-                                    <div className="text-destructive flex items-center gap-2">
-                                      <XCircle className="w-4 h-4" />
-                                      <span>Failed to insert {parsed.failed_count} records.</span>
-                                    </div>
-                                  )}
-                                  {parsed.duplicate_count > 0 && (
-                                    <div className="text-orange-600 flex items-center gap-2">
-                                      <AlertCircle className="w-4 h-4" />
-                                      <span>Ignored {parsed.duplicate_count} duplicate records (Employee already exists).</span>
-                                    </div>
-                                  )}
-                                  {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> Error: {parsed.last_error}</div>}
-                                  {parsed.details && Array.isArray(parsed.details) && parsed.details.length > 0 && (
-                                    <div className="mt-2 max-h-32 overflow-y-auto rounded bg-red-50 p-2 border border-red-100 no-scrollbar">
-                                      <p className="text-[10px] font-bold text-red-800 mb-1 uppercase tracking-widest">Error Details (Upload Cancelled):</p>
-                                      <ul className="list-disc pl-4 space-y-1">
-                                        {parsed.details.map((err: string, i: number) => (
-                                          <li key={i} className="text-[11px] font-medium text-red-700 leading-tight">{err}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {(!parsed.failed_count && !parsed.last_error && !parsed.details) && (
-                                    <div className="text-emerald-600 flex items-start gap-2"><CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> <span>{parsed.status || 'Success'}</span></div>
-                                  )}
-                                </div>
-                              );
-                            } else {
-                              return <div className="text-destructive flex items-start gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{String(parsed)}</span></div>;
-                            }
-                          })()}
+                        <div className="mt-3 bg-white border border-slate-200/60 rounded-xl overflow-hidden shadow-sm">
+                          <div className="bg-slate-50 border-b border-slate-100 px-3 py-1.5 flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Execution Log</span>
+                          </div>
+                          <div className="p-3 text-[11px] font-medium font-mono text-slate-700 leading-relaxed max-h-[160px] overflow-y-auto no-scrollbar">
+                            {(() => {
+                              let parsed: any = activeKekaJob.error_log;
+                              if (typeof parsed === 'string') {
+                                try { parsed = JSON.parse(parsed); } catch { }
+                              }
+
+                              if (typeof parsed === 'string') {
+                                return <div className="text-destructive flex items-start gap-2"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span>{parsed}</span></div>;
+                              } else if (parsed && typeof parsed === 'object') {
+                                return (
+                                  <div className="flex flex-col gap-2">
+                                    {parsed.failed_count > 0 && (
+                                      <div className="text-destructive flex items-start gap-2 bg-red-50/50 p-1.5 rounded">
+                                        <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                        <span>Failed to insert <strong>{parsed.failed_count}</strong> records.</span>
+                                      </div>
+                                    )}
+                                    {parsed.duplicate_count > 0 && (
+                                      <div className="text-orange-600 flex items-start gap-2 bg-orange-50/50 p-1.5 rounded">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                        <span>Ignored <strong>{parsed.duplicate_count}</strong> duplicate records (already exist).</span>
+                                      </div>
+                                    )}
+                                    {parsed.last_error && <div className="text-destructive mt-1 flex items-start gap-2"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span>Error: {parsed.last_error}</span></div>}
+                                    {parsed.details && Array.isArray(parsed.details) && parsed.details.length > 0 && (
+                                      <div className="mt-1 bg-red-50 p-2 rounded-lg border border-red-100">
+                                        <p className="text-[9px] font-bold text-red-800 mb-1.5 uppercase tracking-widest">Error Trace:</p>
+                                        <ul className="list-disc pl-4 space-y-1">
+                                          {parsed.details.map((err: string, i: number) => (
+                                            <li key={i} className="text-[10px] font-medium text-red-700">{err}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {(!parsed.failed_count && !parsed.last_error && !parsed.details) && (
+                                      <div className="text-emerald-600 flex items-start gap-2 bg-emerald-50/50 p-1.5 rounded"><CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span>{parsed.status || 'Successfully processed records.'}</span></div>
+                                    )}
+                                  </div>
+                                );
+                              } else {
+                                return <div className="text-destructive flex items-start gap-2"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> <span>{String(parsed)}</span></div>;
+                              }
+                            })()}
+                          </div>
                         </div>
                       )}
                     </CardContent>
@@ -1412,8 +1442,8 @@ export default function AdminPage() {
         );
       case 'keka-excels':
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -1423,19 +1453,20 @@ export default function AdminPage() {
                 </h2>
                 <p className="text-sm text-slate-500 font-medium ml-13 mt-1">View who uploaded which Keka Master data and manage records.</p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[120px]"
                   value={deleteMonth}
                   onChange={(e) => setDeleteMonth(parseInt(e.target.value))}
                 >
                   <option value={0}>All Months</option>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
-                  ))}
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const monthName = new Date(2000, i).toLocaleString('default', { month: 'short' });
+                    return <option key={i + 1} value={i + 1}>{monthName}</option>;
+                  })}
                 </select>
-                <select 
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+                <select
+                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer w-[90px]"
                   value={deleteYear}
                   onChange={(e) => setDeleteYear(parseInt(e.target.value))}
                 >
@@ -1449,10 +1480,10 @@ export default function AdminPage() {
                       setDeleteMonth(0);
                       setDeleteYear(0);
                     }}
-                    className="p-2 text-slate-400 hover:text-red-500 transition-colors flex items-center justify-center rounded-xl hover:bg-red-50"
+                    className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center rounded-lg shadow-sm border border-red-200 hover:border-red-500"
                     title="Clear Filters"
                   >
-                    <XCircle className="w-5 h-5" />
+                    Clear Filters
                   </button>
                 )}
               </div>
@@ -1473,74 +1504,73 @@ export default function AdminPage() {
 
                   return Object.keys(groupedExcels).map(user => (
                     <div key={user} className="border rounded-xl overflow-hidden shadow-sm">
-                      <div 
-                        className="px-5 py-4 bg-card cursor-pointer flex justify-between items-center hover:bg-muted/50 transition-colors"
+                      <div
+                        className="px-4 py-3 bg-card cursor-pointer flex justify-between items-center hover:bg-muted/50 transition-colors"
                         onClick={() => setExpandedUser(expandedUser === user ? null : user)}
                       >
-                        <div className="flex items-center gap-3">
-                          <Users className="w-5 h-5 text-primary" />
-                          <span className="font-bold text-lg text-foreground">{user}</span>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary" />
+                          <span className="font-bold text-[15px] text-foreground">{user}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-primary text-sm font-medium bg-background px-3 py-1 rounded-full border border-border">{groupedExcels[user].length} Files Uploaded</span>
-                          <svg className={`w-5 h-5 text-muted-foreground transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary text-[11px] font-bold bg-background px-2.5 py-0.5 rounded-md border border-border shadow-sm">{groupedExcels[user].length} Files Uploaded</span>
+                          <svg className={`w-4 h-4 text-muted-foreground transition-transform ${expandedUser === user ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </div>
                       </div>
-                      
+
                       {expandedUser === user && (
                         <div className="border-t border-border">
-                          <table className="w-full text-sm text-left">
-                            <thead className="bg-white text-muted-foreground border-b">
+                          <table className="w-full text-left">
+                            <thead className="bg-slate-50 text-slate-500 border-b">
                               <tr>
-                                <th className="px-5 py-3 font-medium">Uploaded Date</th>
-                                <th className="px-5 py-3 font-medium">File Name</th>
-                                <th className="px-5 py-3 font-medium">Status</th>
-                                <th className="px-5 py-3 font-medium">Rows (Processed / Total)</th>
-                                <th className="px-5 py-3 font-medium text-right">Actions</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Uploaded Date</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">File Name</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Status</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Rows (Processed/Total)</th>
+                                <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y bg-white">
                               {groupedExcels[user].map((job: any) => {
                                 const fileName = job.file_path ? job.file_path.split(/[\/\\]/).pop().split('_').slice(1).join('_') || job.file_path : 'Unknown';
                                 return (
-                                  <tr key={job.id} className="hover:bg-slate-50/50">
-                                    <td className="px-5 py-3 font-medium">
+                                  <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-4 py-2 text-[11px] font-semibold text-slate-700">
                                       {job.upload_at ? new Date(job.upload_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                      <span className="block text-xs text-muted-foreground font-normal">Sys: {new Date(job.created_at).toLocaleString()}</span>
+                                      <span className="block text-[9px] text-slate-400 font-medium">Sys: {new Date(job.created_at).toLocaleString()}</span>
                                     </td>
-                                    <td className="px-5 py-3 text-slate-600 font-medium max-w-[200px] truncate" title={fileName}>{fileName}</td>
-                                    <td className="px-5 py-3 text-muted-foreground">
-                                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${job.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : job.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    <td className="px-4 py-2 text-[11px] text-slate-600 font-semibold max-w-[180px] truncate" title={fileName}>{fileName}</td>
+                                    <td className="px-4 py-2 text-muted-foreground">
+                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider shadow-sm ${job.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : job.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
                                         {job.status}
                                       </span>
                                     </td>
-                                    <td className="px-5 py-3 text-muted-foreground font-medium">{job.processed_rows} / {job.total_rows}</td>
-                                    <td className="px-5 py-3 text-right">
-                                      <div className="flex items-center justify-end gap-2">
-
+                                    <td className="px-4 py-2 text-[11px] text-slate-600 font-semibold">{job.processed_rows} / {job.total_rows}</td>
+                                    <td className="px-4 py-2 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
                                         {job.status !== 'DELETED_BY_ADMIN' ? (
                                           <>
                                             {job.file_path && (
-                                              <a 
+                                              <a
                                                 href={`/${job.file_path.replace(/\\/g, '/')}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="text-xs bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-3 py-2 rounded-lg border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
+                                                className="text-[10px] bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-600 font-bold px-2.5 py-1.5 rounded-md border border-blue-200 hover:border-blue-500 transition-all shadow-sm flex items-center justify-center gap-1"
                                                 download
                                               >
                                                 Download
                                               </a>
                                             )}
-                                            <button 
+                                            <button
                                               onClick={(e) => { e.stopPropagation(); handleDeleteExcel(job.id); }}
-                                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-3 py-2 rounded-lg border border-red-200 hover:border-red-500 transition-all shadow-sm"
+                                              className="text-[10px] bg-red-50 hover:bg-red-500 hover:text-white text-red-600 font-bold px-2.5 py-1.5 rounded-md border border-red-200 hover:border-red-500 transition-all shadow-sm"
                                             >
                                               Delete File
                                             </button>
                                           </>
                                         ) : (
-                                          <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded">Deleted</span>
+                                          <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded shadow-sm border border-orange-100">Deleted</span>
                                         )}
                                       </div>
                                     </td>
@@ -1569,8 +1599,8 @@ export default function AdminPage() {
 
       case 'special':
         return (
-          <div className="w-full h-full flex flex-col p-8 overflow-y-auto no-scrollbar bg-slate-50/50 relative">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+          <div className="w-full h-full flex flex-col p-4 md:p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl border border-slate-200/60 shadow-sm">
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
@@ -1605,83 +1635,83 @@ export default function AdminPage() {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-                <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 w-full lg:max-w-md">
-                  <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-widest">Dynamic Grid Rules</h3>
-                    <button 
-                        disabled={isSavingGrid}
-                        onClick={handleSaveGrid}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
-                    >
-                        {isSavingGrid ? 'Saving...' : 'Save Grid'}
-                    </button>
-                  </div>
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50/50 border-b border-slate-100">
-                      <tr>
-                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Target Collection (₹)</th>
-                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Incentive (%)</th>
-                        <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {specialGridLoading ? (
-                            <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
-                        ) : (
-                            specialGrid.map((row, idx) => (
-                                <tr key={idx} className="hover:bg-slate-50/50">
-                                    <td className="px-5 py-3">
-                                        <input 
-                                            type="number" 
-                                            value={row.target_collection} 
-                                            onChange={(e) => {
-                                                const newGrid = [...specialGrid];
-                                                newGrid[idx].target_collection = e.target.value;
-                                                setSpecialGrid(newGrid);
-                                            }}
-                                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
-                                        />
-                                    </td>
-                                    <td className="px-5 py-3">
-                                        <input 
-                                            type="number" 
-                                            step="0.01"
-                                            value={row.incentive_percentage} 
-                                            onChange={(e) => {
-                                                const newGrid = [...specialGrid];
-                                                newGrid[idx].incentive_percentage = e.target.value;
-                                                setSpecialGrid(newGrid);
-                                            }}
-                                            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
-                                        />
-                                    </td>
-                                    <td className="px-5 py-3 text-right">
-                                        <button 
-                                            onClick={() => {
-                                                const newGrid = specialGrid.filter((_, i) => i !== idx);
-                                                setSpecialGrid(newGrid);
-                                            }}
-                                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors"
-                                        >
-                                            Remove
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                        <tr>
-                            <td colSpan={3} className="px-5 py-4 bg-slate-50/30">
-                                <button 
-                                    onClick={() => setSpecialGrid([...specialGrid, { target_collection: '', incentive_percentage: '' }])}
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-black w-full text-left uppercase tracking-widest flex items-center gap-2"
-                                >
-                                    <span className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">+</span> Add New Rule
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                  </table>
+              <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 w-full lg:max-w-md">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-widest">Dynamic Grid Rules</h3>
+                  <button
+                    disabled={isSavingGrid}
+                    onClick={handleSaveGrid}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+                  >
+                    {isSavingGrid ? 'Saving...' : 'Save Grid'}
+                  </button>
                 </div>
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Target Collection (₹)</th>
+                      <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Incentive (%)</th>
+                      <th className="px-5 py-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {specialGridLoading ? (
+                      <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">Loading Grid...</td></tr>
+                    ) : (
+                      specialGrid.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="px-5 py-3">
+                            <input
+                              type="number"
+                              value={row.target_collection}
+                              onChange={(e) => {
+                                const newGrid = [...specialGrid];
+                                newGrid[idx].target_collection = e.target.value;
+                                setSpecialGrid(newGrid);
+                              }}
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
+                            />
+                          </td>
+                          <td className="px-5 py-3">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={row.incentive_percentage}
+                              onChange={(e) => {
+                                const newGrid = [...specialGrid];
+                                newGrid[idx].incentive_percentage = e.target.value;
+                                setSpecialGrid(newGrid);
+                              }}
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-full text-sm font-bold text-slate-700"
+                            />
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <button
+                              onClick={() => {
+                                const newGrid = specialGrid.filter((_, i) => i !== idx);
+                                setSpecialGrid(newGrid);
+                              }}
+                              className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                    <tr>
+                      <td colSpan={3} className="px-5 py-4 bg-slate-50/30">
+                        <button
+                          onClick={() => setSpecialGrid([...specialGrid, { target_collection: '', incentive_percentage: '' }])}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-black w-full text-left uppercase tracking-widest flex items-center gap-2"
+                        >
+                          <span className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">+</span> Add New Rule
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col">
@@ -1716,11 +1746,10 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => handleToggleSpecial(emp.employee_id, emp.is_special)}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
-                              emp.is_special 
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${emp.is_special
                                 ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                                 : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
-                            }`}
+                              }`}
                           >
                             {emp.is_special ? 'Remove Exception' : 'Mark as Special'}
                           </button>
@@ -1730,7 +1759,7 @@ export default function AdminPage() {
                   )}
                 </tbody>
               </table>
-              
+
               {!specialLoading && specialTotal > specialLimit && (
                 <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
                   <span className="text-sm text-muted-foreground">
@@ -1782,42 +1811,47 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-[calc(100vh-60px)] w-full bg-background overflow-hidden">
-      
+
       {/* Left List Pane (Constraint Space) */}
-      <div className={`${isSidebarOpen ? 'w-[220px] lg:w-[240px]' : 'w-[60px] lg:w-[70px]'} flex-shrink-0 flex flex-col border-r border-border bg-background transition-all duration-300`}>
-        
-        <div className={`px-4 py-4 border-b border-border mb-2 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
+      <div className={`${isSidebarOpen ? 'w-44' : 'w-[72px]'} flex-shrink-0 flex flex-col border-r border-border bg-background transition-all duration-300`}>
+
+        <div className={`px-4 py-4 border-b border-border mb-3 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}>
           {isSidebarOpen && <h1 className="text-lg font-bold tracking-tight text-foreground">Admin</h1>}
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-muted-foreground hover:text-foreground transition-colors">
             {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
           </button>
         </div>
 
-        {/* Modules List */}
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          <div className="flex flex-col pb-4">
-            {adminModules.map((mod) => (
-              <div 
+        {/* Modules List - Polaris Vertical Buttons */}
+        <div className="flex-1 overflow-y-auto no-scrollbar pb-6 px-2">
+          <div className="flex flex-col gap-2 w-full mt-1">
+            {adminModules.map((mod, index) => (
+              <Button
                 key={mod.id}
+                pressed={activeItem === mod.id}
                 onClick={() => {
                   if ((mod as any).link) window.location.href = (mod as any).link;
                   else setActiveItem(mod.id);
                 }}
-                title={!isSidebarOpen ? mod.title : undefined}
-                className={`flex items-start gap-3 py-3 border-b border-border cursor-pointer transition-colors ${
-                  activeItem === mod.id ? 'bg-primary/5 border-l-4 border-l-primary' : 'hover:bg-muted/30 border-l-4 border-l-transparent'
-                } ${isSidebarOpen ? 'px-4' : 'px-0 justify-center'}`}
+                fullWidth
+                textAlign={isSidebarOpen ? "left" : "center"}
+                size="large"
               >
-                <div className={`flex-shrink-0 ${isSidebarOpen ? 'mt-0.5' : ''}`}>
-                  {mod.icon}
-                </div>
-                {isSidebarOpen && (
-                  <div className="flex flex-col pr-2">
-                    <span className="text-[14px] font-semibold text-foreground">{mod.title}</span>
-                    <span className="text-[12px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">{mod.subtitle}</span>
+                <div className={`flex items-center gap-3 ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
+                  <div className="flex-shrink-0 [&_svg]:!fill-transparent">
+                    {React.cloneElement(mod.icon as React.ReactElement, {
+                      color: '#2563eb', // All icons blue
+                      size: 18,
+                      style: { fill: 'none' } // Force fill to none to combat Polaris CSS
+                    })}
                   </div>
-                )}
-              </div>
+                  {isSidebarOpen && (
+                    <span className={`text-[13px] tracking-tight ${activeItem === mod.id ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
+                      {mod.title}
+                    </span>
+                  )}
+                </div>
+              </Button>
             ))}
           </div>
         </div>

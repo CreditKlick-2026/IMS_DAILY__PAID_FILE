@@ -93,13 +93,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
 
   return (
     <div
-      className={`h-[calc(100vh-48px)] bg-[var(--bg-top)] border-r border-border flex-shrink-0 flex flex-col transition-all duration-200 ease-in-out ${isCollapsed ? 'w-[60px]' : 'w-[160px]'
+      className={`h-[calc(100vh-64px)] bg-background border-r border-border/60 flex-shrink-0 flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-[72px]' : 'w-48'
         } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } fixed lg:relative z-30 lg:z-10 ${!mounted ? 'transition-none' : ''}`}
     >
-      <div className="flex flex-col items-stretch gap-2 py-4 overflow-y-auto flex-1 px-2 w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex flex-col items-stretch gap-1.5 py-4 overflow-y-auto flex-1 px-3 w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {navItems.filter(i => (!i.roles || i.roles.includes(user?.role))).map((item, index) => {
-                    let isActive = activePage === item.id;
+          let isActive = activePage === item.id;
           if (item.id.startsWith('incentive-')) {
             const locParam = searchParams ? searchParams.get('location') : null;
             if (locParam) {
@@ -112,8 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
               key={item.id}
               pressed={isActive}
               fullWidth
-              textAlign="left"
-              icon={<span className={item.color}><Icon size={16} strokeWidth={2.5} style={{ fill: 'none' }} /></span>}
+              textAlign={isCollapsed ? "center" : "left"}
+              size="large"
               onClick={() => {
                 if (item.link) {
                   router.push(item.link);
@@ -122,7 +122,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
                 }
               }}
             >
-              {isCollapsed ? '' : item.label}
+              <div className={`flex items-center gap-3 ${!isCollapsed ? 'justify-start' : 'justify-center'}`}>
+                <div className="flex-shrink-0 [&_svg]:!fill-transparent">
+                  <Icon size={18} color="#2563eb" style={{ fill: 'none' }} />
+                </div>
+                {!isCollapsed && (
+                  <span className={`text-[13px] tracking-tight ${isActive ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
+                    {item.label}
+                  </span>
+                )}
+              </div>
             </Button>
           );
         })}
@@ -132,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
       <div className={`flex items-center p-3 border-t border-border/50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && logout && (
           <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer bg-transparent border-none"
             onClick={() => {
               if (confirm('Are you sure you want to logout?')) {
                 logout();
@@ -146,7 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
 
         {isCollapsed && logout && (
           <button
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-destructive hover:bg-destructive/10 transition-colors cursor-pointer bg-transparent border-none mb-2"
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors cursor-pointer bg-transparent border-none mb-2"
             onClick={() => {
               if (confirm('Are you sure you want to logout?')) {
                 logout();
@@ -159,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
         )}
 
         <button
-          className="flex items-center justify-center w-7 h-7 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer bg-transparent"
+          className="flex items-center justify-center w-8 h-8 border border-border/80 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-all cursor-pointer bg-card shadow-sm"
           onClick={toggleCollapse}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >

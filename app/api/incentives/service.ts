@@ -310,63 +310,32 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         const kekaRes = await pool.query(`SELECT * FROM employee_keka_data`);
         const kekaEmployees = kekaRes.rows;
 
-        // 1.5 Fetch All Grid Rules
-        const [gridRes, tenuredRes, vintageRes, leadershipRes] = await Promise.all([
-            pool.query(`SELECT * FROM special_grid_rules ORDER BY target_collection DESC`),
-            pool.query(`SELECT * FROM associate_tenured_grid ORDER BY target_collection DESC`),
-            pool.query(`SELECT * FROM associate_vintage_grid ORDER BY target_collection DESC`),
-            pool.query(`SELECT * FROM leadership_grid ORDER BY target_collection DESC`)
-        ]);
-
-        const specialGridRules = gridRes.rows.map(r => ({
-            target_collection: parseFloat(r.target_collection),
-            incentive_percentage: parseFloat(r.incentive_percentage) / 100 // divide by 100 to get decimal e.g. 3.25 -> 0.0325
-        }));
-        const associateTenuredGrid = tenuredRes.rows;
-        const associateVintageGrid = vintageRes.rows;
-        const leadershipGrid = leadershipRes.rows;
+        // 1.5 Fetch Default Grid 1 Rules from JSON
+        let specialGridRules: any[] = [];
+        let associateTenuredGrid: any[] = [];
+        let associateVintageGrid: any[] = [];
+        let leadershipGrid: any[] = [];
+        
+        try {
+            const grid1DataRaw = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids.json'), 'utf-8');
+            const grid1Data = JSON.parse(grid1DataRaw);
+            specialGridRules = (grid1Data.specialExceptions || []).map((r: any) => ({
+                target_collection: parseFloat(r.target_collection || 0),
+                incentive_percentage: parseFloat(r.incentive_percentage || 0) / 100
+            })).sort((a: any, b: any) => b.target_collection - a.target_collection);
+            
+            associateTenuredGrid = (grid1Data.associateTenured || []).sort((a: any, b: any) => parseFloat(b.target_collection || 0) - parseFloat(a.target_collection || 0));
+            associateVintageGrid = (grid1Data.associateVintage || []).sort((a: any, b: any) => parseFloat(b.target_collection || 0) - parseFloat(a.target_collection || 0));
+            leadershipGrid = (grid1Data.leadership || []).sort((a: any, b: any) => parseFloat(b.target_collection || 0) - parseFloat(a.target_collection || 0));
+        } catch (e) {
+            console.error("Failed to load Grid 1 data from JSON", e);
+        }
 
         // 1.6 Fetch required_columns and assigned_grid from master_client
         const clientParam = searchParams.get('client');
         const productParam = searchParams.get('product');
         let requiredColumns = [];
         let assignedGrid = null;
-
-        let grid2Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
-        try {
-            const fileData = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_2.json'), 'utf-8');
-            grid2Data = JSON.parse(fileData);
-        } catch (e) { /* grid2 not available */ }
-
-        let grid3Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
-        try {
-            const fileData3 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_3.json'), 'utf-8');
-            grid3Data = JSON.parse(fileData3);
-        } catch (e) { /* grid3 not available */ }
-
-        let grid4Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
-        try {
-            const fileData4 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_4.json'), 'utf-8');
-            grid4Data = JSON.parse(fileData4);
-        } catch (e) { /* grid4 not available */ }
-
-        let grid5Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
-        try {
-            const fileData5 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_5.json'), 'utf-8');
-            grid5Data = JSON.parse(fileData5);
-        } catch (e) { }
-
-        let grid6Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
-        try {
-            const fileData6 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_6.json'), 'utf-8');
-            grid6Data = JSON.parse(fileData6);
-        } catch (e) { /* grid6 not available */ }
-
-        let grid7Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [] };
-        try {
-            const fileData7 = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids_7.json'), 'utf-8');
-            grid7Data = JSON.parse(fileData7);
-        } catch (e) { /* grid7 not available */ }
 
         if (clientParam && productParam) {
             const clientConfigRes = await pool.query(
@@ -379,6 +348,17 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     const raw = clientConfigRes.rows[0].required_columns;
                     requiredColumns = Array.isArray(raw) ? raw : JSON.parse(raw);
                 }
+            }
+        }
+        
+        let dynamicGridData: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
+        if (assignedGrid && assignedGrid.startsWith('grid_')) {
+            const gridNum = assignedGrid.replace('grid_', '');
+            try {
+                const fileData = await fs_promises.readFile(path.join(process.cwd(), 'data', `master_grids_${gridNum}.json`), 'utf-8');
+                dynamicGridData = JSON.parse(fileData);
+            } catch (e) { 
+                console.error(`Failed to load ${assignedGrid} data`);
             }
         }
 
@@ -585,48 +565,13 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
 
             } else if (designation.includes('leader') || designation === 'tl') {
                 // Team Leader Logic
-                if (assignedGrid === 'grid_2') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid2Data.tlSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
+                if (assignedGrid === 'grid_5') {
+                    const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, dynamicGridData.tlSlabs || [], vintageMonths, false, teamHeadcount);
+                    incentivePercent = resData.percent;
+                    teamIncentiveAmount = resData.amount;
                     incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_2') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid2Data.amSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.tlSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_5') {
-                    if (designation === 'ASSOCIATE') {
-                        const empAssoc = associateTotalData[record.employee_code] || { collection: 0, upgrade: 0, recovery: 0 };
-                        const resData = getGrid5IncentiveAmount(empAssoc.upgrade, empAssoc.recovery, grid5Data.associateSlabs || [], vintageMonths, true, 0);
-                        incentivePercent = resData.percent;
-                        individualIncentiveAmount = resData.amount;
-                    } else if (designation === 'TL') {
-                        const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, grid5Data.tlSlabs || [], vintageMonths, false, teamHeadcount);
-                        incentivePercent = resData.percent;
-                        teamIncentiveAmount = resData.amount;
-                    } else if (designation === 'AM') {
-                        const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, grid5Data.amSlabs || [], vintageMonths, false, teamHeadcount);
-                        incentivePercent = resData.percent;
-                        teamIncentiveAmount = resData.amount;
-                    }
-                    incentive = individualIncentiveAmount + teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_4') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.tlSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_5') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid5Data.tlSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_6') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid6Data.tlSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_7') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid7Data.tlSlabs, vintageMonths, false);
+                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                    incentivePercent = getGrid4IncentivePercent(pcp, dynamicGridData.tlSlabs || [], vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 } else {
@@ -649,24 +594,13 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 }
 
                 let additionalAmount = 0;
-                if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(pcp, grid3Data.amSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
+                if (assignedGrid === 'grid_5') {
+                    const resData = getGrid5IncentiveAmount(teamUpgradeCollection, teamRecoveryCollection, dynamicGridData.amSlabs || [], vintageMonths, false, teamHeadcount);
+                    incentivePercent = resData.percent;
+                    teamIncentiveAmount = resData.amount;
                     incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_4') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid4Data.amSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_5') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid5Data.amSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_6') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid6Data.amSlabs, vintageMonths, false);
-                    teamIncentiveAmount = teamCollection * incentivePercent;
-                    incentive = teamIncentiveAmount;
-                } else if (assignedGrid === 'grid_7') {
-                    incentivePercent = getGrid4IncentivePercent(pcp, grid7Data.amSlabs, vintageMonths, false);
+                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                    incentivePercent = getGrid4IncentivePercent(pcp, dynamicGridData.amSlabs || [], vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 } else {
@@ -684,24 +618,18 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     incentivePercent = 0;
                     individualIncentiveAmount = 0;
                     incentive = 0;
+                } else if (assignedGrid === 'grid_5') {
+                    const empAssoc = associateTotalData[record.employee_code] || { collection: 0, upgrade: 0, recovery: 0 };
+                    const resData = getGrid5IncentiveAmount(empAssoc.upgrade, empAssoc.recovery, dynamicGridData.associateSlabs || [], vintageMonths, true, 0);
+                    incentivePercent = resData.percent;
+                    individualIncentiveAmount = resData.amount;
+                    incentive = individualIncentiveAmount;
                 } else if (assignedGrid === 'grid_2') {
-                    incentivePercent = getGrid2IncentivePercent(totalEmployeeCollection, record.client, record.product, vintageMonths, grid2Data.associateSlabs || []);
+                    incentivePercent = getGrid2IncentivePercent(totalEmployeeCollection, record.client, record.product, vintageMonths, dynamicGridData.associateSlabs || []);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
-                } else if (assignedGrid === 'grid_3') {
-                    incentivePercent = getGrid3IncentivePercent(totalEmployeeCollection, grid3Data.associateSlabs, vintageMonths, true);
-                    individualIncentiveAmount = collection * incentivePercent;
-                    incentive = individualIncentiveAmount;
-                } else if (assignedGrid === 'grid_4') {
-                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid4Data.associateSlabs, vintageMonths, true);
-                    individualIncentiveAmount = collection * incentivePercent;
-                    incentive = individualIncentiveAmount;
-                } else if (assignedGrid === 'grid_6') {
-                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid6Data.associateSlabs, vintageMonths, true);
-                    individualIncentiveAmount = collection * incentivePercent;
-                    incentive = individualIncentiveAmount;
-                } else if (assignedGrid === 'grid_7') {
-                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, grid7Data.associateSlabs, vintageMonths, true);
+                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                    incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, dynamicGridData.associateSlabs || [], vintageMonths, true);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else {
@@ -823,8 +751,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 filters: activeFilters
             },
             assigned_grid: assignedGrid,
-            grid2Slabs: assignedGrid === 'grid_2' ? (grid2Data.associateSlabs || []) : [],
-            grid3Data: assignedGrid === 'grid_3' ? grid3Data : null,
+            dynamicGridData: dynamicGridData,
             special_grid_rules: specialGridRules.map(r => ({ ...r, incentive_percentage: r.incentive_percentage * 100 })),
             associateTenuredGrid,
             associateVintageGrid,

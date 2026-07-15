@@ -70,7 +70,7 @@ export default function LocationsPage() {
   const filteredItems = items.filter(i => i.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-5xl mx-auto min-h-full">
+    <div className="flex flex-col gap-4 p-4 md:p-6 w-full min-h-full">
       {/* HEADER */}
       <div className="flex justify-between items-start">
         <div>
@@ -137,7 +137,7 @@ export default function LocationsPage() {
 
       {/* LOCATIONS LIST */}
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="px-5 py-4 border-b bg-slate-50 flex justify-between items-center">
+        <div className="px-4 py-3 border-b bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-800">Available Locations</h3>
           <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
             {filteredItems.length} {filteredItems.length === 1 ? 'Location' : 'Locations'}
@@ -147,9 +147,9 @@ export default function LocationsPage() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50/50 text-slate-500 border-b">
             <tr>
-              <th className="px-5 py-3 font-medium w-16">ID</th>
-              <th className="px-5 py-3 font-medium">Location Name</th>
-              <th className="px-5 py-3 font-medium text-right">Actions</th>
+              <th className="px-4 py-2 text-xs font-medium w-16">ID</th>
+              <th className="px-4 py-2 text-xs font-medium">Location Name</th>
+              <th className="px-4 py-2 text-xs font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -173,11 +173,11 @@ export default function LocationsPage() {
             ) : (
               filteredItems.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-5 py-3 text-slate-500 font-medium">#{item.id}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-2 text-xs text-slate-500 font-medium">#{item.id}</td>
+                  <td className="px-4 py-2 text-xs">
                     <div className="font-semibold text-slate-800">{item.name}</div>
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="px-4 py-2 text-xs text-right">
                     <button
                       onClick={() => handleDelete(item.id)}
                       className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"

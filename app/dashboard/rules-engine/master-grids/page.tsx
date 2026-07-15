@@ -122,7 +122,7 @@ export default function MasterGridsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
+    <div className="flex flex-col gap-4 p-4 md:p-6 w-full min-h-full relative">
       <div className="flex justify-between items-center">
       </div>
 

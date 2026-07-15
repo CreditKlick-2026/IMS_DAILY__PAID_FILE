@@ -101,34 +101,39 @@ const MultiSelect = ({ label, options, selected, onChange }: { label: string, op
   const filteredOptions = options.filter(o => o.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: 'auto' }}>
+    <div ref={ref} className="relative min-w-[140px]">
       <div 
-        className="finp" 
-        style={{ fontSize: 12, padding: '6px 10px', minWidth: 120, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 4 }}
+        className="flex items-center justify-between gap-2 px-3 py-2 bg-background border border-border/60 hover:border-primary/50 hover:bg-secondary/30 rounded-md cursor-pointer transition-all shadow-sm group"
         onClick={() => setOpen(!open)}
       >
-        <span>{selected.length === 0 ? label : `${label} (${selected.length})`}</span>
-        <span style={{ fontSize: 10 }}>▼</span>
+        <span className="text-[11px] font-semibold text-foreground/80 whitespace-nowrap">
+          {selected.length === 0 ? label : `${label} (${selected.length})`}
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: 'var(--bg2, #ffffff)', border: '1px solid var(--bdr)', borderRadius: 6, zIndex: 100, maxHeight: 250, overflowY: 'auto', minWidth: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          <div style={{ padding: '6px', position: 'sticky', top: 0, background: 'var(--bg2, #ffffff)', borderBottom: '1px solid var(--bdr)', zIndex: 2 }}>
+        <div className="absolute top-full left-0 mt-1.5 bg-background border border-border/80 rounded-lg shadow-lg z-[100] max-h-[250px] overflow-y-auto w-full min-w-max animate-in fade-in slide-in-from-top-2">
+          <div className="p-1.5 sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/60 z-10">
             <input 
               type="text" 
               placeholder={`Search ${label}...`}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '6px', fontSize: 11, border: '1px solid var(--bdr)', borderRadius: 4, outline: 'none' }}
+              className="w-full px-2.5 py-1.5 text-[11px] bg-secondary/50 border border-border/60 rounded outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
               onClick={e => e.stopPropagation()}
             />
           </div>
-          {filteredOptions.length === 0 ? <div style={{ padding: '6px 10px', fontSize: 11, color: 'var(--txt3)' }}>No options</div> : null}
-          {filteredOptions.map(o => (
-            <div key={o} onClick={() => toggle(o)} style={{ padding: '6px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: '1px solid var(--faint)' }}>
-              <input type="checkbox" checked={selected.includes(o)} readOnly style={{ cursor: 'pointer' }} />
-              <span style={{ whiteSpace: 'nowrap' }}>{o}</span>
-            </div>
-          ))}
+          {filteredOptions.length === 0 ? <div className="px-3 py-2 text-[11px] text-muted-foreground text-center">No options</div> : null}
+          <div className="p-1">
+            {filteredOptions.map(o => (
+              <div key={o} onClick={() => toggle(o)} className="flex items-center gap-2.5 px-2 py-1.5 text-[11px] font-medium text-foreground/80 hover:bg-secondary rounded cursor-pointer transition-colors">
+                <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors ${selected.includes(o) ? 'bg-primary border-primary text-primary-foreground' : 'border-border bg-background'}`}>
+                  {selected.includes(o) && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                </div>
+                <span className="whitespace-nowrap">{o}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -2541,20 +2546,20 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
 
           {/* FILTER ROW */}
           {showFilters && (
-            <div id="fRow" style={{ display: 'flex', padding: '10px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--bdr)', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/20 border-b border-border/60 animate-in slide-in-from-top-1 shadow-inner">
               {tableCols.some(c => c.key?.toLowerCase() === 'account_no') && (
-                <input className="finp" type="text" placeholder="Account No" style={{ width: '120px', padding: '6px 10px' }} value={filterAccountNo} onChange={e => setFilterAccountNo(e.target.value)} />
+                <input className="w-32 px-3 py-2 text-[11px] bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm" type="text" placeholder="Account No" value={filterAccountNo} onChange={e => setFilterAccountNo(e.target.value)} />
               )}
               {tableCols.some(c => c.key?.toLowerCase() === 'dpd') && (
                 <>
-                  <input className="finp" type="number" placeholder="DPD Min" style={{ width: '90px', padding: '6px 10px' }} value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
-                  <input className="finp" type="number" placeholder="DPD Max" style={{ width: '90px', padding: '6px 10px' }} value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
+                  <input className="w-24 px-3 py-2 text-[11px] bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm" type="number" placeholder="DPD Min" value={dpdMin} onChange={e => setDpdMin(e.target.value)} />
+                  <input className="w-24 px-3 py-2 text-[11px] bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm" type="number" placeholder="DPD Max" value={dpdMax} onChange={e => setDpdMax(e.target.value)} />
                 </>
               )}
               {tableCols.some(c => c.type === 'amount' || c.key?.toLowerCase() === 'money_collected' || c.key?.toLowerCase() === 'outstanding' || c.key?.toLowerCase() === 'principle_outstanding') && (
                 <>
-                  <input className="finp" type="number" placeholder="₹ Min" style={{ width: '100px', padding: '6px 10px' }} value={outMin} onChange={e => setOutMin(e.target.value)} />
-                  <select className="finp" style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <input className="w-24 px-3 py-2 text-[11px] bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/50 shadow-sm" type="number" placeholder="₹ Min" value={outMin} onChange={e => setOutMin(e.target.value)} />
+                  <select className="px-3 py-2 text-[11px] font-medium bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all shadow-sm cursor-pointer" value={sortBy} onChange={e => setSortBy(e.target.value)}>
                     <option value="">Sort By</option>
                     <option value="high">Highest Amount</option>
                     <option value="low">Lowest Amount</option>
@@ -2562,9 +2567,9 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 </>
               )}
               {tableCols.some(c => c.key?.toLowerCase() === 'upload_at' || c.key?.toLowerCase() === 'createdat') && (
-                <div style={{ position: 'relative' }}>
-                  <input className="finp" type="date" title="Upload Date" style={{ fontSize: 12, padding: '5px 10px', width: 'auto', background: 'var(--bg2)' }} value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
-                  <span style={{ position: 'absolute', top: -8, left: 6, fontSize: 8, fontWeight: 700, color: 'var(--txt3)', background: 'var(--bg2)', padding: '0 4px', letterSpacing: 0.5, textTransform: 'uppercase' }}>Upload At</span>
+                <div className="relative">
+                  <input className="px-3 py-2 text-[11px] bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all shadow-sm" type="date" title="Upload Date" value={filterUploadDate} onChange={e => { setFilterUploadDate(e.target.value); setFilterMonth(''); setFilterYear(''); }} />
+                  <span className="absolute -top-2 left-2 px-1 text-[8px] font-bold tracking-wider text-muted-foreground bg-background rounded">UPLOAD AT</span>
                 </div>
               )}
               {[
@@ -2592,8 +2597,7 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                 ) : (
                   <select 
                     key={opt.key}
-                    className="finp" 
-                    style={{ fontSize: 12, padding: '6px 10px', width: 'auto' }} 
+                    className="px-3 py-2 text-[11px] font-medium bg-background border border-border/60 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all shadow-sm cursor-pointer" 
                     value={filters[opt.filterKey] || ''} 
                     onChange={e => setFilters({ ...filters, [opt.filterKey]: e.target.value })}
                   >
@@ -2604,18 +2608,33 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                   </select>
                 )
               ))}
-              <SButton size="slim" variant="secondary" onClick={exportToExcel} disabled={exporting}>
-                {exporting ? '⏳ Processing...' : '📥 Current Excel'}
-              </SButton>
-              {user?.role === 'admin' && (
-                <SButton size="slim" variant="primary" onClick={() => { setEditingRecord(null); setShowRecordModal('add'); }}>➕ Add Record</SButton>
-              )}
-              <SButton size="slim" variant="critical" onClick={() => {
-                setStatusFilter(''); setSortBy(''); setFilterAccountNo(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear())); setFilterUploadDate('');
-                setFilters({
-                  employee_code: [], product: [], bucket: [], location: [], aph: [], ph: [], client: [], tl_name: [], employee_name: []
-                });
-              }}>Clear Filters</SButton>
+              <div className="flex items-center gap-2 ml-auto mt-2 md:mt-0 w-full md:w-auto">
+                <button
+                  className="flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold bg-secondary border border-border/60 hover:bg-secondary/80 text-foreground rounded-md shadow-sm transition-all"
+                  onClick={exportToExcel} disabled={exporting}
+                >
+                  {exporting ? '⏳ Processing...' : '📥 Current Excel'}
+                </button>
+                {user?.role === 'admin' && (
+                  <button
+                    className="flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shadow-sm transition-all"
+                    onClick={() => { setEditingRecord(null); setShowRecordModal('add'); }}
+                  >
+                    ➕ Add Record
+                  </button>
+                )}
+                <button
+                  className="flex items-center justify-center gap-2 px-3 py-2 text-[11px] font-bold bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive hover:text-white rounded-md shadow-sm transition-all"
+                  onClick={() => {
+                    setStatusFilter(''); setSortBy(''); setFilterAccountNo(''); setDpdMin(''); setDpdMax(''); setOutMin(''); setPortfolioFilter(''); setSearch(''); setFilterTab('all'); setFilterMonth(String(new Date().getMonth() + 1)); setFilterYear(String(new Date().getFullYear())); setFilterUploadDate('');
+                    setFilters({
+                      employee_code: [], product: [], bucket: [], location: [], aph: [], ph: [], client: [], tl_name: [], employee_name: []
+                    });
+                  }}
+                >
+                  ✕ Clear Filters
+                </button>
+              </div>
             </div>
           )}
 
@@ -2648,49 +2667,62 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
           ) : (
           <>
           {/* SEARCH BAR */}
-          <div className="sbar" style={{ padding: '8px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <SButton size="slim" variant="secondary" onClick={() => setShowFilters(!showFilters)}>⊞ More {showFilters ? '▲' : '▼'}</SButton>
-            <span style={{ fontSize: 12, color: 'var(--txt3)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {leads.length} records
-            </span>
+          <div className="flex items-center justify-between px-6 py-3 border-b border-border/60 bg-background/50 backdrop-blur-sm z-20">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold border border-border bg-secondary hover:bg-secondary/80 text-foreground transition-all shadow-sm cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filters {showFilters ? '▲' : '▼'}
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                {leads.length} records found
+              </span>
+            </div>
           </div>
 
           {/* TABLE */}
-          <div className="result-area hide-scrollbar" style={{ flex: 1, overflow: 'auto', background: 'var(--bg2)' }}>
-            <div className="result-area-mobile-scroll">
-              <table className="tbl" style={{ width: '100%', borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--bdr)' }}>
+          <div className="flex-1 overflow-auto bg-background hide-scrollbar relative">
+            <div className="min-w-full inline-block align-middle">
+              <table className="min-w-full divide-y divide-border/60">
+                <thead className="bg-secondary/80 sticky top-0 z-10 backdrop-blur-md">
+                  <tr>
                     {tableCols.length > 0 ? tableCols.map(col => (
-                      <th key={col.key} style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'left' }}>
+                      <th key={col.key} className="px-5 py-3.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">
                         {col.label}
                       </th>
                     )) : (
                       <>
-                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Account Number</th>
-                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Customer Name</th>
-                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Money_Collected</th>
-                        <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5 }}>Assigned To</th>
+                        <th className="px-5 py-3.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">Account Number</th>
+                        <th className="px-5 py-3.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">Customer Name</th>
+                        <th className="px-5 py-3.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">Money_Collected</th>
+                        <th className="px-5 py-3.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">Assigned To</th>
                       </>
                     )}
                     {user?.role === 'admin' && (
-                      <th style={{ background: 'var(--bg2)', position: 'sticky', top: 0, zIndex: 10, border: 'none', padding: '8px 10px', color: 'var(--txt3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'right' }}>Actions</th>
+                      <th className="px-5 py-3.5 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60">Actions</th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/40 bg-background">
                   {loading ? (
                     Array.from({ length: 15 }).map((_, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid var(--faint)' }}>
+                      <tr key={i} className="animate-pulse">
                         {Array.from({ length: (tableCols.length || 6) + 1 }).map((_, j) => (
-                          <td key={j} style={{ padding: '8px 10px' }}>
-                            <div className="skeleton" style={{ width: `${Math.floor(Math.random() * 40) + 40}%`, height: '14px' }} />
+                          <td key={j} className="px-5 py-4 whitespace-nowrap">
+                            <div className="h-3 bg-secondary rounded-full" style={{ width: `${Math.floor(Math.random() * 40) + 40}%` }} />
                           </td>
                         ))}
                       </tr>
                     ))
                   ) : leads.map(lead => (
-                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} style={{ borderBottom: '1px solid var(--faint)', cursor: 'pointer', background: selectedLead?.id === lead.id ? 'var(--accbg)' : 'transparent' }}>
+                    <tr 
+                      key={lead.id} 
+                      onClick={() => setSelectedLead(lead)} 
+                      className={`cursor-pointer transition-colors hover:bg-muted/40 ${selectedLead?.id === lead.id ? 'bg-primary/5' : ''}`}
+                    >
                       {tableCols.length > 0 ? tableCols.map(col => {
                         const lowerKey = col.key?.toLowerCase();
                         let rawVal = lead[col.key] ?? lead[lowerKey]
@@ -2708,23 +2740,21 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                         
                         const val = (rawVal && typeof rawVal === 'object') ? (rawVal.name || rawVal.label || '—') : rawVal;
                         return (
-                          <td key={col.key} style={{ padding: '8px 10px', fontSize: 11, color: col.type === 'amount' ? 'var(--red)' : 'var(--txt2)' }}>
+                          <td key={col.key} className={`px-5 py-3.5 text-xs whitespace-nowrap ${col.type === 'amount' ? 'text-red-600 font-semibold' : 'text-foreground/80'}`}>
                             {(lowerKey === 'settlement' || lowerKey.includes('settlement')) ? (
                               lead.settlements && lead.settlements.length > 0 ? (
-                                <span className="badge" style={{
-                                  background: 'transparent',
-                                  border: `1px solid ${lead.settlements[0].status === 'Approve' ? 'rgba(34,197,94,0.3)' : lead.settlements[0].status === 'Rejected' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
-                                  color: lead.settlements[0].status === 'Approve' ? 'var(--grn)' : lead.settlements[0].status === 'Rejected' ? 'var(--red)' : 'var(--amb)',
-                                  fontSize: 9,
-                                  borderRadius: 12
+                                <span className="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border" style={{
+                                  background: lead.settlements[0].status === 'Approve' ? 'rgba(34,197,94,0.1)' : lead.settlements[0].status === 'Rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                                  borderColor: lead.settlements[0].status === 'Approve' ? 'rgba(34,197,94,0.2)' : lead.settlements[0].status === 'Rejected' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                                  color: lead.settlements[0].status === 'Approve' ? '#16a34a' : lead.settlements[0].status === 'Rejected' ? '#dc2626' : '#d97706',
                                 }}>
                                   {lead.settlements[0].status}
                                 </span>
                               ) : (
-                                <span style={{ color: 'var(--txt3)', fontSize: 9, opacity: 0.5 }}>—</span>
+                                <span className="text-muted-foreground/50">—</span>
                               )
                             ) : col.type === 'amount' ? `₹${Number(val).toLocaleString('en-IN')}` :
-                              col.type === 'badge' ? <span className="badge" style={{ background: 'var(--purbg)', color: 'var(--pur)', border: '1px solid var(--purbg)', borderRadius: 12, padding: '2px 8px' }}>{String(val)}</span> :
+                              col.type === 'badge' ? <span className="inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full bg-purple-100 text-purple-700 border border-purple-200">{String(val)}</span> :
                                 lowerKey === 'account_no' ? String(val).replace(/LN-|-/g, '') :
                                   (lowerKey === 'createdat' || lowerKey === 'upload_at') ? String(val).split('T')[0] :
                                     (lowerKey.includes('card') || col.label?.toLowerCase().includes('card')) && String(val).length > 4 ? 
@@ -2734,23 +2764,25 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
                         );
                       }) : (
                         <>
-                          <td className="mn" style={{ padding: '8px 10px', color: 'var(--txt3)' }}>
+                          <td className="px-5 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
                             {String(lead.account_no || '').replace(/LN-|-/g, '')}
-                            {lead.is_duplicate && <span style={{ marginLeft: 4, background: '#ef4444', color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle' }}>DUP</span>}
-                            {lead.fraud_flag && <span style={{ marginLeft: 4, background: '#f59e0b', color: '#fff', fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle' }} title={lead.fraud_flag}>FRAUD</span>}
+                            {lead.is_duplicate && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-100 text-red-600">DUP</span>}
+                            {lead.fraud_flag && <span className="ml-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-orange-100 text-orange-600" title={lead.fraud_flag}>FRAUD</span>}
                           </td>
-                          <td className="nm" style={{ padding: '8px 10px', color: 'var(--txt)' }}>{lead.name}</td>
-                          <td className="mn" style={{ padding: '8px 10px', color: 'var(--red)', fontWeight: 600 }}>₹{lead.outstanding?.toLocaleString('en-IN')}</td>
-                          <td style={{ padding: '8px 10px', fontSize: 11, color: 'var(--txt2)' }}>{lead.agent || lead.assignedAgent?.name || 'Unassigned'}</td>
+                          <td className="px-5 py-3.5 text-xs font-medium text-foreground whitespace-nowrap">{lead.name}</td>
+                          <td className="px-5 py-3.5 text-xs text-red-600 font-semibold whitespace-nowrap">₹{lead.outstanding?.toLocaleString('en-IN')}</td>
+                          <td className="px-5 py-3.5 text-xs text-muted-foreground whitespace-nowrap">{lead.agent || lead.assignedAgent?.name || 'Unassigned'}</td>
                         </>
                       )}
                       {user?.role === 'admin' && (
-                        <td style={{ padding: '8px 10px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                          {duplicateOnly && (
-                            <button onClick={(e) => { e.stopPropagation(); handleTransferRecord(lead.id); }} style={{ background: 'var(--color-primary)/10', border: `1px solid var(--color-primary)`, borderRadius: 6, cursor: 'pointer', color: 'var(--color-primary)', marginRight: 12, fontSize: 10, padding: '4px 8px', fontWeight: 600 }} title="Transfer to Leads (Approve)">Approve to Leads</button>
-                          )}
-                          <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', marginRight: 12, display: 'flex', alignItems: 'center' }} title="Edit"><Edit size={16} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center' }} title="Delete"><Trash2 size={16} /></button>
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-3">
+                            {duplicateOnly && (
+                              <button onClick={(e) => { e.stopPropagation(); handleTransferRecord(lead.id); }} className="px-2 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[10px] font-bold hover:bg-blue-100 transition-colors cursor-pointer" title="Transfer to Leads (Approve)">Approve</button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); setEditingRecord(lead); setShowRecordModal('edit'); }} className="text-blue-500 hover:text-blue-600 transition-colors cursor-pointer" title="Edit"><Edit size={16} strokeWidth={2.5} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(lead.id); }} className="text-red-400 hover:text-red-500 transition-colors cursor-pointer" title="Delete"><Trash2 size={16} strokeWidth={2.5} /></button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -2761,20 +2793,21 @@ const Leads = ({ duplicateOnly }: { duplicateOnly?: boolean }) => {
           </div>
 
           {/* PAGER */}
-          <div className="pager">
-            <span style={{ fontSize: 11, color: 'var(--txt3)', flex: 1 }}>Page {page} of {Math.max(1, Math.ceil(totalCount / limit))} • {totalCount} records</span>
-            <div style={{ display: 'flex', gap: 3 }}>
-              <button className="p-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
-              <button className="p-btn" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>‹</button>
-              <button className="p-btn cur">{page}</button>
-              <button className="p-btn" disabled={page >= Math.ceil(totalCount / limit)} onClick={() => setPage(page + 1)}>›</button>
-              <button className="p-btn" disabled={page >= Math.ceil(totalCount / limit)} onClick={() => setPage(Math.ceil(totalCount / limit))}>»</button>
+          <div className="flex items-center justify-between px-6 py-3 border-t border-border/60 bg-background/50 backdrop-blur-sm z-20">
+            <span className="text-xs text-muted-foreground font-medium">Page {page} of {Math.max(1, Math.ceil(totalCount / limit))} • {totalCount} records</span>
+            <div className="flex items-center gap-1.5">
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled={page <= 1} onClick={() => setPage(Math.max(1, page - 1))}>‹</button>
+              <button className="w-7 h-7 flex items-center justify-center rounded bg-primary text-white font-bold text-xs shadow-sm">{page}</button>
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled={page >= Math.ceil(totalCount / limit)} onClick={() => setPage(page + 1)}>›</button>
+              <button className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled={page >= Math.ceil(totalCount / limit)} onClick={() => setPage(Math.ceil(totalCount / limit))}>»</button>
+              
+              <select className="ml-4 text-[11px] font-semibold border border-border/60 rounded px-2 py-1.5 bg-background text-foreground outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer" value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1); }}>
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+              </select>
             </div>
-            <select className="finp" style={{ fontSize: 10, padding: '3px 6px', width: 'auto', marginLeft: 10 }} value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1); }}>
-              <option value="25">25/page</option>
-              <option value="50">50/page</option>
-              <option value="100">100/page</option>
-            </select>
           </div>
           </>
           )}

@@ -359,7 +359,7 @@ export default function ClientsPage() {
   const filteredClients = clients.filter(c => c.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full">
+    <div className="flex flex-col gap-4 p-4 md:p-6 w-full min-h-full">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
@@ -590,7 +590,7 @@ export default function ClientsPage() {
         )}
 
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="px-5 py-4 border-b bg-slate-50 flex justify-between items-center">
+        <div className="px-4 py-3 border-b bg-slate-50 flex justify-between items-center">
           <h3 className="font-bold text-slate-800">Available Clients</h3>
           <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
             {filteredClients.length} {filteredClients.length === 1 ? 'Client' : 'Clients'}
@@ -600,12 +600,12 @@ export default function ClientsPage() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50/50 text-slate-500 border-b">
             <tr>
-              <th className="px-5 py-3 font-medium w-16">ID</th>
-              <th className="px-5 py-3 font-medium">Client Name</th>
-              <th className="px-5 py-3 font-medium">Assigned Locations</th>
-              <th className="px-5 py-3 font-medium">Required Columns</th>
-              <th className="px-5 py-3 font-medium">Assigned Grid</th>
-              <th className="px-5 py-3 font-medium text-right">Actions</th>
+              <th className="px-4 py-2 text-xs font-medium w-16">ID</th>
+              <th className="px-4 py-2 text-xs font-medium">Client Name</th>
+              <th className="px-4 py-2 text-xs font-medium">Assigned Locations</th>
+              <th className="px-4 py-2 text-xs font-medium">Required Columns</th>
+              <th className="px-4 py-2 text-xs font-medium">Assigned Grid</th>
+              <th className="px-4 py-2 text-xs font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -631,31 +631,33 @@ export default function ClientsPage() {
                 const clientLocations = mappings.filter(m => m.client_id === client.id);
                 return (
                   <tr key={client.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="px-5 py-4 text-slate-500 font-medium">#{client.id}</td>
-                    <td className="p-4 font-semibold text-slate-800">
-                      {client.name}
-                      {client.product_type && (
-                        <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                          {client.product_type}
-                        </span>
-                      )}
+                    <td className="px-4 py-2 text-xs text-slate-500 font-medium text-xs">#{client.id}</td>
+                    <td className="px-4 py-2 text-xs font-semibold text-slate-800">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span>{client.name}</span>
+                        {client.product_type && (
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                            {client.product_type}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="px-4 py-2 text-xs">
+                      <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                         {clientLocations.length > 0 ? (
                           clientLocations.map(cl => (
-                            <span key={cl.id} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-md border border-blue-100">
-                              <MapPin size={12} />
+                            <span key={cl.id} className="inline-flex items-center gap-1 bg-blue-50/80 text-blue-700 text-[11px] font-medium px-2 py-0.5 rounded-md border border-blue-100/50">
+                              <MapPin size={10} />
                               {cl.location_name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-400 text-xs italic">No locations assigned</span>
+                          <span className="text-slate-400 text-xs italic">Unassigned</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                    <td className="px-4 py-2 text-xs">
+                      <div className="flex flex-wrap gap-1 max-w-[280px]">
                         {(() => {
                            let reqCols: string[] = [];
                            if (typeof client.required_columns === 'string') {
@@ -668,52 +670,76 @@ export default function ClientsPage() {
                              return <span className="text-slate-400 text-xs italic">None</span>;
                            }
                            
-                           return reqCols.map((col: string) => {
-                             const disp = masterColumns.find(m => m.key === col)?.display || col;
-                             return (
-                               <span key={col} className="inline-flex items-center bg-emerald-50 text-emerald-700 text-[10px] font-medium px-1.5 py-0.5 rounded border border-emerald-100">
-                                 {disp}
-                               </span>
-                             );
-                           });
+                           const MAX_VISIBLE = 4;
+                           const visibleCols = reqCols.slice(0, MAX_VISIBLE);
+                           const hiddenCols = reqCols.slice(MAX_VISIBLE);
+                           
+                           return (
+                             <>
+                               {visibleCols.map((col: string) => {
+                                 const disp = masterColumns.find(m => m.key === col)?.display || col;
+                                 return (
+                                   <span key={col} className="inline-flex items-center bg-emerald-50 text-emerald-700 text-[10px] font-medium px-1.5 py-0.5 rounded border border-emerald-100/60 whitespace-nowrap">
+                                     {disp}
+                                   </span>
+                                 );
+                               })}
+                               {hiddenCols.length > 0 && (
+                                 <div className="relative group/tooltip">
+                                   <span className="inline-flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-medium px-1.5 py-0.5 rounded border border-slate-200 cursor-help whitespace-nowrap transition-colors">
+                                     +{hiddenCols.length} more
+                                   </span>
+                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tooltip:block z-50">
+                                     <div className="bg-slate-800 text-white text-[10px] rounded-md p-2 w-[220px] flex flex-wrap gap-1 shadow-xl border border-slate-700">
+                                        {hiddenCols.map((col: string) => {
+                                          const disp = masterColumns.find(m => m.key === col)?.display || col;
+                                          return <span key={col} className="bg-slate-700/80 border border-slate-600 px-1.5 py-0.5 rounded">{disp}</span>
+                                        })}
+                                     </div>
+                                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-[5px] border-transparent border-t-slate-800"></div>
+                                   </div>
+                                 </div>
+                               )}
+                             </>
+                           );
                         })()}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2 text-xs">
                       {client.assigned_grid ? (
-                        <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-md border border-blue-100">
-                          {client.assigned_grid === 'grid_1' ? 'Master Grid 1' : client.assigned_grid}
+                        <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 text-[11px] font-semibold px-2 py-0.5 rounded-md border border-violet-100/50">
+                          {client.assigned_grid === 'grid_1' ? 'Master Grid 1' : client.assigned_grid.replace('grid_', 'Grid ')}
                         </span>
                       ) : (
                         <span className="text-slate-400 text-xs italic">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <td className="px-4 py-2 text-xs text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => openGridModal(client)}
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-blue-100"
+                          className="text-violet-600 hover:text-violet-800 hover:bg-violet-50 px-2.5 py-1.5 rounded-md transition-colors text-[11px] font-medium flex items-center gap-1 border border-transparent hover:border-violet-100"
                         >
-                          <Columns size={14} /> Assign Grid
+                          <Columns size={12} /> Assign Grid
                         </button>
                         <button
                           onClick={() => openColumnModal(client)}
-                          className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-emerald-100"
+                          className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-2.5 py-1.5 rounded-md transition-colors text-[11px] font-medium flex items-center gap-1 border border-transparent hover:border-emerald-100"
                         >
-                          <Columns size={14} /> Configure Columns
+                          <Columns size={12} /> Configure Columns
                         </button>
                         <button
                           onClick={() => openMappingModal(client)}
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors text-xs font-medium flex items-center gap-1 border border-transparent hover:border-blue-100"
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors text-[11px] font-medium flex items-center gap-1 border border-transparent hover:border-blue-100"
                         >
-                          <MapPin size={14} /> Assign Locations
+                          <MapPin size={12} /> Assign Locations
                         </button>
                         <button
                           onClick={() => handleDeleteClient(client.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                          className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-md transition-colors ml-1"
                           title="Delete Client"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>

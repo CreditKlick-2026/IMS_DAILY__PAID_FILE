@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 import * as XLSX from 'xlsx';
+import { PremiumSelect } from '@/components/PremiumSelect';
 
 export default function IncentiveDashboard() {
   const { user } = useApp();
@@ -130,58 +131,64 @@ export default function IncentiveDashboard() {
           <p className="text-sm text-slate-500 font-medium ml-13 mt-1">In-depth analysis of collections and payouts</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="relative z-10 flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
-            <select
-              className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+            <PremiumSelect
+              placeholder="All Locations"
               value={filterLocation}
-              onChange={e => { setFilterLocation(e.target.value); setFilterClient(''); }}
-            >
-              <option value="">All Locations</option>
-              {locationOptions.map(loc => <option key={loc.id} value={loc.name}>{loc.name}</option>)}
-            </select>
+              onChange={val => { setFilterLocation(val); setFilterClient(''); }}
+              options={locationOptions.map(loc => ({ label: loc.name, value: loc.name }))}
+            />
           )}
-          <select
-            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+          <PremiumSelect
+            placeholder="All Processes"
             value={filterClient}
-            onChange={e => setFilterClient(e.target.value)}
-          >
-            <option value="">All Processes</option>
-            {clientOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <select
-            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+            onChange={val => setFilterClient(val)}
+            options={Array.from(new Map(clientOptions.map(p => [p.name, p])).values()).map((p: any) => ({ label: p.name, value: p.id }))}
+          />
+          <PremiumSelect
+            placeholder="All Months"
             value={filterMonth}
-            onChange={e => setFilterMonth(e.target.value)}
-          >
-            <option value="">All Months</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-              <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
-            ))}
-          </select>
-          <select
-            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors cursor-pointer"
+            onChange={val => setFilterMonth(val)}
+            options={Array.from({ length: 12 }, (_, i) => i + 1).map(m => ({
+              label: new Date(2000, m - 1).toLocaleString('default', { month: 'long' }),
+              value: m.toString()
+            }))}
+          />
+          <PremiumSelect
+            placeholder="All Years"
             value={filterYear}
-            onChange={e => setFilterYear(e.target.value)}
-          >
-            <option value="">All Years</option>
-            {[2024, 2025, 2026, 2027, 2028].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => {
-              if (data.length === 0) return;
-              const ws = XLSX.utils.json_to_sheet(data);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "Dashboard");
-              XLSX.writeFile(wb, `IncentiveDashboard_${filterMonth || 'All'}_${filterYear || 'All'}.xlsx`);
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Download Excel
-          </button>
+            onChange={val => setFilterYear(val)}
+            options={[2024, 2025, 2026, 2027, 2028].map(y => ({ label: y.toString(), value: y.toString() }))}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setFilterMonth((new Date().getMonth() + 1).toString());
+                setFilterYear(new Date().getFullYear().toString());
+                setFilterLocation("");
+                setFilterClient("");
+              }}
+              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              Clear Filters
+            </button>
+            <button
+              onClick={() => {
+                if (data.length === 0) return;
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Dashboard");
+                XLSX.writeFile(wb, `IncentiveDashboard_${filterMonth || 'All'}_${filterYear || 'All'}.xlsx`);
+              }}
+              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={data.length === 0}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Download Excel
+            </button>
+          </div>
         </div>
       </div>
 

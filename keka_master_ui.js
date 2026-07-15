@@ -1,144 +1,15 @@
-"use client";
-import React, { useState, useEffect } from 'react';
-import { useApp } from '@/context/AppContext';
-import { useRouter } from 'next/navigation';
-import * as XLSX from 'xlsx';
-import { Edit, Trash2, X, Save, Download, Search, Database, Users, MapPin, Briefcase } from 'lucide-react';
-import { PremiumSelect } from '@/components/PremiumSelect';
+const fs = require('fs');
+const file = 'app/dashboard/keka-master/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-export default function KekaMasterPage() {
-  const { user } = useApp();
-  const router = useRouter();
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedAM, setSelectedAM] = useState("");
-  const [selectedTL, setSelectedTL] = useState("");
-  const [selectedDesig, setSelectedDesig] = useState("");
-  
-  // Edit State
-  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
-  const [saving, setSaving] = useState(false);
-  
-  // Pagination State
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 500;
+// Update imports
+content = content.replace(
+  /import \{ Edit, Trash2, X, Save \} from 'lucide-react';/,
+  "import { Edit, Trash2, X, Save, Download, Search, Database, Users, MapPin, Briefcase } from 'lucide-react';"
+);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, selectedLocation, selectedAM, selectedTL, selectedDesig]);
-
-  useEffect(() => {
-    // Only admins allowed to see this raw master list
-    if (user && user.role !== 'admin') {
-      router.push('/dashboard');
-      return;
-    }
-
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const kekaRes = await fetch('/api/keka', { cache: 'no-store' });
-      const kekaResult = await kekaRes.json();
-      
-      if (kekaResult.success) {
-        setData(kekaResult.data || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const locationStats = data.reduce((acc, row) => {
-    const loc = row.location || 'Unknown';
-    acc[loc] = (acc[loc] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const uniqueLocations = Object.keys(locationStats).sort();
-  const uniqueAMs = Array.from(new Set(data.map(d => d.am_name).filter(x => x && x !== '—'))).sort();
-  const uniqueTLs = Array.from(new Set(data.map(d => d.tl_name).filter(x => x && x !== '—'))).sort();
-  const uniqueDesigs = Array.from(new Set(data.map(d => d.designation).filter(x => x && x !== '—'))).sort();
-
-  const filteredData = data.filter(r => {
-    const locMatch = !selectedLocation || selectedLocation === "All" || r.location === selectedLocation || (!r.location && selectedLocation === "Unknown");
-    const amMatch = !selectedAM || r.am_name === selectedAM;
-    const tlMatch = !selectedTL || r.tl_name === selectedTL;
-    const desigMatch = !selectedDesig || r.designation === selectedDesig;
-    
-    const searchMatch = (
-      (r.name?.toLowerCase().includes(search.toLowerCase())) ||
-      (r.employee_id?.toLowerCase().includes(search.toLowerCase())) ||
-      (r.location?.toLowerCase().includes(search.toLowerCase())) ||
-      (r.designation?.toLowerCase().includes(search.toLowerCase()))
-    );
-    return locMatch && amMatch && tlMatch && desigMatch && searchMatch;
-  });
-
-  const totalCount = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const paginatedData = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const formatCurrency = (amt: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
-
-  const downloadExcel = () => {
-    if (filteredData.length === 0) return;
-    const ws = XLSX.utils.json_to_sheet(filteredData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Master Employees");
-    const filename = `Master_Employees_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, filename);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this employee record? This action cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/keka/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (res.ok) {
-        setData(d => d.filter(x => x.employee_id !== id));
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to delete');
-      }
-    } catch (e) {
-      alert('Error deleting record');
-    }
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingEmployee) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/keka/${encodeURIComponent(editingEmployee.employee_id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingEmployee)
-      });
-      if (res.ok) {
-        const { data: updatedRecord } = await res.json();
-        setData(d => d.map(x => x.employee_id === updatedRecord.employee_id ? updatedRecord : x));
-        setEditingEmployee(null);
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to update');
-      }
-    } catch (err) {
-      alert('Error updating record');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-
+// Replace return block
+const newReturn = `
   return (
     <div className="w-full h-full overflow-y-auto no-scrollbar bg-slate-50/30">
       <div className="w-full mx-auto px-4 lg:px-8 py-8 space-y-6">
@@ -164,7 +35,7 @@ export default function KekaMasterPage() {
         </div>
 
         {/* Filters Row */}
-        <div className="relative z-10 flex flex-wrap items-center gap-3 bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl shadow-sm border border-slate-200/60">
+        <div className="flex flex-wrap items-center gap-3 bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl shadow-sm border border-slate-200/60">
           
           <div className="relative flex-1 min-w-[250px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -177,23 +48,33 @@ export default function KekaMasterPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <PremiumSelect
-              placeholder="All Designations"
-              value={selectedDesig}
-              onChange={val => {
-                setSelectedDesig(val);
-                setSelectedAM(""); setSelectedTL("");
-                setPage(1);
-              }}
-              options={uniqueDesigs.map(x => ({ label: x, value: x }))}
-            />
+            <div className="relative">
+              <Briefcase className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                className="appearance-none bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 py-2.5 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/30 shadow-sm transition-all min-w-[140px] cursor-pointer"
+                value={selectedDesig}
+                onChange={e => {
+                  setSelectedDesig(e.target.value);
+                  setSelectedAM(""); setSelectedTL("");
+                  setPage(1);
+                }}
+              >
+                <option value="">All Designations</option>
+                {uniqueDesigs.map(x => <option key={x as string} value={x as string}>{x as string}</option>)}
+              </select>
+            </div>
 
-            <PremiumSelect
-              placeholder="All Locations"
-              value={selectedLocation}
-              onChange={val => { setSelectedLocation(val); setPage(1); }}
-              options={uniqueLocations.map(loc => ({ label: loc, value: loc }))}
-            />
+            <div className="relative">
+              <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                className="appearance-none bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 py-2.5 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/30 shadow-sm transition-all min-w-[140px] cursor-pointer"
+                value={selectedLocation}
+                onChange={e => { setSelectedLocation(e.target.value); setPage(1); }}
+              >
+                <option value="">All Locations</option>
+                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            </div>
           </div>
           
           <div className="ml-auto bg-primary/5 text-primary border border-primary/10 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm">
@@ -207,7 +88,7 @@ export default function KekaMasterPage() {
           {/* Header Grid */}
           <div className="grid grid-cols-[40px_2fr_1.5fr_1fr_1fr_1fr_100px_80px] bg-slate-50/80 border-b border-slate-100 px-6 py-4 gap-4 items-center">
             {['#', 'Employee', 'Designation', 'Agent OHR', 'DOJ', 'DOC', 'Salary', 'Actions'].map((h, i) => (
-              <div key={h} className={"text-[10px] font-bold text-slate-400 uppercase tracking-widest " + (i >= 6 ? "text-right" : "text-left")}>
+              <div key={h} className={\`text-[10px] font-bold text-slate-400 uppercase tracking-widest \${i >= 6 ? 'text-right' : 'text-left'}\`}>
                 {h}
               </div>
             ))}
@@ -383,5 +264,10 @@ export default function KekaMasterPage() {
       </div>
     </div>
   );
+\`;
 
-}
+const startIdx = content.indexOf('  return (');
+content = content.substring(0, startIdx) + newReturn + "\n}\n";
+
+fs.writeFileSync(file, content);
+console.log('UI updated successfully');

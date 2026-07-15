@@ -17,30 +17,35 @@ export async function GET(req: Request) {
     const params = [];
     let paramIndex = 1;
 
+    let monthYearStr = null;
+
     if (month && year) {
-      whereClause += ` AND m.month_year = $${paramIndex}`;
-      params.push(`${month}-${year}`);
-      paramIndex++;
+      whereClause += ` AND EXTRACT(MONTH FROM d.upload_at) = $${paramIndex} AND EXTRACT(YEAR FROM d.upload_at) = $${paramIndex + 1}`;
+      params.push(parseInt(month), parseInt(year));
+      paramIndex += 2;
+      monthYearStr = `${month}-${year}`;
     }
 
     if (clientName) {
-      whereClause += ` AND m.employee_id IN (SELECT DISTINCT employee_code FROM dpf_records WHERE LOWER(client) = LOWER($${paramIndex}))`;
+      whereClause += ` AND LOWER(d.client) = LOWER($${paramIndex})`;
       params.push(clientName);
       paramIndex++;
     }
 
     const { rows } = await pool.query(`
       SELECT 
-        m.employee_id,
-        k.employee_name as name,
-        k.designation,
-        k.location,
-        m.total_metric_value as total_collection,
-        m.final_payout as final_incentive
-      FROM monthly_incentive_calculation m
-      LEFT JOIN employee_keka_data k ON m.employee_id = k.employee_id
+        d.employee_code AS employee_id,
+        MAX(k.employee_name) AS name,
+        MAX(k.designation) AS designation,
+        MAX(k.location) AS location,
+        SUM(d.money_collected) AS total_collection,
+        COALESCE(MAX(m.final_payout), 0) AS final_incentive
+      FROM dpf_records d
+      LEFT JOIN employee_keka_data k ON d.employee_code = k.employee_id
+      LEFT JOIN monthly_incentive_calculation m ON d.employee_code = m.employee_id ${monthYearStr ? `AND m.month_year = '${monthYearStr}'` : ''}
       ${whereClause}
-      ORDER BY m.final_payout DESC
+      GROUP BY d.employee_code
+      ORDER BY final_incentive DESC, total_collection DESC
     `, params);
 
     return NextResponse.json({ success: true, data: rows });

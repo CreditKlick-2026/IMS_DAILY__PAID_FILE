@@ -82,10 +82,10 @@ export default function UsersAccessPage() {
     setSaving(false);
   };
 
-  if (loading) return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>;
+  if (loading) return <div className="p-4 md:p-6 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-slate-800 flex items-center gap-3">
           <Users className="w-8 h-8 text-orange-500" />
@@ -111,7 +111,7 @@ export default function UsersAccessPage() {
                   <button
                     key={usr.id}
                     onClick={() => loadUserMapping(usr)}
-                    className={`w-full text-left px-5 py-4 flex flex-col gap-1 border-b border-slate-100 transition-colors ${
+                    className={`w-full text-left px-4 py-3 flex flex-col gap-1 border-b border-slate-100 transition-colors ${
                       selectedUser?.id === usr.id ? 'bg-orange-50 border-l-4 border-l-orange-500' : 'hover:bg-slate-50'
                     }`}
                   >

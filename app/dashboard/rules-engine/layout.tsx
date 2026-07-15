@@ -27,12 +27,12 @@ export default function RulesEngineLayout({ children }: { children: React.ReactN
   return (
     <div className="flex h-full min-h-[calc(100vh-60px)]">
       {/* Secondary Sidebar */}
-      <div className="w-64 border-r border-slate-200 bg-white flex-shrink-0 flex flex-col hidden md:flex">
-        <div className="p-5 border-b border-slate-200">
-          <h2 className="font-bold text-lg text-slate-800">Rules Engine</h2>
-          <p className="text-xs text-slate-500 mt-1">Configuration Menu</p>
+      <div className="w-44 border-r border-slate-200 bg-white flex-shrink-0 flex flex-col hidden md:flex">
+        <div className="p-3 border-b border-slate-200">
+          <h2 className="font-bold text-base text-slate-800 leading-tight">Rules Engine</h2>
+          <p className="text-[10px] text-slate-500 mt-0.5">Configuration</p>
         </div>
-        <div className="p-3 flex-1 overflow-y-auto">
+        <div className="p-2 flex-1 overflow-y-auto hide-scrollbar">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -41,13 +41,13 @@ export default function RulesEngineLayout({ children }: { children: React.ReactN
                 <li key={item.path}>
                   <Link 
                     href={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
                       isActive 
                         ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
                     }`}
                   >
-                    <Icon size={18} className={isActive ? "text-blue-600" : "text-slate-400"} />
+                    <Icon size={16} className={isActive ? "text-blue-600" : "text-slate-400"} />
                     {item.label}
                   </Link>
                 </li>

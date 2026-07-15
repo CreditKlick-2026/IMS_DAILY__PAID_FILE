@@ -86,33 +86,42 @@ export default function SpecialExceptionsPage() {
 
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-6xl mx-auto min-h-full relative">
+    <div className="w-full h-full flex flex-col p-6 overflow-y-auto no-scrollbar bg-slate-50/50 relative gap-6">
       
       {/* HEADER WITH SEARCH */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">Special Exceptions</h1>
-          <p className="text-slate-500 mt-1 max-w-xl">Force employees into the Special Exceptions bucket (flat percentage logic) regardless of vintage/salary.</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            Special Exceptions
+          </h1>
+          <p className="text-sm text-slate-500 font-medium ml-13 mt-1 max-w-xl">Force employees into the Special Exceptions bucket (flat percentage logic) regardless of vintage/salary.</p>
         </div>
-        <div className="flex gap-2 relative mt-2">
-          <input
-            type="text"
-            placeholder="Search Employee ID or Name"
-            className="pl-9 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-red-500/50 w-64"
-            value={specialSearch}
-            onChange={(e) => {
-              setSpecialSearch(e.target.value);
-              if (e.target.value.length >= 3 || e.target.value.length === 0) {
-                fetchSpecialEmployees(e.target.value, 1);
-                setSpecialPage(1);
-              }
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && fetchSpecialEmployees(specialSearch, specialPage)}
-          />
-          <Search size={16} className="absolute left-3 top-3.5 text-slate-400" />
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-initial">
+            <input
+              type="text"
+              placeholder="Search Employee ID or Name"
+              className="pl-10 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-500/20 transition-colors w-full md:w-64 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white"
+              value={specialSearch}
+              onChange={(e) => {
+                setSpecialSearch(e.target.value);
+                if (e.target.value.length >= 3 || e.target.value.length === 0) {
+                  fetchSpecialEmployees(e.target.value, 1);
+                  setSpecialPage(1);
+                }
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && fetchSpecialEmployees(specialSearch, specialPage)}
+            />
+            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+          </div>
           <button
             onClick={() => fetchSpecialEmployees(specialSearch, specialPage)}
-            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md font-medium shadow-sm transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-sm transition-colors"
           >
             Search
           </button>
@@ -135,9 +144,9 @@ export default function SpecialExceptionsPage() {
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50/50 text-slate-500 border-b">
               <tr>
-                <th className="px-4 py-3 font-medium">Target Collection (₹)</th>
-                <th className="px-4 py-3 font-medium">Incentive (%)</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
+                <th className="px-4 py-2 text-xs font-medium">Target Collection (₹)</th>
+                <th className="px-4 py-2 text-xs font-medium">Incentive (%)</th>
+                <th className="px-4 py-2 text-xs font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -146,7 +155,7 @@ export default function SpecialExceptionsPage() {
                 ) : (
                     specialGrid.map((row, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-1.5">
                                 <input 
                                     type="number" 
                                     value={row.target_collection} 
@@ -155,10 +164,10 @@ export default function SpecialExceptionsPage() {
                                         newGrid[idx].target_collection = e.target.value;
                                         setSpecialGrid(newGrid);
                                     }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
+                                    className="border rounded px-2.5 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                 />
                             </td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-1.5">
                                 <input 
                                     type="number" 
                                     step="0.01"
@@ -168,10 +177,10 @@ export default function SpecialExceptionsPage() {
                                         newGrid[idx].incentive_percentage = e.target.value;
                                         setSpecialGrid(newGrid);
                                     }}
-                                    className="border rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
+                                    className="border rounded px-2.5 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full"
                                 />
                             </td>
-                            <td className="px-4 py-2 text-right">
+                            <td className="px-4 py-1.5 text-right">
                                 <button 
                                     onClick={() => {
                                         const newGrid = specialGrid.filter((_, i) => i !== idx);
@@ -205,11 +214,11 @@ export default function SpecialExceptionsPage() {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50/50 text-slate-500 border-b">
             <tr>
-              <th className="px-4 py-3 font-medium">Emp ID</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Designation</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium text-right">Toggle Exception</th>
+              <th className="px-4 py-2 text-xs font-medium">Emp ID</th>
+              <th className="px-4 py-2 text-xs font-medium">Name</th>
+              <th className="px-4 py-2 text-xs font-medium">Designation</th>
+              <th className="px-4 py-2 text-xs font-medium">Status</th>
+              <th className="px-4 py-2 text-xs font-medium text-right">Toggle Exception</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -220,17 +229,17 @@ export default function SpecialExceptionsPage() {
             ) : (
               specialEmployees.map((emp: any) => (
                 <tr key={emp.employee_id} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium">{emp.employee_id}</td>
-                  <td className="px-4 py-3 font-bold text-slate-800">{emp.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{emp.designation || 'N/A'}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2 font-medium text-xs">{emp.employee_id}</td>
+                  <td className="px-4 py-2 font-bold text-slate-800 text-xs">{emp.name}</td>
+                  <td className="px-4 py-2 text-slate-500 text-xs">{emp.designation || 'N/A'}</td>
+                  <td className="px-4 py-2">
                     {emp.is_special ? (
-                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold border border-red-200">SPECIAL APPLIED</span>
+                      <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[10px] font-bold border border-red-200">SPECIAL APPLIED</span>
                     ) : (
-                      <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-full text-xs font-medium border border-slate-200">Normal Logic</span>
+                      <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-medium border border-slate-200">Normal Logic</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-2 text-right">
                     <button
                       onClick={() => handleToggleSpecial(emp.employee_id, emp.is_special)}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
