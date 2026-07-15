@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, user, isMo
     },
 
     {
-      id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'user'],
+      id: 'upload', label: 'Upload Data', section: 'MANAGEMENT', roles: ['admin', 'user'], link: '/dashboard/upload',
       Icon: UploadCloud, color: 'text-primary'
     },
     {
