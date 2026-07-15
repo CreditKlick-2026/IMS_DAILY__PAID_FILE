@@ -1837,13 +1837,14 @@ export default function AdminPage() {
                 textAlign={isSidebarOpen ? "left" : "center"}
                 size="large"
               >
+                {/* @ts-expect-error Polaris Button typings restrict children to strings, but React allows elements */}
                 <div className={`flex items-center gap-3 ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
                   <div className="flex-shrink-0 [&_svg]:!fill-transparent">
                     {React.cloneElement(mod.icon as React.ReactElement, {
                       color: '#2563eb', // All icons blue
                       size: 18,
                       style: { fill: 'none' } // Force fill to none to combat Polaris CSS
-                    })}
+                    } as any)}
                   </div>
                   {isSidebarOpen && (
                     <span className={`text-[13px] tracking-tight ${activeItem === mod.id ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
