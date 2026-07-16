@@ -164,6 +164,12 @@ export async function POST(req: Request) {
     const associateVintageGrid = vintageRes.rows;
     const leadershipGrid = leadershipRes.rows;
 
+    let masterGrids: any = { tenured_salary_ranges: [] };
+    try {
+      const rawMaster = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids.json'), 'utf-8');
+      masterGrids = JSON.parse(rawMaster);
+    } catch {}
+
     // 2. Load file-based grids
     let grid2Data: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
     try {
@@ -379,13 +385,14 @@ export async function POST(req: Request) {
       };
     } else if (isATL || isTL) {
       const role = isATL ? 'ATL' : 'TL';
-      const mult = isATL ? 5 : 9;
+      const hc = record.team_headcount || 1;
+      const minMult = isATL ? 5 : 9;
+      const mult = Math.max(hc, minMult);
       formulaNodeText = isATL
         ? 'Dual Incentive (Player-Coach). Team payout shown below. Plus Associate-level individual payout.'
         : `Leadership Logic (${role}). Based on Team Total Recovery.`;
 
       const grid = leadershipGrid.filter(r => r.role === role).sort((a, b) => a.target_collection - b.target_collection);
-      const hc = record.team_headcount || 1;
       let hi = -1;
       for (let i = grid.length - 1; i >= 0; i--) {
         if (record.team_collection >= grid[i].target_collection * mult) { hi = i; break; }
@@ -432,7 +439,7 @@ export async function POST(req: Request) {
 
       if (isATL) {
         // Also build individual associate table for ATL
-        const indTable = buildAssociateTable(record, vintageMonths, salary, associateVintageGrid, associateTenuredGrid, fmt);
+        const indTable = buildAssociateTable(record, vintageMonths, salary, associateVintageGrid, associateTenuredGrid, fmt, masterGrids.tenured_salary_ranges);
         formulaTables = indTable ? [teamTableData, indTable] : [teamTableData];
       } else {
         formulaTableData = teamTableData;
@@ -660,26 +667,39 @@ export async function POST(req: Request) {
         };
       } else {
         formulaNodeText = 'Associate Tenured Logic (>3 Months). Percentage incentive based on collection and salary slab.';
+        
+        const ranges = masterGrids.tenured_salary_ranges || [
+          { key: 'under_16k', min: 0, max: 15999, label: '<16k (%)' },
+          { key: 'between_16_18k', min: 16000, max: 17999, label: '16k-18k (%)' },
+          { key: 'between_18_24k', min: 18000, max: 9999999, label: '>18k (%)' }
+        ];
+
         let colHi = -1;
-        if (salary < 16000) colHi = 1;
-        else if (salary < 18000) colHi = 2;
-        else if (salary < 24000) colHi = 3;
-        else colHi = 4;
+        for (let j = 0; j < ranges.length; j++) {
+            if (salary >= ranges[j].min && salary <= ranges[j].max) {
+                colHi = j + 1;
+                break;
+            }
+        }
+        
         const sorted = [...associateTenuredGrid].sort((a, b) => a.target_collection - b.target_collection);
         let hi = -1;
         for (let i = sorted.length - 1; i >= 0; i--) {
           if (record.total_collection >= sorted[i].target_collection) { hi = i; break; }
         }
+        
+        const headers = ['Coll.', ...ranges.map((r: any) => r.label)];
+        
         formulaTableData = {
-          headers: ['Coll.', '<16k', '16-18k', '18-24k', '>24k'],
+          headers: headers,
           rows: sorted.map((r, i) => ({
             highlighted: i === hi,
             cells: [
               { val: fmt(r.target_collection), highlighted: i === hi },
-              { val: parseFloat(r.under_16k).toFixed(2) + '%', highlighted: i === hi && colHi === 1 },
-              { val: parseFloat(r.between_16_18k).toFixed(2) + '%', highlighted: i === hi && colHi === 2 },
-              { val: parseFloat(r.between_18_24k).toFixed(2) + '%', highlighted: i === hi && colHi === 3 },
-              { val: parseFloat(r.over_24k).toFixed(2) + '%', highlighted: i === hi && colHi === 4 },
+              ...ranges.map((range: any, j: number) => ({
+                val: parseFloat(r[range.key]).toFixed(2) + '%',
+                highlighted: i === hi && colHi === (j + 1)
+              }))
             ],
           })),
         };
@@ -765,7 +785,8 @@ export async function POST(req: Request) {
 function buildAssociateTable(
   record: any, vintageMonths: number, salary: number,
   associateVintageGrid: any[], associateTenuredGrid: any[],
-  fmtFn: (n: number) => string
+  fmtFn: (n: number) => string,
+  tenuredSalaryRanges: any[]
 ): any | null {
   if (vintageMonths <= 120) {
     const targetColIdx = vintageMonths <= 30 ? 1 : vintageMonths <= 60 ? 2 : vintageMonths <= 90 ? 3 : 4;
@@ -789,23 +810,39 @@ function buildAssociateTable(
       })),
     };
   } else {
-    let colHi = salary < 16000 ? 1 : salary < 18000 ? 2 : salary < 24000 ? 3 : 4;
+    const ranges = tenuredSalaryRanges || [
+      { key: 'under_16k', min: 0, max: 15999, label: '<16k (%)' },
+      { key: 'between_16_18k', min: 16000, max: 17999, label: '16k-18k (%)' },
+      { key: 'between_18_24k', min: 18000, max: 9999999, label: '>18k (%)' }
+    ];
+
+    let colHi = -1;
+    for (let j = 0; j < ranges.length; j++) {
+        if (salary >= ranges[j].min && salary <= ranges[j].max) {
+            colHi = j + 1;
+            break;
+        }
+    }
+
     const sorted = [...associateTenuredGrid].sort((a, b) => a.target_collection - b.target_collection);
     let hi = -1;
     for (let i = sorted.length - 1; i >= 0; i--) {
       if (record.total_collection >= sorted[i].target_collection) { hi = i; break; }
     }
+    
+    const headers = ['Coll.', ...ranges.map((r: any) => r.label)];
+    
     return {
       title: 'Individual Payout (Tenured >3 Months)',
-      headers: ['Coll.', '<16k', '16-18k', '18-24k', '>24k'],
+      headers: headers,
       rows: sorted.map((r, i) => ({
         highlighted: i === hi,
         cells: [
           { val: fmtFn(r.target_collection), highlighted: i === hi },
-          { val: parseFloat(r.under_16k).toFixed(2) + '%', highlighted: i === hi && colHi === 1 },
-          { val: parseFloat(r.between_16_18k).toFixed(2) + '%', highlighted: i === hi && colHi === 2 },
-          { val: parseFloat(r.between_18_24k).toFixed(2) + '%', highlighted: i === hi && colHi === 3 },
-          { val: parseFloat(r.over_24k).toFixed(2) + '%', highlighted: i === hi && colHi === 4 },
+          ...ranges.map((range: any, j: number) => ({
+            val: parseFloat(r[range.key]).toFixed(2) + '%',
+            highlighted: i === hi && colHi === (j + 1)
+          }))
         ],
       })),
     };

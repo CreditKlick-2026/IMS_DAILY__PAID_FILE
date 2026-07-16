@@ -31,27 +31,30 @@ function getAssociateFixedIncentive(collection: number, monthOfVintage: number, 
 }
 
 // Associate Percentage Slab Logic (>3 Months)
-function getAssociateTenuredIncentivePercentage(collection: number, salary: number, grid: any[]) {
+function getAssociateTenuredIncentivePercentage(collection: number, salary: number, grid: any[], salaryRanges: any[]) {
     for (const rule of grid) {
         if (collection >= rule.target_collection) {
-            if (salary < 16000) return parseFloat(rule.under_16k) / 100;
-            if (salary >= 16000 && salary < 18000) return parseFloat(rule.between_16_18k) / 100;
-            if (salary >= 18000 && salary < 24000) return parseFloat(rule.between_18_24k) / 100;
-            return parseFloat(rule.over_24k) / 100;
+            for (const range of salaryRanges) {
+                if (salary >= range.min && salary <= range.max) {
+                    return parseFloat(rule[range.key]) / 100;
+                }
+            }
+            return 0; // Fallback if salary doesn't match any range
         }
     }
     return 0;
 }
 
-// Leadership Incentive Percentage Slab Logic
-function getLeadershipIncentivePercentage(teamCollection: number, role: string, grid: any[]) {
-    let fixedMultiplier = 1;
-    if (role === 'ATL') fixedMultiplier = 5;
-    else if (role === 'TL') fixedMultiplier = 9;
-    else if (role === 'AM') fixedMultiplier = 30;
+function getLeadershipIncentivePercentage(teamCollection: number, role: string, grid: any[], teamHeadcount: number) {
+    let minHeadcount = 1;
+    if (role === 'ATL') minHeadcount = 5;
+    else if (role === 'TL') minHeadcount = 9;
+    else if (role === 'AM') minHeadcount = 30;
+
+    let multiplier = Math.max(teamHeadcount, minHeadcount);
 
     for (const rule of grid) {
-        if (rule.role === role && teamCollection >= rule.target_collection * fixedMultiplier) {
+        if (rule.role === role && teamCollection >= rule.target_collection * multiplier) {
             return parseFloat(rule.incentive_percentage) / 100;
         }
     }
@@ -63,7 +66,7 @@ function calculateVintageDays(doc: Date, currentCalcDate: Date) {
     return Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
 }
 
-function calculateAssociateIncentive(collection: number, salary: number, doc: Date | null, vintageMonths: number, associateVintageGrid: any[], associateTenuredGrid: any[]) {
+function calculateAssociateIncentive(collection: number, salary: number, doc: Date | null, vintageMonths: number, associateVintageGrid: any[], associateTenuredGrid: any[], salaryRanges: any[]) {
     let traceData: any = null;
     let incentive = 0;
     let incentivePercent = 0;
@@ -79,11 +82,11 @@ function calculateAssociateIncentive(collection: number, salary: number, doc: Da
             incentive = getAssociateFixedIncentive(collection, slabMonth, associateVintageGrid);
             incentivePercent = (collection > 0) ? incentive / collection : 0;
         } else {
-            incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary, associateTenuredGrid);
+            incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary, associateTenuredGrid, salaryRanges);
             incentive = collection * incentivePercent;
         }
     } else {
-        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid);
+        incentivePercent = getAssociateTenuredIncentivePercentage(collection, salary || 25000, associateTenuredGrid, salaryRanges);
         incentive = collection * incentivePercent;
     }
 
@@ -246,6 +249,14 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
+        let masterGrids: any = { tenured_salary_ranges: [] };
+        try {
+            const rawMaster = await fs_promises.readFile(path.join(process.cwd(), 'data', 'master_grids.json'), 'utf-8');
+            masterGrids = JSON.parse(rawMaster);
+        } catch (e) {
+            console.error("Failed to load master_grids.json", e);
+        }
+
         const { searchParams } = new URL(req.url);
         const conditions: string[] = [];
         const queryParams: any[] = [];
@@ -352,7 +363,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
         }
         
         let dynamicGridData: any = { associateSlabs: [], tlSlabs: [], amSlabs: [], riders: [] };
-        if (assignedGrid && assignedGrid.startsWith('grid_')) {
+        if (assignedGrid && assignedGrid.startsWith('grid_') && assignedGrid !== 'grid_1') {
             const gridNum = assignedGrid.replace('grid_', '');
             try {
                 const fileData = await fs_promises.readFile(path.join(process.cwd(), 'data', `master_grids_${gridNum}.json`), 'utf-8');
@@ -549,12 +560,11 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                 individualIncentiveAmount = collection * incentivePercent;
                 incentive = individualIncentiveAmount;
             } else if (designation === 'atl') {
-                const teamIncentivePercent = getLeadershipIncentivePercentage(teamCollection, 'ATL', leadershipGrid);
+                const teamIncentivePercent = getLeadershipIncentivePercentage(teamCollection, 'ATL', leadershipGrid, teamHeadcount);
                 teamIncentiveAmount = teamCollection * teamIncentivePercent;
 
-                const totalEmployeeCollection = (associateTotalData[record.employee_code]?.collection) || collection;
                 const { incentive: indInc, incentivePercent: indIncPct } = calculateAssociateIncentive(
-                    totalEmployeeCollection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid
+                    collection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid, masterGrids.tenured_salary_ranges
                 );
                 individualIncentiveAmount = collection * indIncPct;
 
@@ -570,24 +580,24 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     incentivePercent = resData.percent;
                     teamIncentiveAmount = resData.amount;
                     incentive = teamIncentiveAmount;
-                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                } else if (assignedGrid && assignedGrid.startsWith('grid_') && assignedGrid !== 'grid_1') {
                     incentivePercent = getGrid4IncentivePercent(pcp, dynamicGridData.tlSlabs || [], vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 } else {
-                    incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'TL', leadershipGrid);
+                    incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'TL', leadershipGrid, teamHeadcount);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
                 }
 
             } else if (designation.includes('manager') || designation === 'am') {
                 // Assistant Manager Logic
-                incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'AM', leadershipGrid);
+                incentivePercent = getLeadershipIncentivePercentage(teamCollection, 'AM', leadershipGrid, teamHeadcount);
                 teamIncentiveAmount = teamCollection * incentivePercent;
 
                 let matchedTarget = 0;
                 for (const rule of leadershipGrid) {
-                    if (rule.role === 'AM' && teamCollection >= rule.target_collection * 30) {
+                    if (rule.role === 'AM' && teamCollection >= rule.target_collection * teamHeadcount) {
                         matchedTarget = Number(rule.target_collection);
                         break;
                     }
@@ -599,7 +609,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     incentivePercent = resData.percent;
                     teamIncentiveAmount = resData.amount;
                     incentive = teamIncentiveAmount;
-                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                } else if (assignedGrid && assignedGrid.startsWith('grid_') && assignedGrid !== 'grid_1') {
                     incentivePercent = getGrid4IncentivePercent(pcp, dynamicGridData.amSlabs || [], vintageMonths, false);
                     teamIncentiveAmount = teamCollection * incentivePercent;
                     incentive = teamIncentiveAmount;
@@ -628,13 +638,13 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     incentivePercent = getGrid2IncentivePercent(totalEmployeeCollection, record.client, record.product, vintageMonths, dynamicGridData.associateSlabs || []);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
-                } else if (assignedGrid && assignedGrid.startsWith('grid_')) {
+                } else if (assignedGrid && assignedGrid.startsWith('grid_') && assignedGrid !== 'grid_1') {
                     incentivePercent = getGrid4IncentivePercent(totalEmployeeCollection, dynamicGridData.associateSlabs || [], vintageMonths, true);
                     individualIncentiveAmount = collection * incentivePercent;
                     incentive = individualIncentiveAmount;
                 } else {
                     const associateData = calculateAssociateIncentive(
-                        totalEmployeeCollection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid
+                        totalEmployeeCollection, salary, doc, vintageMonths, associateVintageGrid, associateTenuredGrid, masterGrids.tenured_salary_ranges
                     );
                     incentivePercent = associateData.incentivePercent;
                     individualIncentiveAmount = collection * incentivePercent;

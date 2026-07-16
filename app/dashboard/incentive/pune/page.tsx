@@ -107,11 +107,35 @@ export default function IncentivePage() {
         if (incResult.assigned_grid) setAssignedGrid(incResult.assigned_grid);
         if (incResult.grid2Slabs) setGrid2Slabs(incResult.grid2Slabs);
         
-        let mergedData = [];
-        if (filterLocation || filterClient || filterProduct) {
-            mergedData = incData.map((match: any) => {
+        const baseKeka = kekaData.filter((emp: any) => {
+            const locMatch = !filterLocation || emp.location === filterLocation;
+            const clientMatch = !filterClient || emp.client === filterClient;
+            const productMatch = !filterProduct || emp.product === filterProduct;
+            return locMatch && clientMatch && productMatch;
+        });
+        
+        let mergedData = baseKeka.map((emp: any) => {
+            const match = incData.find((inc: any) => inc.employee_id === emp.employee_id) || {};
+            return {
+                ...emp,
+                ...match,
+                name: match.name || emp.name || emp.employee_id,
+                final_incentive: match.incentive || 0,
+                total_collection: match.total_collection || 0,
+                am_name: match.am_name || emp.am_name || '—',
+                tl_name: match.tl_name || emp.tl_name || '—',
+                aph: match.aph || emp.aph || '—',
+                ph: match.ph || emp.ph || '—',
+                designation: match.designation || emp.designation || '—'
+            };
+        });
+
+        // Add any injected AMs/TLs from incData that are missing in baseKeka
+        const baseKekaIds = new Set(baseKeka.map((e: any) => e.employee_id));
+        incData.forEach((match: any) => {
+            if (!baseKekaIds.has(match.employee_id)) {
                 const emp = kekaData.find((e: any) => e.employee_id === match.employee_id) || {};
-                return {
+                mergedData.push({
                     ...emp,
                     ...match,
                     name: match.name || emp.name || match.employee_id,
@@ -122,25 +146,9 @@ export default function IncentivePage() {
                     aph: match.aph || emp.aph || '—',
                     ph: match.ph || emp.ph || '—',
                     designation: match.designation || emp.designation || '—'
-                };
-            });
-        } else {
-            mergedData = kekaData.map((emp: any) => {
-                const match = incData.find((inc: any) => inc.employee_id === emp.employee_id) || {};
-                return {
-                    ...emp,
-                    ...match,
-                    name: match.name || emp.name || emp.employee_id,
-                    final_incentive: match.incentive || 0,
-                    total_collection: match.total_collection || 0,
-                    am_name: match.am_name || emp.am_name || '—',
-                    tl_name: match.tl_name || emp.tl_name || '—',
-                    aph: match.aph || emp.aph || '—',
-                    ph: match.ph || emp.ph || '—',
-                    designation: match.designation || emp.designation || '—'
-                };
-            });
-        }
+                });
+            }
+        });
         
         setData(mergedData);
       }
@@ -192,8 +200,12 @@ export default function IncentivePage() {
   const totalColl = filteredData.reduce((sum, r) => sum + (r.total_collection || 0), 0);
 
   const downloadExcel = () => {
-    if (filteredData.length === 0) return;
-    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const excelData = filteredData.filter((d: any) => d.assigned_grid && d.assigned_grid !== 'No Plan Matched');
+    if (excelData.length === 0) {
+        alert("No valid data or grid assigned to download.");
+        return;
+    }
+    const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Incentives");
     const filename = `Incentives_${filterMonth || 'All'}_${filterYear || 'All'}.xlsx`;

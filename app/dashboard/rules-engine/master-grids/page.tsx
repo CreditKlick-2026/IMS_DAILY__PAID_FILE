@@ -103,10 +103,16 @@ export default function MasterGridsPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gridName: 'column_mappings', data: masterGrids.column_mappings })
         });
+        const dataToSave = JSON.parse(JSON.stringify(masterGrids[gridName as keyof typeof masterGrids]));
+        if (gridName === 'associateTenured' || gridName === 'associateVintage') {
+            dataToSave.forEach((row: any) => {
+                row.over_24k = row.between_18_24k;
+            });
+        }
         const res = await fetch('/api/admin/master-grids', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gridName, data: masterGrids[gridName as keyof typeof masterGrids] })
+            body: JSON.stringify({ gridName, data: dataToSave })
         });
         const data = await res.json();
         if (!data.success) {
@@ -306,8 +312,7 @@ export default function MasterGridsPage() {
                 {activeMasterGridTab === 'associateTenured' && (masterGrids.tenured_salary_ranges || [
                     { key: 'under_16k', label: '<16k (%)' },
                     { key: 'between_16_18k', label: '16k-18k (%)' },
-                    { key: 'between_18_24k', label: '18k-24k (%)' },
-                    { key: 'over_24k', label: '>24k (%)' }
+                    { key: 'between_18_24k', label: '>18k (%)' }
                 ]).map((r) => (
                     <th key={r.key} className="px-4 py-3 font-medium">{r.label}</th>
                 ))}
@@ -368,8 +373,7 @@ export default function MasterGridsPage() {
                                 {(masterGrids.tenured_salary_ranges || [
                     { key: 'under_16k', label: '<16k (%)' },
                     { key: 'between_16_18k', label: '16k-18k (%)' },
-                    { key: 'between_18_24k', label: '18k-24k (%)' },
-                    { key: 'over_24k', label: '>24k (%)' }
+                    { key: 'between_18_24k', label: '>18k (%)' }
                 ]).map((r) => (
                                     <td key={r.key} className="px-4 py-2">
                                         <input type="number" step="0.01" value={row[r.key] || ''} onChange={(e) => {
