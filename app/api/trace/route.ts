@@ -387,7 +387,11 @@ export async function POST(req: Request) {
       const role = isATL ? 'ATL' : 'TL';
       const hc = record.team_headcount || 1;
       const minMult = isATL ? 5 : 9;
-      const mult = Math.max(hc, minMult);
+      let mult = Math.max(hc, minMult);
+      // Temporary fix: As requested, cap ATL multiplier strictly at 5, overriding dynamic headcount
+      if (isATL) {
+          mult = 5;
+      }
       formulaNodeText = isATL
         ? 'Dual Incentive (Player-Coach). Team payout shown below. Plus Associate-level individual payout.'
         : `Leadership Logic (${role}). Based on Team Total Recovery.`;

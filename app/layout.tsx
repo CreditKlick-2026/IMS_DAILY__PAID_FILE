@@ -8,8 +8,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "IMS DPF System",
-  description: "IMS Daily Paid File Management System",
+  title: "IMS DPF System | Stefto",
+  description: "Stefto IMS Daily Paid File Management System",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

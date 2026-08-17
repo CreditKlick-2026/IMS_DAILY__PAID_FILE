@@ -22,14 +22,16 @@ export async function GET(req: Request) {
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
     const locationName = searchParams.get('location');
-    const processId = searchParams.get('client_id'); // This is actually process_id from frontend
+    const processId = searchParams.get('client_id');
     const clientName = searchParams.get('client_name');
     const productName = searchParams.get('product_type');
+    const jobType = searchParams.get('job_type');
 
     let queryText = `
-      SELECT u.id, u.file_path, u.status, u.total_rows, u.processed_rows, 
+      SELECT u.id, u.file_path, u.file_name, u.status, u.total_rows, u.processed_rows, 
       TO_CHAR(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at, 
-      TO_CHAR(u.upload_at, 'YYYY-MM-DD') as upload_at, u.uploaded_by_employee_id, u.uploaded_by_name, u.target_employee_id, u.is_edited_by_admin, u.job_type, u.product_type,
+      TO_CHAR(COALESCE(u.target_date, u.upload_at, u.created_at), 'YYYY-MM-DD') as target_date,
+      u.uploaded_by_employee_id, u.uploaded_by_name, u.target_employee_id, u.is_edited_by_admin, u.job_type, u.product_type,
       l.name as location_name, c.name as client_name,
       (SELECT string_agg(DISTINCT bucket, ', ') FROM dpf_records d WHERE d.job_id = u.id) as buckets
         FROM upload_jobs u
@@ -40,18 +42,23 @@ export async function GET(req: Request) {
     `;
     let queryParams: any[] = [];
 
+    if (jobType) {
+      queryParams.push(jobType);
+      queryText += ` AND u.job_type = $${queryParams.length} `;
+    }
+
     if (monthStr && yearStr) {
       const month = parseInt(monthStr);
       const year = parseInt(yearStr);
       if (month !== 0 && year !== 0) {
         queryParams.push(month, year);
-        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length - 1} AND EXTRACT(YEAR FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
+        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.target_date, u.upload_at, u.created_at)) = $${queryParams.length - 1} AND EXTRACT(YEAR FROM COALESCE(u.target_date, u.upload_at, u.created_at)) = $${queryParams.length} `;
       } else if (month !== 0) {
         queryParams.push(month);
-        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
+        queryText += ` AND EXTRACT(MONTH FROM COALESCE(u.target_date, u.upload_at, u.created_at)) = $${queryParams.length} `;
       } else if (year !== 0) {
         queryParams.push(year);
-        queryText += ` AND EXTRACT(YEAR FROM COALESCE(u.upload_at, u.created_at)) = $${queryParams.length} `;
+        queryText += ` AND EXTRACT(YEAR FROM COALESCE(u.target_date, u.upload_at, u.created_at)) = $${queryParams.length} `;
       }
     }
     
@@ -94,16 +101,18 @@ export async function DELETE(req: Request) {
 
     if (!id) return NextResponse.json({ error: 'Job ID missing' }, { status: 400 });
 
-    const jobCheck = await query('SELECT file_path FROM upload_jobs WHERE id = $1', [id]);
+    const jobCheck = await query('SELECT file_path, job_type FROM upload_jobs WHERE id = $1', [id]);
     if (jobCheck.rows.length === 0) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     const fs = require('fs');
     const path = require('path');
-    const fullPath = path.join(process.cwd(), 'public', jobCheck.rows[0].file_path);
-    if (fs.existsSync(fullPath)) {
-      fs.unlinkSync(fullPath);
+    if (jobCheck.rows[0].file_path) {
+      const fullPath = path.join(process.cwd(), 'public', jobCheck.rows[0].file_path);
+      if (fs.existsSync(fullPath)) {
+        try { fs.unlinkSync(fullPath); } catch {}
+      }
     }
 
     await query('DELETE FROM dpf_records WHERE job_id = $1', [id]);
@@ -114,7 +123,7 @@ export async function DELETE(req: Request) {
       'EXCEL_BATCH',
       id,
       admin.username,
-      { file_path: jobCheck.rows[0].file_path, action_by_emp_id: admin.employee_id }
+      { file_path: jobCheck.rows[0].file_path, job_type: jobCheck.rows[0].job_type, action_by_emp_id: admin.employee_id }
     );
 
     return NextResponse.json({ success: true, message: 'Excel and all associated records deleted successfully.' });

@@ -15,39 +15,49 @@ export async function GET(req: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      let isClosed = false;
+
       const sendUpdate = async () => {
+        if (isClosed) return true;
         try {
-          const res = await query(`SELECT id, status, total_rows, processed_rows, error_log FROM upload_jobs WHERE id = $1`, [jobId]);
+          const res = await query(
+            `SELECT id, status, total_rows, processed_rows, error_log FROM upload_jobs WHERE id = $1`,
+            [jobId]
+          );
           if (res.rows.length > 0) {
             const job = res.rows[0];
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(job)}\n\n`));
             
-            // Close stream if finished
             if (job.status === 'COMPLETED' || job.status === 'FAILED') {
+              isClosed = true;
               controller.close();
               return true;
             }
           }
         } catch (e) {
-          controller.error(e);
+          if (!isClosed) {
+            isClosed = true;
+            controller.error(e);
+          }
           return true;
         }
         return false;
       };
 
-      // Initial send
       await sendUpdate();
 
-      // Poll every 1 second and stream the result
+      // High-speed 300ms real-time progress push
       const interval = setInterval(async () => {
         const done = await sendUpdate();
         if (done) clearInterval(interval);
-      }, 1000);
+      }, 300);
 
-      // Clean up on close
       req.signal.onabort = () => {
         clearInterval(interval);
-        controller.close();
+        if (!isClosed) {
+          isClosed = true;
+          controller.close();
+        }
       };
     },
   });
@@ -55,8 +65,9 @@ export async function GET(req: Request) {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no' // disables proxy buffering on AWS Nginx / CloudFront / ALB
     },
   });
 }

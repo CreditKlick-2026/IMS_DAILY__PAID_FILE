@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -13,7 +14,7 @@ interface PremiumSelectProps {
 
 export const PremiumSelect: React.FC<PremiumSelectProps> = ({ 
   label, 
-  options, 
+  options = [], 
   value, 
   onChange, 
   placeholder, 
@@ -34,44 +35,52 @@ export const PremiumSelect: React.FC<PremiumSelectProps> = ({
   }, []);
 
   const selectedOption = options.find(o => String(o.value) === String(value));
+  const hasEmptyOption = options.some(o => o.value === '' || o.value === 'All');
 
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 ${label ? 'min-w-[200px]' : 'min-w-[140px]'}`} ref={dropdownRef}>
+    <div className={`flex flex-col sm:flex-row sm:items-center gap-2 flex-1 ${label ? 'min-w-[180px]' : 'min-w-[140px]'}`} ref={dropdownRef}>
       {label && (
-        <span className={`text-[10px] font-bold uppercase tracking-widest pl-2 ${isAdminProxy ? 'text-primary' : 'text-slate-400'}`}>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
           {label}
         </span>
       )}
       <div className="relative w-full">
-        <div 
+        <button 
+          type="button"
+          disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between rounded-xl px-3 py-1.5 text-xs font-bold shadow-sm transition-all cursor-pointer border ${
-            disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200' :
-            isAdminProxy ? 'bg-primary/5 border-primary/20 text-primary hover:border-primary/40' : 
-            'bg-slate-50 border-slate-200/60 text-slate-700 hover:border-primary/30 hover:bg-white'
-          } ${isOpen ? 'ring-2 ring-primary/30 border-primary/50 bg-white' : ''}`}
+          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold shadow-2xs transition-colors cursor-pointer border rounded-none ${
+            disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200 text-slate-400' :
+            isOpen ? 'border-[#024e4d] bg-white text-slate-900 ring-1 ring-[#024e4d]' :
+            'bg-slate-50 hover:bg-white border-slate-300 text-slate-700'
+          }`}
         >
           <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${isAdminProxy ? 'text-primary' : 'text-slate-400'}`} />
-        </div>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 text-slate-400 ${isOpen ? 'rotate-180 text-[#024e4d]' : ''}`} />
+        </button>
         
         {isOpen && (
-          <div className="absolute z-[100] top-full mt-1 w-full bg-white border border-slate-100 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] overflow-hidden animate-in fade-in zoom-in-95 duration-200 py-1 max-h-[300px] overflow-y-auto no-scrollbar">
-            <div 
-              className={`px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors hover:bg-slate-50 ${value === '' ? 'bg-primary/5 text-primary' : 'text-slate-500'}`}
-              onClick={() => { onChange(''); setIsOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((opt, i) => (
+          <div className="absolute z-50 top-full left-0 mt-1 w-full min-w-[160px] bg-white border border-slate-300 shadow-2xl rounded-none animate-in fade-in duration-100 py-1 max-h-60 overflow-y-auto">
+            {!hasEmptyOption && (
               <div 
-                key={i}
-                className={`px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors hover:bg-slate-50 ${String(value) === String(opt.value) ? 'bg-primary/5 text-primary font-bold' : 'text-slate-700'}`}
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                className={`px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors hover:bg-teal-50 ${value === '' ? 'bg-teal-50 text-[#024e4d] font-bold' : 'text-slate-600'}`}
+                onClick={() => { onChange(''); setIsOpen(false); }}
               >
-                {opt.label}
+                {placeholder}
               </div>
-            ))}
+            )}
+            {options.map((opt, i) => {
+              const isSelected = String(value) === String(opt.value);
+              return (
+                <div 
+                  key={i}
+                  className={`px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors hover:bg-teal-50 ${isSelected ? 'bg-teal-50 text-[#024e4d] font-bold border-l-2 border-l-[#024e4d]' : 'text-slate-700'}`}
+                  onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                >
+                  {opt.label}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

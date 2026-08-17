@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+import { query } from '@/lib/db';
 
 export async function GET(req: Request) {
   try {
@@ -14,35 +9,39 @@ export async function GET(req: Request) {
     const clientName = searchParams.get('client');
 
     let whereClause = 'WHERE 1=1';
-    const params = [];
-    let paramIndex = 1;
+    const params: any[] = [];
 
-    let monthYearStr = null;
-
-    if (month && year) {
-      whereClause += ` AND EXTRACT(MONTH FROM d.upload_at) = $${paramIndex} AND EXTRACT(YEAR FROM d.upload_at) = $${paramIndex + 1}`;
-      params.push(parseInt(month), parseInt(year));
-      paramIndex += 2;
-      monthYearStr = `${month}-${year}`;
+    if (month && month !== '0') {
+      params.push(parseInt(month, 10));
+      whereClause += ` AND EXTRACT(MONTH FROM COALESCE(d.upload_at, d.created_at)) = $${params.length}`;
     }
 
-    if (clientName) {
-      whereClause += ` AND LOWER(d.client) = LOWER($${paramIndex})`;
-      params.push(clientName);
-      paramIndex++;
+    if (year && year !== '0') {
+      params.push(parseInt(year, 10));
+      whereClause += ` AND EXTRACT(YEAR FROM COALESCE(d.upload_at, d.created_at)) = $${params.length}`;
     }
 
-    const { rows } = await pool.query(`
+    if (clientName && clientName.trim() && clientName.toLowerCase() !== 'all') {
+      params.push(`%${clientName.trim()}%`);
+      whereClause += ` AND d.client ILIKE $${params.length}`;
+    }
+
+    const monthYearStr = (month && month !== '0' && year) ? `${month}-${year}` : null;
+
+    const { rows } = await query(`
       SELECT 
         d.employee_code AS employee_id,
-        MAX(k.employee_name) AS name,
-        MAX(k.designation) AS designation,
-        MAX(k.location) AS location,
-        SUM(d.money_collected) AS total_collection,
+        COALESCE(MAX(k.name), MAX(d.employee_name), '—') AS name,
+        COALESCE(MAX(k.designation), 'Associate') AS designation,
+        COALESCE(MAX(k.location), MAX(d.location), '—') AS location,
+        COALESCE(MAX(k.client), MAX(d.client), '—') AS client,
+        COALESCE(MAX(k.product), MAX(d.product), '—') AS product,
+        SUM(COALESCE(d.money_collected, 0)) AS total_collection,
+        COUNT(d.id) AS total_cases,
         COALESCE(MAX(m.final_payout), 0) AS final_incentive
       FROM dpf_records d
-      LEFT JOIN employee_keka_data k ON d.employee_code = k.employee_id
-      LEFT JOIN monthly_incentive_calculation m ON d.employee_code = m.employee_id ${monthYearStr ? `AND m.month_year = '${monthYearStr}'` : ''}
+      LEFT JOIN employee_keka_data k ON UPPER(d.employee_code) = UPPER(k.employee_id)
+      LEFT JOIN monthly_incentive_calculation m ON UPPER(d.employee_code) = UPPER(m.employee_id) ${monthYearStr ? `AND m.month_year = '${monthYearStr}'` : ''}
       ${whereClause}
       GROUP BY d.employee_code
       ORDER BY final_incentive DESC, total_collection DESC
@@ -50,6 +49,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data: rows });
   } catch (error: any) {
+    console.error('Universal Dashboard API Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

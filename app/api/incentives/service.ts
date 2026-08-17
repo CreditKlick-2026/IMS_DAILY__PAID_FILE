@@ -52,6 +52,11 @@ function getLeadershipIncentivePercentage(teamCollection: number, role: string, 
     else if (role === 'AM') minHeadcount = 30;
 
     let multiplier = Math.max(teamHeadcount, minHeadcount);
+    
+    // Temporary fix: As requested, cap ATL multiplier strictly at 5, overriding dynamic headcount
+    if (role === 'ATL') {
+        multiplier = 5;
+    }
 
     for (const rule of grid) {
         if (rule.role === role && teamCollection >= rule.target_collection * multiplier) {
@@ -698,10 +703,14 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
             if (!groupedData[groupKey]) {
                 groupedData[groupKey] = {
                     employee_id: res.employee_code || groupKey,
+                    employee_code: res.employee_code || groupKey,
                     name: res.employee_name || groupKey,
+                    employee_name: res.employee_name || groupKey,
                     total_records: 0,
                     total_collection: 0,
+                    money_collected: 0,
                     incentive: 0,
+                    final_incentive: 0,
                     individual_incentive: 0,
                     team_incentive: 0,
                     // Additional fields for detail view
@@ -713,6 +722,7 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
                     incentive_percent: res.incentive_percent,
                     tl_name: res.tl_name,
                     am_name: res.am_name,
+                    am: res.am_name,
                     aph: res.aph,
                     ph: res.ph,
                     bucket: res.bucket,
@@ -723,7 +733,9 @@ export async function getIncentiveData(req: Request, forcedLocation?: string) {
 
             groupedData[groupKey].total_records += 1;
             groupedData[groupKey].total_collection += res.total_collection;
+            groupedData[groupKey].money_collected += res.total_collection;
             groupedData[groupKey].incentive += res.incentive;
+            groupedData[groupKey].final_incentive += res.incentive;
             groupedData[groupKey].individual_incentive += (res.individual_incentive || 0);
             groupedData[groupKey].team_incentive += (res.team_incentive || 0);
 

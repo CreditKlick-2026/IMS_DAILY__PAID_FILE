@@ -1,11 +1,16 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import SButton from '../SButton';
-import { ButtonGroup, Button } from '@shopify/polaris';
-import { DISPOSITION_LOGIC, CONNECT_STATUS_COLORS, PAGE_SIZE } from './constants';
+import { X, Building2 } from 'lucide-react';
 
-const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edit', record?: any, onClose: () => void, onSave: () => void }) => {
+interface RecordFormModalProps {
+  mode: 'add' | 'edit';
+  record?: any;
+  onClose: () => void;
+  onSave: () => void;
+}
+
+export function RecordFormModal({ mode, record, onClose, onSave }: RecordFormModalProps) {
   const [formData, setFormData] = useState({
     account_no: record?.account_no || '',
     employee_code: record?.employee_code || '',
@@ -30,9 +35,8 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
     setLoading(true);
     try {
       const url = mode === 'add' ? '/api/leads' : `/api/leads/${record.id}`;
-      const method = mode === 'add' ? 'POST' : 'PUT';
       const res = await fetch(url, {
-        method,
+        method: mode === 'add' ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
@@ -54,36 +58,36 @@ const RecordFormModal = ({ mode, record, onClose, onSave }: { mode: 'add' | 'edi
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: 'var(--bg2, #ffffff)', width: '600px', maxWidth: '90%', maxHeight: '90vh', borderRadius: 12, display: 'flex', flexDirection: 'column', border: '1px solid var(--bdr)' }}>
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: 16, color: 'var(--txt)' }}>{mode === 'add' ? 'Add New Record' : 'Edit Record'}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--txt)' }}>✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white border border-slate-300 shadow-2xl w-full max-w-xl overflow-hidden flex flex-col rounded-none max-h-[90vh]">
+        <div className="px-5 py-3 border-b bg-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-blue-600" />
+            <h3 className="font-bold text-slate-900 text-sm">{mode === 'add' ? 'Add New Collection Record' : 'Edit Collection Record'}</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 cursor-pointer"><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: 16, flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="ff"><label>Account Number *</label><input required className="finp" name="account_no" value={formData.account_no} onChange={handleChange} /></div>
-          <div className="ff"><label>Customer Name *</label><input required className="finp" name="name" value={formData.name} onChange={handleChange} /></div>
-          <div className="ff"><label>Money_Collected *</label><input required type="number" className="finp" name="outstanding" value={formData.outstanding} onChange={handleChange} /></div>
-          <div className="ff"><label>Product Type</label><input className="finp" name="product" value={formData.product} onChange={handleChange} /></div>
-          <div className="ff"><label>Emp Code</label><input className="finp" name="employee_code" value={formData.employee_code} onChange={handleChange} /></div>
-          <div className="ff"><label>Client</label><input className="finp" name="client" value={formData.client} onChange={handleChange} /></div>
-          <div className="ff"><label>Bucket</label><input className="finp" name="bucket" value={formData.bucket} onChange={handleChange} /></div>
-          <div className="ff"><label>Location</label><input className="finp" name="location" value={formData.location} onChange={handleChange} /></div>
-          <div className="ff"><label>Payment Mode</label><input className="finp" name="payment_mode" value={formData.payment_mode} onChange={handleChange} /></div>
-          <div className="ff"><label>TL Name</label><input className="finp" name="tl_name" value={formData.tl_name} onChange={handleChange} /></div>
-          <div className="ff"><label>Agent Name</label><input className="finp" name="agent" value={formData.agent} onChange={handleChange} /></div>
-          <div className="ff"><label>APH</label><input className="finp" name="aph" value={formData.aph} onChange={handleChange} /></div>
-          <div className="ff"><label>PH</label><input className="finp" name="ph" value={formData.ph} onChange={handleChange} /></div>
-          <div className="ff"><label>Mobile No</label><input className="finp" name="mobile_no" value={formData.mobile_no} onChange={handleChange} /></div>
-          
-          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-            <button type="button" onClick={onClose} className="btn">Cancel</button>
-            <button type="submit" className="btn pr" disabled={loading}>{loading ? 'Saving...' : 'Save Record'}</button>
+
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 grid grid-cols-2 gap-3 text-xs">
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Account Number *</label><input required className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500 font-mono" name="account_no" value={formData.account_no} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Customer Name *</label><input required className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="name" value={formData.name} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Money Collected *</label><input required type="number" className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500 font-mono text-emerald-700 font-bold" name="outstanding" value={formData.outstanding} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Product Type</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="product" value={formData.product} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Emp Code</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500 font-mono" name="employee_code" value={formData.employee_code} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Client</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="client" value={formData.client} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Bucket</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500 font-mono" name="bucket" value={formData.bucket} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Location</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="location" value={formData.location} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Payment Mode</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="payment_mode" value={formData.payment_mode} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">TL Name</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="tl_name" value={formData.tl_name} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Agent / AM</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500" name="agent" value={formData.agent} onChange={handleChange} /></div>
+          <div><label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">Mobile No</label><input className="w-full px-2.5 py-1.5 border border-slate-300 rounded-none outline-none focus:border-blue-500 font-mono" name="mobile_no" value={formData.mobile_no} onChange={handleChange} /></div>
+
+          <div className="col-span-2 flex justify-end gap-2 pt-3 border-t mt-2">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-none">Cancel</button>
+            <button type="submit" disabled={loading} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-none shadow-2xs cursor-pointer">{loading ? 'Saving...' : 'Save Record'}</button>
           </div>
         </form>
       </div>
     </div>
   );
-};
-
-export default RecordFormModal;
+}

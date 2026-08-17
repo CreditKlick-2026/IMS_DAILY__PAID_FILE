@@ -67,3 +67,25 @@ export const CONNECT_STATUS_COLORS: Record<string, string> = {
 
 export const PAGE_SIZE = 25;
 
+export const COLUMN_ORDER: Record<string, { order: number; label: string }> = {
+  account_no: { order: 1, label: 'Account_No' },
+  employee_name: { order: 2, label: 'Employee_Name' },
+  mobile: { order: 3, label: 'Mobile Number' },
+  address: { order: 4, label: 'Address' },
+  city: { order: 5, label: 'City' },
+  state: { order: 6, label: 'State' },
+  email: { order: 7, label: 'Email' },
+  bank: { order: 8, label: 'Bank / Lender' },
+  portfolio: { order: 9, label: 'Portfolio' },
+  dpd: { order: 10, label: 'DPD' },
+  bkt_2: { order: 11, label: 'Bucket' },
+  min_amt_due: { order: 12, label: 'Min Amount Due' },
+  principle_outstanding: { order: 13, label: 'Principle Outstanding' },
+  money_collected: { order: 14, label: 'Money_Collected' },
+  product: { order: 15, label: 'Product Type' },
+  'credit card number': { order: 16, label: 'Credit Card Number' },
+  credit_card_number: { order: 16, label: 'Credit Card Number' },
+  pan: { order: 17, label: 'PAN Number' },
+  createdat: { order: 18, label: 'Allocation Date' },
+  assignedagent: { order: 19, label: 'Assigned Agent' },
+};

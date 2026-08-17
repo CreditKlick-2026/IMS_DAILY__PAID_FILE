@@ -22,98 +22,84 @@ export async function GET(req: Request) {
     const monthStr = searchParams.get('month');
     const yearStr = searchParams.get('year');
     const locationName = searchParams.get('location');
-    const clientName = searchParams.get('client_name');
-    const productName = searchParams.get('product_type');
-    
+
     const now = new Date();
-    // Default to current month/year
-    const month = monthStr ? parseInt(monthStr) : now.getMonth() + 1;
-    const year = yearStr ? parseInt(yearStr) : now.getFullYear();
-
-    let paramIndex = 3;
-    const queryParams: any[] = [month, year];
-
-    let subqueryConditions = '';
-    if (clientName) {
-      subqueryConditions += ` AND c.name = $${paramIndex}`;
-      queryParams.push(clientName);
-      paramIndex++;
-    }
-    if (productName) {
-      subqueryConditions += ` AND j.product_type = $${paramIndex}`;
-      queryParams.push(productName);
-      paramIndex++;
-    }
+    const month = monthStr ? parseInt(monthStr, 10) : now.getMonth() + 1;
+    const year = yearStr ? parseInt(yearStr, 10) : now.getFullYear();
 
     let userConditions = '';
+    const queryParams: any[] = [month, year];
+    let pIdx = 3;
+
     if (locationName) {
-      userConditions += ` AND u.location = $${paramIndex}`;
+      userConditions += ` AND (u.location = $${pIdx} OR l.name = $${pIdx})`;
       queryParams.push(locationName);
-      paramIndex++;
+      pIdx++;
     }
 
     const query = `
       SELECT 
+        u.id as user_id,
         u.employee_id, 
         u.name,
         u.username,
-        TO_CHAR(COALESCE(uj.upload_at, uj.created_at), 'YYYY-MM-DD') as upload_date,
+        COALESCE(l.name, u.location, '—') as location_name,
+        TO_CHAR(COALESCE(uj.target_date, uj.created_at), 'YYYY-MM-DD') as upload_date,
+        uj.id as job_id,
         uj.status as job_status,
-        uj.is_edited_by_admin,
-        uj.uploaded_by_employee_id
+        uj.uploaded_by_employee_id,
+        uj.total_rows,
+        uj.processed_rows
       FROM users u
-      LEFT JOIN (
-        SELECT j.* FROM upload_jobs j
-        LEFT JOIN master_client c ON COALESCE(j.client_id, j.process_id) = c.id
-        WHERE 1=1 ${subqueryConditions}
-      ) uj 
-        ON u.employee_id = uj.target_employee_id
-        AND EXTRACT(MONTH FROM COALESCE(uj.upload_at, uj.created_at)) = $1
-        AND EXTRACT(YEAR FROM COALESCE(uj.upload_at, uj.created_at)) = $2
+      LEFT JOIN master_location l ON u.location_id = l.id
+      LEFT JOIN upload_jobs uj 
+        ON (u.employee_id = uj.uploaded_by_employee_id OR u.username = uj.uploaded_by_employee_id)
+        AND uj.job_type = 'DPF'
+        AND EXTRACT(MONTH FROM COALESCE(uj.target_date, uj.created_at)) = $1
+        AND EXTRACT(YEAR FROM COALESCE(uj.target_date, uj.created_at)) = $2
       WHERE u.role = 'user' ${userConditions}
-      ORDER BY u.name, u.username, uj.created_at DESC
+      ORDER BY u.name, u.employee_id, uj.created_at DESC
     `;
 
     const res = await pool.query(query, queryParams);
 
     // Group by user
     const usersMap: Record<string, any> = {};
-    
+
     for (const row of res.rows) {
       const empId = row.employee_id || row.username;
       if (!usersMap[empId]) {
         usersMap[empId] = {
+          user_id: row.user_id,
           employee_id: row.employee_id,
           name: row.name || row.username,
           username: row.username,
-          uploads: {} // date string -> status string
+          location: row.location_name,
+          uploads: {}
         };
       }
-      
+
       if (row.upload_date) {
-        // Only set if not already set (since ordered DESC, we get latest first)
         if (!usersMap[empId].uploads[row.upload_date]) {
           let cellStatus = 'UPLOADED';
-          
           if (row.job_status === 'DELETED_BY_ADMIN') {
             cellStatus = 'DELETED_BY_ADMIN';
           } else if (row.job_status === 'FAILED') {
             cellStatus = 'FAILED';
+          } else if (row.job_status === 'PROCESSING') {
+            cellStatus = 'PROCESSING';
           } else if (row.uploaded_by_employee_id && row.uploaded_by_employee_id !== row.employee_id) {
             cellStatus = 'UPLOADED_BY_ADMIN';
           }
-          
           usersMap[empId].uploads[row.upload_date] = cellStatus;
         }
       }
     }
 
     const trackerData = Object.values(usersMap);
-
     return NextResponse.json({ success: true, month, year, data: trackerData });
-
   } catch (error: any) {
     console.error('Error fetching tracker data:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch tracker data' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -24,7 +24,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const employee_id = p.id;
     const body = await req.json();
 
-    const { name, designation, location, am_name, tl_name, salary, doj, doc, agent_ohr, is_special } = body;
+    const { name, designation, location, am_name, tl_name, salary, doj, doc, agent_ohr, is_special, extra_data } = body;
 
     // Use parameterized query to update
     const updateQuery = `
@@ -40,8 +40,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         doc = $8,
         agent_ohr = $9,
         is_special = $10,
+        extra_data = COALESCE(extra_data, '{}'::jsonb) || $11::jsonb,
         updated_at = NOW()
-      WHERE employee_id = $11
+      WHERE employee_id = $12
       RETURNING *;
     `;
 
@@ -56,6 +57,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       doc ? new Date(doc) : null,
       agent_ohr || null,
       is_special === true || is_special === 'true',
+      JSON.stringify(extra_data || {}),
       employee_id
     ];
 

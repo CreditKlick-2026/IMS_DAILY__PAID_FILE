@@ -1,0 +1,394 @@
+{
+  "default": [
+    {
+      "key": "employee_id",
+      "display": "Employee ID",
+      "labels": [
+        "employee_id",
+        "Employee ID",
+        "EmployeeId",
+        "EMP ID",
+        "EMPID",
+        "EMPLOYEE ID",
+        "emp id",
+        "employee id",
+        "EmpCode",
+        "Emp Code",
+        "EMP CODE",
+        "Emp_Code",
+        "Emp ID"
+      ]
+    },
+    {
+      "key": "name",
+      "display": "Employee Name",
+      "labels": [
+        "name",
+        "Name",
+        "NAME",
+        "Employee Name",
+        "EmployeeName",
+        "EmpName",
+        "EMP NAME",
+        "EMPNAME",
+        "Emp_Name",
+        "EMPLOYEE NAME",
+        "employee name",
+        "Agent Name"
+      ]
+    },
+    {
+      "key": "location",
+      "display": "Location",
+      "labels": [
+        "location",
+        "Location",
+        "LOCATION",
+        "Branch",
+        "BRANCH",
+        "City",
+        "CITY",
+        "Hub",
+        "Location Name",
+        "LocationName"
+      ]
+    },
+    {
+      "key": "client",
+      "display": "Client",
+      "labels": [
+        "client",
+        "Client",
+        "CLIENT",
+        "Process",
+        "PROCESS",
+        "Process Name",
+        "ProcessName",
+        "Client Name",
+        "ClientName",
+        "Bank",
+        "BANK"
+      ]
+    },
+    {
+      "key": "product",
+      "display": "Product",
+      "labels": [
+        "product",
+        "Product",
+        "PRODUCT",
+        "Product Type",
+        "ProductType",
+        "Scheme",
+        "Segment"
+      ]
+    },
+    {
+      "key": "designation",
+      "display": "Designation",
+      "labels": [
+        "designation",
+        "Designation",
+        "DESIGNATION",
+        "Role",
+        "ROLE",
+        "Position",
+        "POSITION",
+        "Desig",
+        "Job Title"
+      ]
+    },
+    {
+      "key": "agent_ohr",
+      "display": "Agent OHR",
+      "labels": [
+        "agent_ohr",
+        "Agent OHR",
+        "AgentOHR",
+        "OHR",
+        "OHR ID",
+        "OHRID",
+        "Agent_OHR",
+        "AGENT OHR",
+        "AGENTOHR",
+        "ohr id",
+        "agent ohr"
+      ]
+    },
+    {
+      "key": "tl_name",
+      "display": "TL Name",
+      "labels": [
+        "tl_name",
+        "TL Name",
+        "TLName",
+        "Team Leader",
+        "TeamLeader",
+        "TL",
+        "tl",
+        "TL_NAME",
+        "TL NAME",
+        "Reporting Manager"
+      ]
+    },
+    {
+      "key": "am_name",
+      "display": "AM Name",
+      "labels": [
+        "am_name",
+        "AM Name",
+        "AMName",
+        "Area Manager",
+        "AreaManager",
+        "AM",
+        "am",
+        "AM_NAME",
+        "AM NAME",
+        "Manager"
+      ]
+    },
+    {
+      "key": "doj",
+      "display": "DOJ",
+      "labels": [
+        "doj",
+        "DOJ",
+        "Date of Joining",
+        "DateOfJoining",
+        "Joining Date",
+        "JoiningDate",
+        "DOJ Date",
+        "DOJ_DATE",
+        "Date_Of_Joining"
+      ]
+    },
+    {
+      "key": "doc",
+      "display": "DOC",
+      "labels": [
+        "doc",
+        "DOC",
+        "Date of Calling",
+        "DateOfCalling",
+        "Calling Date",
+        "CallingDate",
+        "DOC Date",
+        "DOC_DATE",
+        "Date_Of_Calling"
+      ]
+    },
+    {
+      "key": "salary",
+      "display": "Salary",
+      "labels": [
+        "salary",
+        "Salary",
+        "SALARY",
+        "Base Salary",
+        "BaseSalary",
+        "Gross Salary",
+        "GrossSalary",
+        "CTC",
+        "ctc",
+        "Target",
+        "Monthly Salary"
+      ]
+    }
+  ],
+  "all_all_all": [
+    {
+      "key": "employee_id",
+      "display": "Employee ID",
+      "labels": [
+        "employee_id",
+        "Employee ID",
+        "EmployeeId",
+        "EMP ID",
+        "EMPID",
+        "EMPLOYEE ID",
+        "emp id",
+        "employee id",
+        "EmpCode",
+        "Emp Code",
+        "EMP CODE",
+        "Emp_Code",
+        "Emp ID"
+      ]
+    },
+    {
+      "key": "name",
+      "display": "Employee Name",
+      "labels": [
+        "name",
+        "Name",
+        "NAME",
+        "Employee Name",
+        "EmployeeName",
+        "EmpName",
+        "EMP NAME",
+        "EMPNAME",
+        "Emp_Name",
+        "EMPLOYEE NAME",
+        "employee name",
+        "Agent Name"
+      ]
+    },
+    {
+      "key": "location",
+      "display": "Location",
+      "labels": [
+        "location",
+        "Location",
+        "LOCATION",
+        "Branch",
+        "BRANCH",
+        "City",
+        "CITY",
+        "Hub",
+        "Location Name",
+        "LocationName"
+      ]
+    },
+    {
+      "key": "client",
+      "display": "Client",
+      "labels": [
+        "client",
+        "Client",
+        "CLIENT",
+        "Process",
+        "PROCESS",
+        "Process Name",
+        "ProcessName",
+        "Client Name",
+        "ClientName",
+        "Bank",
+        "BANK"
+      ]
+    },
+    {
+      "key": "product",
+      "display": "Product",
+      "labels": [
+        "product",
+        "Product",
+        "PRODUCT",
+        "Product Type",
+        "ProductType",
+        "Scheme",
+        "Segment"
+      ]
+    },
+    {
+      "key": "designation",
+      "display": "Designation",
+      "labels": [
+        "designation",
+        "Designation",
+        "DESIGNATION",
+        "Role",
+        "ROLE",
+        "Position",
+        "POSITION",
+        "Desig",
+        "Job Title"
+      ]
+    },
+    {
+      "key": "agent_ohr",
+      "display": "Agent OHR",
+      "labels": [
+        "agent_ohr",
+        "Agent OHR",
+        "AgentOHR",
+        "OHR",
+        "OHR ID",
+        "OHRID",
+        "Agent_OHR",
+        "AGENT OHR",
+        "AGENTOHR",
+        "ohr id",
+        "agent ohr"
+      ]
+    },
+    {
+      "key": "tl_name",
+      "display": "TL Name",
+      "labels": [
+        "tl_name",
+        "TL Name",
+        "TLName",
+        "Team Leader",
+        "TeamLeader",
+        "TL",
+        "tl",
+        "TL_NAME",
+        "TL NAME",
+        "Reporting Manager"
+      ]
+    },
+    {
+      "key": "am_name",
+      "display": "AM Name",
+      "labels": [
+        "am_name",
+        "AM Name",
+        "AMName",
+        "Area Manager",
+        "AreaManager",
+        "AM",
+        "am",
+        "AM_NAME",
+        "AM NAME",
+        "Manager"
+      ]
+    },
+    {
+      "key": "doj",
+      "display": "DOJ",
+      "labels": [
+        "doj",
+        "DOJ",
+        "Date of Joining",
+        "DateOfJoining",
+        "Joining Date",
+        "JoiningDate",
+        "DOJ Date",
+        "DOJ_DATE",
+        "Date_Of_Joining"
+      ]
+    },
+    {
+      "key": "doc",
+      "display": "DOC",
+      "labels": [
+        "doc",
+        "DOC",
+        "Date of Calling",
+        "DateOfCalling",
+        "Calling Date",
+        "CallingDate",
+        "DOC Date",
+        "DOC_DATE",
+        "Date_Of_Calling"
+      ]
+    },
+    {
+      "key": "salary",
+      "display": "Salary",
+      "labels": [
+        "salary",
+        "Salary",
+        "SALARY",
+        "Base Salary",
+        "BaseSalary",
+        "Gross Salary",
+        "GrossSalary",
+        "CTC",
+        "ctc",
+        "Target",
+        "Monthly Salary"
+      ]
+    }
+  ]
+}

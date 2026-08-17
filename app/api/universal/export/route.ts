@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { query } from '@/lib/db';
 import ExcelJS from 'exceljs';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
 
 export async function GET(req: Request) {
   try {
@@ -19,19 +14,20 @@ export async function GET(req: Request) {
 
     const monthYearStr = `${month}-${year}`;
 
-    const { rows } = await pool.query(`
+    const { rows } = await query(`
       SELECT 
         m.employee_id,
-        k.employee_name,
-        k.designation,
-        k.department,
+        COALESCE(k.name, '—') as employee_name,
+        COALESCE(k.designation, 'Associate') as designation,
+        COALESCE(k.location, '—') as location,
+        COALESCE(k.product, '—') as product,
         m.month_year,
         m.total_metric_value as "Target/Collection",
         m.base_payout as "Base Incentive",
         m.final_payout as "Final Incentive",
         m.status
       FROM monthly_incentive_calculation m
-      LEFT JOIN employee_keka_data k ON m.employee_id = k.employee_id
+      LEFT JOIN employee_keka_data k ON UPPER(m.employee_id) = UPPER(k.employee_id)
       WHERE m.month_year = $1
       ORDER BY m.final_payout DESC
     `, [monthYearStr]);
@@ -48,7 +44,8 @@ export async function GET(req: Request) {
       { header: 'Emp Code', key: 'employee_id', width: 15 },
       { header: 'Emp Name', key: 'employee_name', width: 25 },
       { header: 'Designation', key: 'designation', width: 20 },
-      { header: 'Department', key: 'department', width: 20 },
+      { header: 'Location', key: 'location', width: 20 },
+      { header: 'Product', key: 'product', width: 20 },
       { header: 'Month-Year', key: 'month_year', width: 15 },
       { header: 'Metric Value (₹/%)', key: 'Target/Collection', width: 20 },
       { header: 'Base Incentive (₹)', key: 'Base Incentive', width: 20 },
@@ -58,7 +55,7 @@ export async function GET(req: Request) {
 
     // Styling Header
     sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F81BD' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF024E4D' } };
     sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
     rows.forEach(row => {
